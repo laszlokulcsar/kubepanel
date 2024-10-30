@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+                        <main class="content">
+                                <div class="container-fluid p-0">
+
+                                        <h1 class="h3 mb-3"><strong>Add new domain</strong> list</h1>
+                                        <div class="row">
+                                                <div class="col-12 col-lg-12 col-xxl-12">
+							<div class="card">
+								<div class="card-header">
+									<h5 class="card-title mb-0">Input</h5>
+								</div>
+								<div class="card-body">
+									<form action="{% url 'add_domain' %}" method="post">
+								          {% csrf_token %}
+									<input type="text" name="domain_name" class="form-control" placeholder="Domain name">
+									<input class="btn btn-primary" type="submit" value="Add domain">
+									</form>
+								</div>
+							</div>
+                                                </div>
+                                        </div>
+
+                                </div>
+                        </main>
+{% endblock %}

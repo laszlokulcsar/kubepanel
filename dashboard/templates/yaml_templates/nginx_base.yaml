@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: {{ domain_name_dash }}
+spec:
+  replicas: 1  # You can adjust the number of replicas here
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: docker.io/laszlokulcsar/nginx:v0.1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: nginx-conf-volume
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: html-volume
+          mountPath: /usr/share/nginx/html
+      - name: sftp
+        image: docker.io/laszlokulcsar/sftp:v0.1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 22
+        volumeMounts:
+        - name: html-volume
+          mountPath: /home/webuser/html
+        - name: sftp
+          mountPath: /home/webuser/.ssh/authorized_keys
+          subPath: authorized_keys
+      volumes:
+      - name: sftp
+        configMap:
+          defaultMode: 0644
+          name: sftp
+      - name: nginx-conf-volume
+        configMap:
+          name: nginx-config
+      - name: html-volume
+        persistentVolumeClaim:
+          claimName: {{ domain_name_dash }}-pvc
+

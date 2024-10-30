@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: delete-domain-{{ jobid }}
+  namespace: kubepanel
+spec:
+  template:
+    spec:
+      containers:
+      - name: delete-domain
+        image: laszlokulcsar/watchdog:v0.1
+        command: ["kubectl",  "delete", "ns", "{{ domain_name_dash }}"]
+      - name: dbclient
+        env:
+        - name: MARIADB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-auth
+              key: password
+        - name: DBUSER
+          value: "{{ domain_name_underscore }}"
+        - name: DBNAME
+          value: "{{ domain_name_underscore }}"
+        image: laszlokulcsar/dbclient:v0.1
+        command: ["/bin/bash"]
+        args: ["/delete_db.sh"]
+      restartPolicy: Never
+  backoffLimit: 4

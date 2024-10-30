@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-db-{{ jobid }}
+  namespace: kubepanel
+spec:
+  template:
+    spec:
+      containers:
+      - name: dbclient
+        env:
+        - name: MARIADB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-auth
+              key: password
+        - name: DBUSER
+          value: "{{ mariadb_user }}"
+        - name: DBNAME
+          value: "{{ mariadb_user }}"
+        - name: DBPASS
+          value: "{{ mariadb_pass }}"
+        image: laszlokulcsar/dbclient:v0.1
+        command: ["/bin/bash"]
+        args: ["/create_db.sh"]
+      restartPolicy: Never
+  ttlSecondsAfterFinished: 120
+  backoffLimit: 4
