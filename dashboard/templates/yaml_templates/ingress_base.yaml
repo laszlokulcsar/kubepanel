@@ -18,7 +18,18 @@ spec:
             name: nginx
             port:
               number: 8080
+  - host: "www.{{ domain_name }}"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: nginx
+            port:
+              number: 8080
   tls:
   - hosts:
     - {{ domain_name }}
+    - www.{{ domain_name }}
     secretName: {{ domain_name_dash }}-cert
