@@ -3,7 +3,7 @@
                         <main class="content">
                                 <div class="container-fluid p-0">
 
-                                        <h1 class="h3 mb-3"><strong>Domain</strong> list</h1>
+                                        <h1 class="h3 mb-3"><strong>Filesystem backups</strong> list</h1>
                                         <div class="row">
                                                 <div class="col-12 col-lg-12 col-xxl-12 d-flex">
                                                         <div class="card flex-fill">
@@ -16,27 +16,22 @@
                                                                                 <tr>
                                                                                         <th>Name</th>
                                                                                         <th class="d-none d-xl-table-cell">SFTP port</th>
-                                                                                        <th>Filesystem backups</th>
+                                                                                        <th>Status</th>
                                                                                         <th class="d-none d-md-table-cell">Actions</th>
                                                                                 </tr>
                                                                         </thead>
                                                                         <tbody>
-                                                                                {% for domain in domains.all %}
+                                                                                {% for volumesnapshot in volumesnapshots.all %}
                                                                                 <tr>
-                                                                                        <td>{{ domain.domain_name }}</td>
-                                                                                        <td class="d-none d-xl-table-cell">{{ domain.scp_port  }}</td>
-                                                                                        <td><a href="{% url 'volumesnapshots' domain=domain.domain_name %}"><button class="btn btn-warning">Show FS Backups</button></a></td>
-                                                                                        <td class="d-none d-md-table-cell"><a href="{% url 'view_domain' domain=domain.domain_name %}"><button class="btn btn-success">View</button></a>  <a href="{% url 'delete_domain' domain=domain.domain_name %}"><button class="btn btn-danger">Delete</button></a></td>
+                                                                                        <td>{{ volumesnapshot.snapshotname }}</td>
+                                                                                        <td class="d-none d-xl-table-cell">{{ volumesnapshot.created_at  }}</td>
+                                                                                        <td class="d-none d-md-table-cell"><a href="{% url 'restore_volumesnapshot' volumesnapshot=volumesnapshot.snapshotname %}"><button class="btn btn-danger">Restore backup</button></a></td>
+                                                                                        <td></td>
                                                                                 </tr>
                                                                                 {% endfor %}
                                                                         </tbody>
                                                                 </table>
                                                                         <div class="d-grid">
-                                                                                <a href="add_domain" class="btn btn-primary">
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
-                                                                                  <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
-                                                                                </svg>
-                                                                                Add new domain</a>
                                                                         </div>
                                                         </div>
                                                 </div>

@@ -12,7 +12,7 @@ spec:
           restartPolicy: Never
           containers:
             - name: snapshotter
-              image: laszlokulcsar/watchdog:v0.1
+              image: laszlokulcsar/dashboard:v0.1
               command:
                 - /bin/sh
                 - -c
@@ -21,13 +21,14 @@ spec:
                   SLEEP_TIME=$(( $RANDOM % 360 ))
                   echo "Sleeping for ${SLEEP_TIME}s before snapshot..."
                   sleep $SLEEP_TIME
+                  DATE=$(date +'%Y%m%d%H%M%S')
 
                   # Now create the snapshot
                   kubectl apply -f - <<EOF
                   apiVersion: snapshot.storage.k8s.io/v1
                   kind: VolumeSnapshot
                   metadata:
-                    name: {{ domain_name_dash }}-snapshot-$(date +'%Y%m%d%H%M%S')
+                    name: {{ domain_name_dash }}-snapshot-$DATE
                     namespace: {{ domain_name_dash }}
                   spec:
                     volumeSnapshotClassName: piraeus-snapshots
