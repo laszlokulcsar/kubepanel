@@ -34,8 +34,8 @@ def kpmain(request):
 @login_required(login_url="/dashboard/")
 def volumesnapshots(request,domain):
     domain_obj = Domains.objects.get(domain_name=domain)
-    volumesnapshots = { "volumesnapshots" : Volumesnapshot.objects.filter(domain=domain_obj) }
-    return render(request, "main/volumesnapshot.html", volumesnapshots)
+    context = {"volumesnapshots" : Volumesnapshot.objects.filter(domain=domain_obj), "domain" : domain }
+    return render(request, "main/volumesnapshot.html", context)
 
 def settings(request):
     return render(request, "main/settings.html")
@@ -126,8 +126,30 @@ def add_domain(request):
     return True
 
 @login_required(login_url="/dashboard/")
-def restore_volumesnapshot(request,volumesnapshot):
-    return True
+def restore_volumesnapshot(request,volumesnapshot,domain):
+    if request.method == 'POST':
+      if request.POST["imsure"] == domain:
+        try:
+          permission_valid = Domains.objects.get(owner=request.user, domain_name = domain)
+        except:
+          return HttpResponse("Permission denied.")
+        if permission_valid:
+          template_dir = "restore_templates/"
+          domain_dirname = '/kubepanel/yaml_templates/'+domain
+          try:
+            os.mkdir(domain_dirname)
+            os.mkdir('/dkim-privkeys/'+domain)
+          except:
+            print("Can't create directories. Please check debug logs if you think this is an error.")
+          jobid = random_string(5)
+          context = { "jobid" : jobid, "domain_name_dash" : domain.replace(".","-"), "volumesnapshot" : volumesnapshot }
+          iterate_input_templates(template_dir,domain_dirname,context)
+      else:
+        error = "Domain name didn't match"
+        return render(request, "main/restore_snapshot.html", { "volumesnapshot" : volumesnapshot, "domain" : domain, "error" : error})
+    else:
+      return render(request, "main/restore_snapshot.html", { "volumesnapshot" : volumesnapshot, "domain" : domain})
+    return redirect(kpmain)
 
 @login_required(login_url="/dashboard/")
 def delete_domain(request,domain):

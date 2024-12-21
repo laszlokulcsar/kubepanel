@@ -12,7 +12,7 @@ spec:
           restartPolicy: Never
           containers:
           - name: snapshotter
-            image: laszlokulcsar/dashboard:v0.1
+            image: laszlokulcsar/watchdog:v0.1
             command:
               - /bin/sh
               - -c
@@ -35,6 +35,15 @@ spec:
                   source:
                     persistentVolumeClaimName: {{ domain_name_dash }}-pvc
                 EOF
+            volumeMounts:
+            - name: html-volume
+              mountPath: /usr/share/nginx/html
+          - name: add_snapshot
+            image: laszlokulcsar/dashboard:v0.1
+            command:
+              - /bin/sh
+              - -c
+              - |
                 python manage.py add_snapshot -sn {{ domain_name_dash }}-snapshot-$DATE -d {{ domain_name }}
             volumeMounts:
             - name: html-volume
