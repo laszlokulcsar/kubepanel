@@ -16,4 +16,24 @@ spec:
                 kubectl scale deployment/php --replicas=0 -n {{ domain_name_dash }}
                 kubectl scale deployment/nginx --replicas=0 -n {{ domain_name_dash }}
                 kubectl delete pvc/{{ domain_name_dash }}-pvc -n {{ domain_name_dash }}
+                kubectl apply -f - <<EOF
+                apiVersion: v1
+                kind: PersistentVolumeClaim
+                metadata:
+                  name: {{ domain_name_dash }}-pvc
+                  namespace: {{ domain_name_dash }}
+                spec:
+                  storageClassName: linstor-sc
+                  resources:
+                    requests:
+                      storage: 1Gi
+                  dataSource:
+                    apiGroup: snapshot.storage.k8s.io
+                    kind: VolumeSnapshot
+                    name: {{ volumesnapshot }}
+                  accessModes:
+                    - ReadWriteMany
+                EOF
+                kubectl scale deployment/nginx --replicas=1 -n {{ domain_name_dash }}
+                kubectl scale deployment/php --replicas=1 -n {{ domain_name_dash }}
   backoffLimit: 4
