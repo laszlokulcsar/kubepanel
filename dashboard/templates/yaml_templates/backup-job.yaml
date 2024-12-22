@@ -10,6 +10,13 @@ spec:
       template:
         spec:
           restartPolicy: Never
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchLabels:
+                    group: {{ domain_name_dash }}
+                topologyKey: "kubernetes.io/hostname"
           containers:
           - name: snapshotter
             image: laszlokulcsar/watchdog:v0.1
