@@ -25,8 +25,8 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-&psk#na5l=p3q8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = 'False'
 
-ALLOWED_HOSTS = ["localhost"]
-#ALLOWED_HOSTS = ["<KUBEPANEL_DOMAIN>"]
+#ALLOWED_HOSTS = ["localhost"]
+ALLOWED_HOSTS = ["<KUBEPANEL_DOMAIN>"]
 CSRF_TRUSTED_ORIGINS = ["https://<KUBEPANEL_DOMAIN>"]
 
 # Application definition
