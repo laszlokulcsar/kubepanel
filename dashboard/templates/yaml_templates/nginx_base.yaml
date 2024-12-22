@@ -8,11 +8,20 @@ spec:
   selector:
     matchLabels:
       app: nginx
+      group: {{ domain_name_dash }}
   template:
     metadata:
       labels:
         app: nginx
+        group: {{ domain_name_dash }}
     spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                group: {{ domain_name_dash }}
+            topologyKey: "kubernetes.io/hostname"
       containers:
       - name: nginx
         image: docker.io/laszlokulcsar/nginx:v0.1

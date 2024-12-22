@@ -3,7 +3,7 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from .models import User, Domains
+from .models import User, Domains, Volumesnapshot
 from django.urls import reverse
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -30,6 +30,12 @@ def kplogin(request):
 def kpmain(request):
     domains = { "domains" : Domains.objects.filter(owner=request.user) }
     return render(request, "main/domain.html", domains)
+
+@login_required(login_url="/dashboard/")
+def volumesnapshots(request,domain):
+    domain_obj = Domains.objects.get(domain_name=domain)
+    context = {"volumesnapshots" : Volumesnapshot.objects.filter(domain=domain_obj), "domain" : domain }
+    return render(request, "main/volumesnapshot.html", context)
 
 def settings(request):
     return render(request, "main/settings.html")
@@ -69,6 +75,10 @@ def render_yaml(domain_dirname,input_filename,context,file_name):
 def add_domain(request):
     if request.method == 'POST':
         new_domain_name = request.POST["domain_name"][:60]
+        if request.POST["wordpress_preinstall"] == 'on':
+          wp_preinstall = True
+        else:
+          wp_preinstall = False
 
         #GENERATE SSH AND DKIM PRIV/PUB KEYS
         sshkey = rsa.generate_private_key(backend=crypto_default_backend(), public_exponent=65537, key_size=2048)
@@ -89,7 +99,7 @@ def add_domain(request):
         mariadb_user = new_domain_name.replace(".","_")
         new_domain = Domains(owner=request.user, domain_name = new_domain_name, title = new_domain_name, scp_privkey = private_key, scp_pubkey = public_key, scp_port = scp_port, dkim_privkey = dkim_privkey, dkim_pubkey = dkim_txt_record, mariadb_pass = mariadb_pass, mariadb_user = mariadb_user)
         domain_dirname = '/kubepanel/yaml_templates/'+new_domain_name
-        context = { "domains" : Domains.objects.all(), "jobid" : jobid, "domain_name_dash" : new_domain.domain_name.replace(".","-"), "domain_name" : new_domain.domain_name, "public_key" : public_key, "scp_port" : scp_port, "dkim_privkey" : dkim_privkey, "mariadb_pass" : mariadb_pass, "mariadb_user" : mariadb_user }
+        context = { "domains" : Domains.objects.all(), "jobid" : jobid, "domain_name_dash" : new_domain.domain_name.replace(".","-"), "domain_name" : new_domain.domain_name, "public_key" : public_key, "scp_port" : scp_port, "dkim_privkey" : dkim_privkey, "mariadb_pass" : mariadb_pass, "mariadb_user" : mariadb_user, "wp_preinstall" : wp_preinstall}
         try:
           new_domain.save()
         except:
@@ -114,6 +124,32 @@ def add_domain(request):
     else:
         return render(request, "main/add_domain.html")
     return True
+
+@login_required(login_url="/dashboard/")
+def restore_volumesnapshot(request,volumesnapshot,domain):
+    if request.method == 'POST':
+      if request.POST["imsure"] == domain:
+        try:
+          permission_valid = Domains.objects.get(owner=request.user, domain_name = domain)
+        except:
+          return HttpResponse("Permission denied.")
+        if permission_valid:
+          template_dir = "restore_templates/"
+          domain_dirname = '/kubepanel/yaml_templates/'+domain
+          try:
+            os.mkdir(domain_dirname)
+            os.mkdir('/dkim-privkeys/'+domain)
+          except:
+            print("Can't create directories. Please check debug logs if you think this is an error.")
+          jobid = random_string(5)
+          context = { "jobid" : jobid, "domain_name_dash" : domain.replace(".","-"), "volumesnapshot" : volumesnapshot }
+          iterate_input_templates(template_dir,domain_dirname,context)
+      else:
+        error = "Domain name didn't match"
+        return render(request, "main/restore_snapshot.html", { "volumesnapshot" : volumesnapshot, "domain" : domain, "error" : error})
+    else:
+      return render(request, "main/restore_snapshot.html", { "volumesnapshot" : volumesnapshot, "domain" : domain})
+    return redirect(kpmain)
 
 @login_required(login_url="/dashboard/")
 def delete_domain(request,domain):

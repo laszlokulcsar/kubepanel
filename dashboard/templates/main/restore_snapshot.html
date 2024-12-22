@@ -3,19 +3,19 @@
                         <main class="content">
                                 <div class="container-fluid p-0">
 
-                                        <h1 class="h3 mb-3"><strong>Add new domain</strong> list</h1>
+                                        <h1 class="h3 mb-3"><strong>Restore backup</strong> list</h1>
                                         <div class="row">
                                                 <div class="col-12 col-lg-12 col-xxl-12">
 							<div class="card">
 								<div class="card-header">
-									<h5 class="card-title mb-0">Input</h5>
+									<h5 class="card-title mb-0">If you really want to restore a previous state of this domain, please type in: '{{ domain }}'</h5>
+									{% if error %}<h4 class="card-title mb-0">{{ error }}</h4>{% endif %}
 								</div>
 								<div class="card-body">
-									<form action="{% url 'add_domain' %}" method="post">
+									<form action="{% url 'restore_volumesnapshot' volumesnapshot=volumesnapshot domain=domain %}" method="post">
 								          {% csrf_token %}
-									<input type="text" name="domain_name" class="form-control" placeholder="Domain name"><br>
-									<input type="checkbox" name="wordpress_preinstall"> Preinstall wordpress<br><br>
-									<input class="btn btn-primary" type="submit" value="Add domain">
+									<input type="text" name="imsure" class="form-control" placeholder="Domain name">
+									<input class="btn btn-primary" type="submit" value="Yes, I want to restore it">
 									</form>
 								</div>
 							</div>

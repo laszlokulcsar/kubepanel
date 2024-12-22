@@ -8,22 +8,37 @@ spec:
   selector:
     matchLabels:
       app: php
+      group: {{ domain_name_dash }}
   template:
     metadata:
       labels:
         app: php
         app.kubernetes.io/name: php
+        group: {{ domain_name_dash }}
     spec:
-     subdomain: "www"
-     initContainers:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                group: {{ domain_name_dash }}
+            topologyKey: "kubernetes.io/hostname"
+      subdomain: "www"
+      initContainers:
       - name: init
+        env:
+        - name: WP_PREINSTALL
+          value: {{ wp_preinstall }}
         image: docker.io/laszlokulcsar/init_php:v0.1
         imagePullPolicy: Always
         securityContext:
           capabilities:
             add: ["CAP_SYS_ADMIN"]
           privileged: true
-     containers:
+        volumeMounts:
+        - name: html-volume
+          mountPath: /usr/share/nginx/html
+      containers:
       - name: php
         image: docker.io/laszlokulcsar/php:v0.1
         imagePullPolicy: Always
@@ -32,7 +47,7 @@ spec:
         volumeMounts:
         - name: html-volume
           mountPath: /usr/share/nginx/html
-     volumes:
+      volumes:
       - name: html-volume
         persistentVolumeClaim:
           claimName: {{ domain_name_dash }}-pvc

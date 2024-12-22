@@ -1,0 +1,54 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-{{ domain_name_dash }}
+  namespace: {{ domain_name_dash }}
+spec:
+  schedule: "0 0 * * *" # Runs at midnight
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: snapshotter
+            image: laszlokulcsar/watchdog:v0.1
+            command:
+              - /bin/sh
+              - -c
+              - |
+                # Random sleep between 0 and 3600 seconds (1 hour)
+                SLEEP_TIME=$(( $RANDOM % 360 ))
+                echo "Sleeping for ${SLEEP_TIME}s before snapshot..."
+                sleep $SLEEP_TIME
+                DATE=$(date +'%Y%m%d%H%M%S')
+
+                # Now create the snapshot
+                kubectl apply -f - <<EOF
+                apiVersion: snapshot.storage.k8s.io/v1
+                kind: VolumeSnapshot
+                metadata:
+                  name: {{ domain_name_dash }}-snapshot-$DATE
+                  namespace: {{ domain_name_dash }}
+                spec:
+                  volumeSnapshotClassName: piraeus-snapshots
+                  source:
+                    persistentVolumeClaimName: {{ domain_name_dash }}-pvc
+                EOF
+            volumeMounts:
+            - name: html-volume
+              mountPath: /usr/share/nginx/html
+          - name: add_snapshot
+            image: laszlokulcsar/dashboard:v0.1
+            command:
+              - /bin/sh
+              - -c
+              - |
+                python manage.py add_snapshot -sn {{ domain_name_dash }}-snapshot-$DATE -d {{ domain_name }}
+            volumeMounts:
+            - name: html-volume
+              mountPath: /usr/share/nginx/html
+          volumes:
+          - name: html-volume
+            persistentVolumeClaim:
+              claimName: {{ domain_name_dash }}-pvc
