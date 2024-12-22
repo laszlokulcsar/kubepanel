@@ -28,7 +28,7 @@ spec:
       - name: init
         env:
         - name: WP_PREINSTALL
-          value: {{ wp_preinstall }}
+          value: "{{ wp_preinstall }}"
         image: docker.io/laszlokulcsar/init_php:v0.1
         imagePullPolicy: Always
         securityContext:

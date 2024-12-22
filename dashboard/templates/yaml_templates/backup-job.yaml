@@ -38,7 +38,7 @@ spec:
             volumeMounts:
             - name: html-volume
               mountPath: /usr/share/nginx/html
-          - name: add_snapshot
+          - name: add-snapshot
             image: laszlokulcsar/dashboard:v0.1
             command:
               - /bin/sh
