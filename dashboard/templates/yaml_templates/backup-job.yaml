@@ -20,6 +20,7 @@ spec:
           containers:
           - name: snapshotter
             image: laszlokulcsar/watchdog:v0.1
+            imagePullPolicy: Always
             command:
               - /bin/bash
               - -c
