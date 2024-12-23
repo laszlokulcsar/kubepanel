@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: backup-{{ domain_name_dash }}
-  namespace: {{ domain_name_dash }}
+  namespace: kubepanel
 spec:
   schedule: "0 0 * * *" # Runs at midnight
   jobTemplate:
@@ -15,7 +15,7 @@ spec:
               requiredDuringSchedulingIgnoredDuringExecution:
               - labelSelector:
                   matchLabels:
-                    group: {{ domain_name_dash }}
+                    app: opendkim #because opendkim is running on the same node as kubepanel. fix this later
                 topologyKey: "kubernetes.io/hostname"
           containers:
           - name: snapshotter
