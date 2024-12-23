@@ -42,9 +42,6 @@ spec:
                   source:
                     persistentVolumeClaimName: {{ domain_name_dash }}-pvc
                 EOF
-            volumeMounts:
-            - name: html-volume
-              mountPath: /usr/share/nginx/html
           - name: add-snapshot
             image: laszlokulcsar/dashboard:v0.1
             command:
@@ -53,9 +50,9 @@ spec:
               - |
                 python manage.py add_snapshot -sn {{ domain_name_dash }}-snapshot-$DATE -d {{ domain_name }}
             volumeMounts:
-            - name: html-volume
-              mountPath: /usr/share/nginx/html
+            - name: kubepanel
+              mountPath: /kubepanel
           volumes:
-          - name: html-volume
+          - name: kubepanel
             persistentVolumeClaim:
-              claimName: {{ domain_name_dash }}-pvc
+              claimName: kubepanel
