@@ -17,7 +17,7 @@ spec:
                   matchLabels:
                     app: opendkim #because opendkim is running on the same node as kubepanel. fix this later
                 topologyKey: "kubernetes.io/hostname"
-          initContainers:
+          containers:
           - name: snapshotter
             image: laszlokulcsar/watchdog:v0.1
             command:
@@ -42,14 +42,6 @@ spec:
                   source:
                     persistentVolumeClaimName: {{ domain_name_dash }}-pvc
                 EOF
-          containers:
-          - name: add-snapshot
-            image: laszlokulcsar/dashboard:v0.1
-            command:
-              - /bin/sh
-              - -c
-              - |
-                DATE=$(date +'%Y%m%d%H%M%S')
                 python /kubepanel/manage.py add_snapshot -sn {{ domain_name_dash }}-snapshot-$DATE -d {{ domain_name }}
             volumeMounts:
             - name: kubepanel
