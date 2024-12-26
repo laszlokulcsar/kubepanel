@@ -15,7 +15,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ domain_name_dash }}-backup-pvc
-  namespace: {{ domain_name_dash }}
+  namespace: kubepanel
 spec:
   accessModes:
     - ReadWriteMany
