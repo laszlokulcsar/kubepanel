@@ -65,7 +65,6 @@ spec:
           - name: kubepanel
             persistentVolumeClaim:
               claimName: kubepanel
-          volumes:
           - name: backup
             persistentVolumeClaim:
               claimName: {{ domain_name_dash }}-backup-pvc
