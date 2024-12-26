@@ -17,6 +17,7 @@ class Domains(models.Model):
     dkim_pubkey = models.TextField(db_default="")
     mariadb_user = models.CharField(max_length=255, unique=True)
     mariadb_pass = models.CharField(max_length=255)
+    status =  models.CharField(max_length=255)
 
 class Volumesnapshot(models.Model):
     def __str__(self):
