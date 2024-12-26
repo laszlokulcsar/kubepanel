@@ -25,7 +25,7 @@
                                                                                 <tr>
                                                                                         <td>{{ volumesnapshot.snapshotname }}</td>
                                                                                         <td class="d-none d-xl-table-cell">{{ volumesnapshot.created_at  }}</td>
-                                                                                        <td class="d-none d-md-table-cell"><a href="{% url 'restore_volumesnapshot' volumesnapshot.snapshotname domain %}"><button class="btn btn-danger">Restore backup</button></a></td>
+                                                                                        <td class="d-none d-md-table-cell"><a href="{% url 'restore_volumesnapshot' domain volumesnapshot.snapshotname %}"><button class="btn btn-danger">Restore backup</button></a></td>
                                                                                         <td></td>
                                                                                 </tr>
                                                                                 {% endfor %}

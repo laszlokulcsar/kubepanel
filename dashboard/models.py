@@ -25,3 +25,4 @@ class Volumesnapshot(models.Model):
     domain = models.ForeignKey(Domains, on_delete=models.PROTECT)
     snapshotname = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+

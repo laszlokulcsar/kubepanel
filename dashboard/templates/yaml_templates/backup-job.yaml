@@ -18,8 +18,18 @@ spec:
                     app: opendkim #because opendkim is running on the same node as kubepanel. fix this later
                 topologyKey: "kubernetes.io/hostname"
           containers:
-          - name: snapshotter
-            image: laszlokulcsar/watchdog:v0.1
+          - name: dbclient
+            env:
+            - name: MARIADB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mariadb-auth
+                  key: password
+            - name: DBUSER
+              value: "{{ domain_name_underscore }}"
+            - name: DBNAME
+              value: "{{ domain_name_underscore }}"
+            image: laszlokulcsar/dbclient:v0.1
             imagePullPolicy: Always
             command:
               - /bin/bash
@@ -44,10 +54,18 @@ spec:
                     persistentVolumeClaimName: {{ domain_name_dash }}-pvc
                 EOF
                 python /kubepanel/manage.py add_snapshot -sn {{ domain_name_dash }}-snapshot-$DATE -d {{ domain_name }}
+                mysqldump -h mariadb.kubepanel.svc.cluster.local -uroot -p$MARIADB_ROOT_PASSWORD $DBNAME > /backup/{{ domain_name_dash }}-snapshot-$DATE.sql
             volumeMounts:
             - name: kubepanel
               mountPath: /kubepanel
+            - name: backup
+              mountPath: /backup
+          restartPolicy: Never
           volumes:
           - name: kubepanel
             persistentVolumeClaim:
               claimName: kubepanel
+          volumes:
+          - name: backup
+            persistentVolumeClaim:
+              claimName: {{ domain_name_dash }}-backup-pvc

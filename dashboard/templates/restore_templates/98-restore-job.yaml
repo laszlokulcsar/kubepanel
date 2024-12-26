@@ -7,9 +7,26 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      volumes:
+      - name: backup
+        persistentVolumeClaim:
+          claimName: {{ domain_name_dash }}-backup-pvc
       containers:
       - name: restore-job
-        image: laszlokulcsar/watchdog:v0.1
+        env:
+        - name: MARIADB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-auth
+              key: password
+        - name: DBUSER
+          value: "{{ domain_name_underscore }}"
+        - name: DBNAME
+          value: "{{ domain_name_underscore }}"
+        image: laszlokulcsar/dbclient:v0.1
+        volumeMounts:
+        - name: backup
+          mountPath: /backup
         command: 
               - /bin/sh
               - -c
@@ -37,4 +54,5 @@ spec:
                 EOF
                 kubectl scale deployment/nginx --replicas=1 -n {{ domain_name_dash }}
                 kubectl scale deployment/php --replicas=1 -n {{ domain_name_dash }}
+                mysql -uroot -p$MARIADB_ROOT_PASSWORD $DBNAME < /backup/{{ volumesnapshot }}.sql
   backoffLimit: 4
