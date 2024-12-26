@@ -24,6 +24,7 @@ spec:
         - name: DBNAME
           value: "{{ domain_name_underscore }}"
         image: laszlokulcsar/dbclient:v0.1
+        imagePullPolicy: Always
         volumeMounts:
         - name: backup
           mountPath: /backup
@@ -54,5 +55,5 @@ spec:
                 EOF
                 kubectl scale deployment/nginx --replicas=1 -n {{ domain_name_dash }}
                 kubectl scale deployment/php --replicas=1 -n {{ domain_name_dash }}
-                mysql -uroot -p$MARIADB_ROOT_PASSWORD $DBNAME < /backup/{{ volumesnapshot }}.sql
+                mysql -h mariadb.kubepanel.svc.cluster.local -uroot -p$MARIADB_ROOT_PASSWORD $DBNAME < /backup/{{ volumesnapshot }}.sql
   backoffLimit: 4
