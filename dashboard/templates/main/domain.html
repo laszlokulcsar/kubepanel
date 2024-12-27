@@ -27,7 +27,7 @@
                                                                                         <td>{{ domain.domain_name }}</td>
                                                                                         <td class="d-none d-xl-table-cell">{{ domain.scp_port  }}</td>
                                                                                         <td><a href="{% url 'volumesnapshots' domain=domain.domain_name %}"><button class="btn btn-warning">Show FS Backups</button></a></td>
-                                  							<td>{{ domain.status }}</td>
+                                  							<td>{{ domain.status|safe }}</td>
                                                                                         <td class="d-none d-md-table-cell"><a href="{% url 'view_domain' domain=domain.domain_name %}"><button class="btn btn-success">View</button></a>  <a href="{% url 'delete_domain' domain=domain.domain_name %}"><button class="btn btn-danger">Delete</button></a></td>
                                                                                 </tr>
                                                                                 {% endfor %}
