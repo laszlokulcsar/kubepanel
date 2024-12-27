@@ -32,4 +32,7 @@ class Command(BaseCommand):
       if not (pods_data.get("items",[])):
         domain.status = "Not running"
         domain.save()
-      
+      domain.status = ""
+      for item in pods_data.get("items", []):
+        domain.status = domain.status + item['metadata']['labels']['app'] + ":" + item['metadata']['annotations']['kubepanel.status'] + ", " + item['status']['phase'] + "<br>"
+        domain.save()
