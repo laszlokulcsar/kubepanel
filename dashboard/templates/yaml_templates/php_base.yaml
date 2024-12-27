@@ -11,7 +11,7 @@ spec:
       group: {{ domain_name_dash }}
   template:
     annotations:
-      kubepanel.status: "Running"
+      kubepanel.status: "Started"
     metadata:
       labels:
         app: php
