@@ -13,7 +13,7 @@ class Command(BaseCommand):
 #    parser.add_argument('-d', '--domain', type=ascii)
 
   def handle(self, *args, **kwargs):
-    domain = Domains.objects.all()
+    domains = Domains.objects.all()
     host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
     port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
     token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
