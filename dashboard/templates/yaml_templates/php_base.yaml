@@ -10,9 +10,9 @@ spec:
       app: php
       group: {{ domain_name_dash }}
   template:
-    annotations:
-      kubepanel.status: "Started"
     metadata:
+      annotations:
+        kubepanel.status: "Started"
       labels:
         app: php
         app.kubernetes.io/name: php
