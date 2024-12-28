@@ -170,9 +170,9 @@ def startstop_domain(request,domain,action):
                 print(f"Error while scaling deployment: {e}")
       else:
         error = "Domain name didn't match"
-        return render(request, "main/pause_domain.html", { "domain" : domain, "error" : error})
+        return render(request, "main/pause_domain.html", { "action" : action, "domain" : domain, "error" : error})
     else:
-      return render(request, "main/pause_domain.html", { "domain" : domain})  
+      return render(request, "main/pause_domain.html", { "action" : action, "domain" : domain})  
     return redirect(kpmain)
 
 @login_required(login_url="/dashboard/")
