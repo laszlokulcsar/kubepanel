@@ -34,5 +34,7 @@ class Command(BaseCommand):
         domain.save()
       domain.status = ""
       for item in pods_data.get("items", []):
-        domain.status = domain.status + item['spec']['nodeName'] + "<br>" + item['metadata']['labels']['app'] + ":" + item['metadata']['annotations']['kubepanel.status'] + ", " + item['status']['phase'] + "<br>"
+        if domain.status == "":
+          domain.status = item['spec']['nodeName'] + "<br>"
+        domain.status = domain.status + item['metadata']['labels']['app'] + ":" + item['metadata']['annotations']['kubepanel.status'] + ", " + item['status']['phase'] + "<br>"
         domain.save()
