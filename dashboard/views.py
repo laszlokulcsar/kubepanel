@@ -127,6 +127,42 @@ def add_domain(request):
     return True
 
 @login_required(login_url="/dashboard/")
+def pause_domain(request,domain):
+    if request.method == 'POST':
+      if request.POST["imsure"] == domain:
+        try:
+          permission_valid = Domains.objects.get(owner=request.user, domain_name = domain)
+        except:
+          return HttpResponse("Permission denied.")
+        if permission_valid:
+          host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
+          port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
+          namespace = domain.replace(".","-")
+          token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+          ca_cert_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+          with open(token_path, 'r') as f:
+            token = f.read().strip()
+          headers = {
+            "Authorization": f"Bearer {token}"
+            "Content-Type": "application/strategic-merge-patch+json"
+          }
+          payload = {
+ 	   "spec": {
+             "replicas": "0"
+            }
+          }
+          url = f"https://{host}:{port}/apis/apps/v1/namespaces/{namespace}/deployments/nginx"
+          try:
+              response = requests.patch(url, headers=headers, data=json.dumps(payload), verify=False)  # Disable SSL verification for simplicity
+              if response.status_code == 200:
+                  print(f"Deployment nginx successfully scaled to 0 replicas.")
+              else:
+                  print(f"Failed to scale deployment. Status Code: {response.status_code}")
+                  print(f"Response: {response.text}")
+          except requests.exceptions.RequestException as e:
+              print(f"Error while scaling deployment: {e}")
+
+@login_required(login_url="/dashboard/")
 def restore_volumesnapshot(request,volumesnapshot,domain):
     if request.method == 'POST':
       if request.POST["imsure"] == domain:
