@@ -151,16 +151,19 @@ def pause_domain(request,domain):
              "replicas": 0
             }
           }
-          url = f"https://{host}:{port}/apis/apps/v1/namespaces/{namespace}/deployments/nginx"
-          try:
-              response = requests.patch(url, headers=headers, data=json.dumps(payload), verify=False)  # Disable SSL verification for simplicity
-              if response.status_code == 200:
-                  print(f"Deployment nginx successfully scaled to 0 replicas.")
-              else:
-                  print(f"Failed to scale deployment. Status Code: {response.status_code}")
-                  print(f"Response: {response.text}")
-          except requests.exceptions.RequestException as e:
-              print(f"Error while scaling deployment: {e}")
+          urls = []
+          urls.append(f"https://{host}:{port}/apis/apps/v1/namespaces/{namespace}/deployments/nginx")
+          urls.append(f"https://{host}:{port}/apis/apps/v1/namespaces/{namespace}/deployments/php")
+          for url in urls:
+            try:
+                response = requests.patch(url, headers=headers, data=json.dumps(payload), verify=False)  # Disable SSL verification for simplicity
+                if response.status_code == 200:
+                    print(f"Deployment nginx successfully scaled to 0 replicas.")
+                else:
+                    print(f"Failed to scale deployment. Status Code: {response.status_code}")
+                    print(f"Response: {response.text}")
+            except requests.exceptions.RequestException as e:
+                print(f"Error while scaling deployment: {e}")
       else:
         error = "Domain name didn't match"
         return render(request, "main/pause_domain.html", { "domain" : domain, "error" : error})
