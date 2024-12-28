@@ -202,6 +202,32 @@ def restore_volumesnapshot(request,volumesnapshot,domain):
     return redirect(kpmain)
 
 @login_required(login_url="/dashboard/")
+def start_backup(request,domain):
+    if request.method == 'POST':
+      if request.POST["imsure"] == domain:
+        try:
+          permission_valid = Domains.objects.get(owner=request.user, domain_name = domain)
+        except:
+          return HttpResponse("Permission denied.")
+        if permission_valid:
+          template_dir = "backup_templates/"
+          domain_dirname = '/kubepanel/yaml_templates/'+domain
+          try:
+            os.mkdir(domain_dirname)
+            os.mkdir('/dkim-privkeys/'+domain)
+          except:
+            print("Can't create directories. Please check debug logs if you think this is an error.")
+          jobid = random_string(5)
+          context = { "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-") }
+          iterate_input_templates(template_dir,domain_dirname,context)
+      else:
+        error = "Domain name didn't match"
+        return render(request, "main/start_backup.html", { "domain" : domain, "error" : error})
+    else:
+      return render(request, "main/start_backup.html", { "domain" : domain})
+    return redirect(kpmain)
+
+@login_required(login_url="/dashboard/")
 def delete_domain(request,domain):
     if request.method == 'POST':
       if request.POST["imsure"] == domain:

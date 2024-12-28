@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backup-{{ domain_name_dash }}
+  namespace: kubepanel
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: opendkim # because opendkim is running on the same node as kubepanel. Fix this later
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: dbclient
+        env:
+        - name: MARIADB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-auth
+              key: password
+        - name: DBUSER
+          value: "{{ domain_name_underscore }}"
+        - name: DBNAME
+          value: "{{ domain_name_underscore }}"
+        image: laszlokulcsar/dbclient:v0.1
+        imagePullPolicy: Always
+        command:
+          - /bin/bash
+          - -c
+          - |
+            DATE=$(date +'%Y%m%d%H%M%S')
+            # Now create the snapshot
+            kubectl apply -f - <<EOF
+            apiVersion: snapshot.storage.k8s.io/v1
+            kind: VolumeSnapshot
+            metadata:
+              name: {{ domain_name_dash }}-snapshot-$DATE
+              namespace: {{ domain_name_dash }}
+            spec:
+              volumeSnapshotClassName: piraeus-snapshots
+              source:
+                persistentVolumeClaimName: {{ domain_name_dash }}-pvc
+            EOF
+            python3 /kubepanel/manage.py add_snapshot -sn {{ domain_name_dash }}-snapshot-$DATE -d {{ domain_name }}
+            mysqldump --column-statistics=0 -h mariadb.kubepanel.svc.cluster.local -uroot -p$MARIADB_ROOT_PASSWORD $DBNAME > /backup/{{ domain_name_dash }}-snapshot-$DATE.sql
+        volumeMounts:
+        - name: kubepanel
+          mountPath: /kubepanel
+        - name: backup
+          mountPath: /backup
+      volumes:
+      - name: kubepanel
+        persistentVolumeClaim:
+          claimName: kubepanel
+      - name: backup
+        persistentVolumeClaim:
+          claimName: {{ domain_name_dash }}-backup-pvc
+
