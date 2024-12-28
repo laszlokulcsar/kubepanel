@@ -13,5 +13,5 @@ urlpatterns = [
     path("restore_volumesnapshot/<str:domain>/<str:volumesnapshot>", views.restore_volumesnapshot, name="restore_volumesnapshot"),
     path("settings", views.settings, name="settings"),
     path("delete_domain/<str:domain>", views.delete_domain, name="delete_domain"),
-    path("pause_domain/<str:domain>", views.pause_domain, name="pause_domain"),
+    path("startstop_domain/<str:domain>/<str:action>", views.startstop_domain, name="startstop_domain"),
 ]

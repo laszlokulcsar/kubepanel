@@ -127,7 +127,7 @@ def add_domain(request):
     return True
 
 @login_required(login_url="/dashboard/")
-def pause_domain(request,domain):
+def startstop_domain(request,domain,action):
     if request.method == 'POST':
       if request.POST["imsure"] == domain:
         try:
@@ -146,9 +146,13 @@ def pause_domain(request,domain):
             "Authorization": f"Bearer {token}",
             "Content-Type": f"application/strategic-merge-patch+json"
           }
+          if action == "start":
+            replicas = 1
+          if action == "stop":
+            replicas = 0
           payload = {
  	   "spec": {
-             "replicas": 0
+             "replicas": replicas
             }
           }
           urls = []
@@ -158,7 +162,7 @@ def pause_domain(request,domain):
             try:
                 response = requests.patch(url, headers=headers, data=json.dumps(payload), verify=False)  # Disable SSL verification for simplicity
                 if response.status_code == 200:
-                    print(f"Deployment nginx successfully scaled to 0 replicas.")
+                    print(f"Deployment nginx successfully scaled to {replicas} replicas.")
                 else:
                     print(f"Failed to scale deployment. Status Code: {response.status_code}")
                     print(f"Response: {response.text}")
