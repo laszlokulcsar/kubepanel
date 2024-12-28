@@ -148,7 +148,7 @@ def pause_domain(request,domain):
           }
           payload = {
  	   "spec": {
-             "replicas": "0"
+             "replicas": 0
             }
           }
           url = f"https://{host}:{port}/apis/apps/v1/namespaces/{namespace}/deployments/nginx"
