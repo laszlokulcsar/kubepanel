@@ -144,7 +144,7 @@ def pause_domain(request,domain):
             token = f.read().strip()
           headers = {
             "Authorization": f"Bearer {token}"
-            "Content-Type": "application/strategic-merge-patch+json"
+            "Content-Type": f"application/strategic-merge-patch+json"
           }
           payload = {
  	   "spec": {
