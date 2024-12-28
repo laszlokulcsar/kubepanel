@@ -218,7 +218,7 @@ def start_backup(request,domain):
           except:
             print("Can't create directories. Please check debug logs if you think this is an error.")
           jobid = random_string(5)
-          context = { "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-") }
+          context = { "domain_name" : domain, "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-") }
           iterate_input_templates(template_dir,domain_dirname,context)
       else:
         error = "Domain name didn't match"
