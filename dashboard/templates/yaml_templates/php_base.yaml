@@ -43,6 +43,10 @@ spec:
       containers:
       - name: php
         image: docker.io/laszlokulcsar/php:v0.1
+        resources:
+          limits:
+            cpu: "{{ new_domain.cpu_limit }}m"
+            memory: "{{ new_domain.mem_limit }}Mi"
         imagePullPolicy: Always
         ports:
         - containerPort: 9001

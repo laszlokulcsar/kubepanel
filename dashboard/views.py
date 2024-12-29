@@ -74,10 +74,19 @@ def render_yaml(domain_dirname,input_filename,context,file_name):
 @login_required(login_url="/dashboard/")
 def add_domain(request):
     if request.method == 'POST':
-        new_domain_name = request.POST["domain_name"][:60]
-        if request.POST["wordpress_preinstall"] == 'on':
-          wp_preinstall = True
-        else:
+        try:
+          new_domain_name = request.POST["domain_name"][:60]
+          mem_limit = request.POST["mem_limit"][:8]
+          cpu_limit = request.POST["cpu_limit"][:5]
+          storage_size = request.POST["storage_size"][:5]
+        except:
+          return render(request, "main/add_domain.html")
+        try:
+          if request.POST["wordpress_preinstall"] == 'on':
+            wp_preinstall = True
+          else:
+            wp_preinstall = False
+        except:
           wp_preinstall = False
 
         #GENERATE SSH AND DKIM PRIV/PUB KEYS
@@ -98,10 +107,11 @@ def add_domain(request):
         jobid = random_string(5)
         mariadb_user = new_domain_name.replace(".","_")
         status = "Startup in progress"
-        new_domain = Domains(owner=request.user, domain_name = new_domain_name, title = new_domain_name, scp_privkey = private_key, scp_pubkey = public_key, scp_port = scp_port, dkim_privkey = dkim_privkey, dkim_pubkey = dkim_txt_record, mariadb_pass = mariadb_pass, mariadb_user = mariadb_user, status = status)
+        new_domain = Domains(owner=request.user, mem_limit = mem_limit, cpu_limit = cpu_limit, storage_size = storage_size, domain_name = new_domain_name, title = new_domain_name, scp_privkey = private_key, scp_pubkey = public_key, scp_port = scp_port, dkim_privkey = dkim_privkey, dkim_pubkey = dkim_txt_record, mariadb_pass = mariadb_pass, mariadb_user = mariadb_user, status = status)
         domain_dirname = '/kubepanel/yaml_templates/'+new_domain_name
-        context = { "domains" : Domains.objects.all(), "jobid" : jobid, "domain_name_dash" : new_domain.domain_name.replace(".","-"), "domain_name_underscore" : new_domain.domain_name.replace(".","_"), "domain_name" : new_domain.domain_name, "public_key" : public_key, "scp_port" : scp_port, "dkim_privkey" : dkim_privkey, "mariadb_pass" : mariadb_pass, "mariadb_user" : mariadb_user, "wp_preinstall" : wp_preinstall}
+        context = { "new_domain" : new_domain, "domains" : Domains.objects.all(), "jobid" : jobid, "domain_name_dash" : new_domain.domain_name.replace(".","-"), "domain_name_underscore" : new_domain.domain_name.replace(".","_"), "domain_name" : new_domain.domain_name, "public_key" : public_key, "scp_port" : scp_port, "dkim_privkey" : dkim_privkey, "mariadb_pass" : mariadb_pass, "mariadb_user" : mariadb_user, "wp_preinstall" : wp_preinstall}
         try:
+          new_domain.full_clean()
           new_domain.save()
         except:
           print("Ooops, can't save domain, please check debug logs.")
@@ -180,10 +190,11 @@ def restore_volumesnapshot(request,volumesnapshot,domain):
     if request.method == 'POST':
       if request.POST["imsure"] == domain:
         try:
-          permission_valid = Domains.objects.get(owner=request.user, domain_name = domain)
+          domain_obj = Domains.objects.get(owner=request.user, domain_name = domain)
         except:
           return HttpResponse("Permission denied.")
-        if permission_valid:
+        if domain_obj:
+          storage_size = domain_obj.storage_size
           template_dir = "restore_templates/"
           domain_dirname = '/kubepanel/yaml_templates/'+domain
           try:
@@ -192,7 +203,7 @@ def restore_volumesnapshot(request,volumesnapshot,domain):
           except:
             print("Can't create directories. Please check debug logs if you think this is an error.")
           jobid = random_string(5)
-          context = { "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-"), "volumesnapshot" : volumesnapshot }
+          context = { "storage_size" : storage_size, "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-"), "volumesnapshot" : volumesnapshot }
           iterate_input_templates(template_dir,domain_dirname,context)
       else:
         error = "Domain name didn't match"
