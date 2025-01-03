@@ -21,6 +21,7 @@ spec:
         - name: DBPASS
           value: "{{ mariadb_pass }}"
         image: laszlokulcsar/dbclient:v0.1
+        imagePullPolicy: Always
         command: ["/bin/bash"]
         args: ["/create_db.sh"]
       restartPolicy: Never
