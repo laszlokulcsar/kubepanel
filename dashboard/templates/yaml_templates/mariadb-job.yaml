@@ -15,11 +15,11 @@ spec:
               name: mariadb-auth
               key: password
         - name: DBUSER
-          value: "{{ mariadb_user }}"
+          value: "{{ domain_instance.mariadb_user }}"
         - name: DBNAME
-          value: "{{ mariadb_user }}"
+          value: "{{ domain_instance.mariadb_user }}"
         - name: DBPASS
-          value: "{{ mariadb_pass }}"
+          value: "{{ domain_instance.mariadb_pass }}"
         image: laszlokulcsar/dbclient:v0.1
         imagePullPolicy: Always
         command: ["/bin/bash"]
