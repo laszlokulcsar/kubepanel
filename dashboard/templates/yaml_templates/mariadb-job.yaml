@@ -25,5 +25,5 @@ spec:
         command: ["/bin/bash"]
         args: ["/create_db.sh"]
       restartPolicy: Never
-  ttlSecondsAfterFinished: 120
+  ttlSecondsAfterFinished: 7200
   backoffLimit: 4
