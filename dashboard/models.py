@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
-
+from .defaultconfigs import NGINX_DEFAULT_CONFIG
 
 class Domains(models.Model):
     title = models.CharField(max_length=255)
@@ -23,9 +23,10 @@ class Domains(models.Model):
     mariadb_user = models.CharField(max_length=255, unique=True)
     mariadb_pass = models.CharField(max_length=255)
     status =  models.CharField(max_length=255)
-    storage_size = models.IntegerField(db_default=1)
-    cpu_limit = models.IntegerField(db_default=100)
-    mem_limit = models.IntegerField(db_default=128)
+    storage_size = models.IntegerField(db_default=1, validators=[MinValueValidator(1), MaxValueValidator(10000)])
+    cpu_limit = models.IntegerField(db_default=500, validators=[MinValueValidator(100), MaxValueValidator(4000)])
+    mem_limit = models.IntegerField(db_default=256, validators=[MinValueValidator(32), MaxValueValidator(4096)])
+    nginx_config = models.TextField(default=NGINX_DEFAULT_CONFIG)
 
 class Volumesnapshot(models.Model):
     def __str__(self):

@@ -1,11 +1,4 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: nginx-config
-  namespace: {{ domain_name_dash }}
-data:
-  nginx.conf: |
-    {{ domain_instance.nginx_config }}
+NGINX_DEFAULT_CONFIG = r"""
     user  root;
     worker_processes  auto;
 
@@ -60,5 +53,4 @@ data:
             }
         }
     }
-
-
+"""

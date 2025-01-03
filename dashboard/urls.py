@@ -8,6 +8,7 @@ urlpatterns = [
     path("main", views.kpmain, name="kpmain"),
     path("logout", views.logout_view, name="logout_view"),
     path("add_domain", views.add_domain, name="add_domain"),
+    path("save_domain/<str:domain>", views.save_domain, name="save_domain"),
     path("view_domain/<str:domain>", views.view_domain, name="view_domain"),
     path("volumesnapshots/<str:domain>", views.volumesnapshots, name="volumesnapshots"),
     path("restore_volumesnapshot/<str:domain>/<str:volumesnapshot>", views.restore_volumesnapshot, name="restore_volumesnapshot"),

@@ -4,6 +4,7 @@ from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from .models import User, Domains, Volumesnapshot
+from dashboard.forms import DomainForm, DomainAddForm
 from django.urls import reverse
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -74,6 +75,7 @@ def render_yaml(domain_dirname,input_filename,context,file_name):
 @login_required(login_url="/dashboard/")
 def add_domain(request):
     if request.method == 'POST':
+        #form = DomainAddForm(request.POST)
         try:
           new_domain_name = request.POST["domain_name"][:60]
           mem_limit = request.POST["mem_limit"][:8]
@@ -109,7 +111,7 @@ def add_domain(request):
         status = "Startup in progress"
         new_domain = Domains(owner=request.user, mem_limit = mem_limit, cpu_limit = cpu_limit, storage_size = storage_size, domain_name = new_domain_name, title = new_domain_name, scp_privkey = private_key, scp_pubkey = public_key, scp_port = scp_port, dkim_privkey = dkim_privkey, dkim_pubkey = dkim_txt_record, mariadb_pass = mariadb_pass, mariadb_user = mariadb_user, status = status)
         domain_dirname = '/kubepanel/yaml_templates/'+new_domain_name
-        context = { "new_domain" : new_domain, "domains" : Domains.objects.all(), "jobid" : jobid, "domain_name_dash" : new_domain.domain_name.replace(".","-"), "domain_name_underscore" : new_domain.domain_name.replace(".","_"), "domain_name" : new_domain.domain_name, "public_key" : public_key, "scp_port" : scp_port, "dkim_privkey" : dkim_privkey, "mariadb_pass" : mariadb_pass, "mariadb_user" : mariadb_user, "wp_preinstall" : wp_preinstall}
+        context = { "domain_instance" : new_domain, "domains" : Domains.objects.all(), "jobid" : jobid, "domain_name_dash" : new_domain.domain_name.replace(".","-"), "domain_name_underscore" : new_domain.domain_name.replace(".","_"), "domain_name" : new_domain.domain_name, "public_key" : public_key, "scp_port" : scp_port, "dkim_privkey" : dkim_privkey, "mariadb_pass" : mariadb_pass, "mariadb_user" : mariadb_user, "wp_preinstall" : wp_preinstall}
         try:
           new_domain.full_clean()
           new_domain.save()
@@ -133,8 +135,8 @@ def add_domain(request):
 
         return redirect(kpmain)
     else:
-        return render(request, "main/add_domain.html")
-    return True
+        form = DomainAddForm()
+        return render(request, "main/add_domain.html", { "form" : form })
 
 @login_required(login_url="/dashboard/")
 def startstop_domain(request,domain,action):
@@ -255,7 +257,7 @@ def delete_domain(request,domain):
             except:
               print("Can't create directories. Please check debug logs if you think this is an error.")
             jobid = random_string(5)
-            context = { "domains" : Domains.objects.all(), "jobid" : jobid, "domain_name_dash" : domain.replace(".","-"), "domain_name_underscore" : domain.replace(".","_")}
+            context = { "jobid" : jobid, "domain_name_dash" : domain.replace(".","-"), "domain_name_underscore" : domain.replace(".","_")}
             template_dir = "delete_templates/"
             iterate_input_templates(template_dir,domain_dirname,context)
       else:
@@ -269,7 +271,29 @@ def delete_domain(request,domain):
 def view_domain(request,domain):
   try:
     domain = Domains.objects.get(owner=request.user, domain_name = domain)
-    context = {"domain_name" : domain.domain_name, "sftp_privkey" : domain.scp_privkey, "db_user" : domain.mariadb_user, "db_pass" : domain.mariadb_pass, "sftp_port" : domain.scp_port, "dkim_pubkey" : domain.dkim_pubkey}
+    form = DomainForm(instance=domain)
   except:
     return HttpResponse("Permission denied.")
-  return render(request, "main/view_domain.html", { "domain" : domain})
+  return render(request, "main/view_domain.html", { "domain" : domain, "form" : form})
+
+@login_required(login_url="/dashboard/")
+def save_domain(request,domain):
+  domain_instance = Domains.objects.get(owner=request.user, domain_name = domain)
+  if request.method == 'POST':
+      form = DomainForm(request.POST, instance=domain_instance)
+      if form.is_valid():
+          form.save()
+          template_dir = "yaml_templates/"
+          domain_dirname = '/kubepanel/yaml_templates/'+domain_instance.domain_name
+          try:
+            os.mkdir(domain_dirname)
+            os.mkdir('/dkim-privkeys/'+domain)
+          except:
+            print("Can't create directories. Please check debug logs if you think this is an error.")
+          jobid = random_string(5)
+          domain_instance = Domains.objects.get(owner=request.user, domain_name = domain)
+          context = { "domain_instance" : domain_instance, "domain_name" : domain, "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-") }
+          iterate_input_templates(template_dir,domain_dirname,context)
+      else:
+        return render(request, "main/view_domain.html", { "domain" : domain_instance, "form" : form})
+  return redirect(kpmain)

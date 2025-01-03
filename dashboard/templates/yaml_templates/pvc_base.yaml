@@ -9,7 +9,7 @@ spec:
   storageClassName: linstor-sc  # This must match the PV's storageClassName
   resources:
     requests:
-      storage: {{ new_domain.storage_size }}Gi
+      storage: {{ domain_instance.storage_size }}Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -22,4 +22,4 @@ spec:
   storageClassName: linstor-sc  # This must match the PV's storageClassName
   resources:
     requests:
-      storage: {{ new_domain.storage_size }}Gi
+      storage: {{ domain_instance.storage_size }}Gi

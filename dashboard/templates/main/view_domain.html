@@ -1,9 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
+ {% load static %}  
+<form method="POST" class="post-form" action="{% url 'save_domain' domain=domain.domain_name %}"> 
+{% csrf_token %}
                         <main class="content">
                                 <div class="container-fluid p-0">
 
                                         <h1 class="h3 mb-3"><strong>{{ domain.domain_name }}</strong> details</h1>
+{% if form.errors %}
+                                        <div class="row">
+                                                <div class="col-12 col-lg-12 col-xxl-12 d-flex">
+                                                        <div class="card flex-fill border-danger bg-warning">
+                                                                <div class="card-header bg-warning">
+
+                                                                        <h5 class="card-title mb-0">Errors</h5>
+                                                                </div>
+                                                                <table class="table table-hover my-0">
+                                                                        <tbody>
+                                                                                <tr>
+                                                                                        <th class="d-none d-xl-table-cell">Please fix the following errors</th>
+                                                                                        <td>{{ form.errors }}</td>
+                                                                                </tr>
+                                                                        </tbody>
+                                                                </table>
+                                                        </div>
+
+                                                </div>
+                                        </div>
+{% endif %}
                                         <div class="row">
                                                 <div class="col-12 col-lg-12 col-xxl-12 d-flex">
                                                         <div class="card flex-fill">
@@ -77,6 +101,33 @@
 
                                                 </div>
                                         </div>
+                                        <div class="row">
+                                                <div class="col-12 col-lg-12 col-xxl-12 d-flex">
+                                                        <div class="card flex-fill">
+                                                                <div class="card-header">
+
+                                                                        <h5 class="card-title mb-0">Resource limits</h5>
+                                                                </div>
+                                                                <table class="table table-hover my-0">
+                                                                        <tbody>
+                                                                                <tr>
+                                                                                        <th class="d-none d-xl-table-cell">CPU Limit:</th>
+                                                                                        <td>{{ form.cpu_limit }}</td>
+                                                                                        <th class="d-none d-xl-table-cell">Memory Limit:</th>
+                                                                                        <td>{{ form.mem_limit }}</td>
+                                                                                </tr>
+										<tr>
+											<th class="d-none d-xl-table-cell">Nginx config:</th>
+                                                                                        <td>{{ form.nginx_config }}</td>
+										</tr>
+                                                                        </tbody>
+                                                                </table>
+                                                        </div>
+
+                                                </div>
+                                        </div>
                                 </div>
+    <button type="submit">Save</button>
                         </main>
+</form>
 {% endblock %}
