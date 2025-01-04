@@ -12,7 +12,10 @@ NGINX_DEFAULT_CONFIG = r"""
     http {
         include       /etc/nginx/mime.types;
         default_type  application/octet-stream;
-
+        real_ip_header X-Forwarded-For;
+        set_real_ip_from 127.0.0.1;       # If traffic is coming from localhost (proxy sidecar)
+        set_real_ip_from 10.0.0.0/8;
+        real_ip_recursive on;
         log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
                           '$status $body_bytes_sent "$http_referer" '
                           '"$http_user_agent" "$http_x_forwarded_for"';
