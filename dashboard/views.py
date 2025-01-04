@@ -68,10 +68,9 @@ def livetraffic(request):
           log_url = f"https://{host}:{port}/api/v1/namespaces/{namespace}/pods/{pod_name}/log"
           log_response = requests.get(log_url, headers=headers, verify=ca_cert_path)
           log_response.raise_for_status()
-          text = log_response.text
-          logs.append(text.split('\n'))
-      parsed_logs = [json.loads(log) for log in logs]
-      return render(request, "main/livetraffic.html", {"logs": parsed_logs})
+          pod_logs = [json.loads(line) for line in response.text.splitlines()]
+          logs.extend(pod_logs)
+      return render(request, "main/livetraffic.html", {"logs": logs})
     else:
       return HttpResponse("Permission denied")
     
