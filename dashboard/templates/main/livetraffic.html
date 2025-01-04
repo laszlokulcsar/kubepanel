@@ -12,6 +12,44 @@
 								</div>
 								<div class="card-body">
 
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        input {
+            width: 90%;
+            padding: 5px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        .collapsed {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+            cursor: pointer;
+        }
+        .expanded {
+            white-space: normal;
+            cursor: pointer;
+        }
+    </style>
+
     <table id="logsTable">
         <thead>
             <tr>
@@ -22,7 +60,7 @@
                 <th>Method <br><input type="text" onkeyup="filterTable(4)" placeholder="Filter by Method"></th>
                 <th>Path <br><input type="text" onkeyup="filterTable(5)" placeholder="Filter by Path"></th>
                 <th>Duration <br><input type="text" onkeyup="filterTable(6)" placeholder="Filter by Duration"></th>
-                <th>Body <br><input type="text" onkeyup="filterTable(7)" placeholder="Filter by Body"></th>
+                <th>Body</th>
             </tr>
         </thead>
         <tbody>
@@ -35,22 +73,21 @@
                 <td>{{ log.method }}</td>
                 <td>{{ log.path }}</td>
                 <td>{{ log.duration }}</td>
-                <td>{{ log.request_body }}</td>
+                <td class="collapsed" onclick="toggleBody(this)">{{ log.request_body }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
     <script>
+        // Filter table rows by column
         function filterTable(columnIndex) {
-            // Get the input element for the specific column
             const input = event.target;
             const filter = input.value.toLowerCase();
             const table = document.getElementById("logsTable");
             const rows = table.getElementsByTagName("tr");
 
-            // Loop through all table rows and filter them
-            for (let i = 1; i < rows.length; i++) { // Skip the header row
+            for (let i = 1; i < rows.length; i++) { // Skip header row
                 const cell = rows[i].getElementsByTagName("td")[columnIndex];
                 if (cell) {
                     const textValue = cell.textContent || cell.innerText;
@@ -58,7 +95,19 @@
                 }
             }
         }
-    </script>									
+
+        // Toggle body content between collapsed and expanded states
+        function toggleBody(cell) {
+            if (cell.classList.contains("collapsed")) {
+                cell.classList.remove("collapsed");
+                cell.classList.add("expanded");
+            } else {
+                cell.classList.remove("expanded");
+                cell.classList.add("collapsed");
+            }
+        }
+    </script>
+								
 								</div>
 							</div>
                                                 </div>
