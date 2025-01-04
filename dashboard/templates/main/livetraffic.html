@@ -11,17 +11,18 @@
 									<h5 class="card-title mb-0">Live Traffic Inspector</h5>
 								</div>
 								<div class="card-body">
-   <table>
+
+    <table id="logsTable">
         <thead>
             <tr>
-                <th>Time</th>
-                <th>Host</th>
-                <th>Forwarded For</th>
-                <th>Status</th>
-                <th>Method</th>
-                <th>Path</th>
-                <th>Duration</th>
-                <th>Body</th>
+                <th>Time <br><input type="text" onkeyup="filterTable(0)" placeholder="Filter by Time"></th>
+                <th>Host <br><input type="text" onkeyup="filterTable(1)" placeholder="Filter by Host"></th>
+                <th>Forwarded For <br><input type="text" onkeyup="filterTable(2)" placeholder="Filter by Forwarded For"></th>
+                <th>Status <br><input type="text" onkeyup="filterTable(3)" placeholder="Filter by Status"></th>
+                <th>Method <br><input type="text" onkeyup="filterTable(4)" placeholder="Filter by Method"></th>
+                <th>Path <br><input type="text" onkeyup="filterTable(5)" placeholder="Filter by Path"></th>
+                <th>Duration <br><input type="text" onkeyup="filterTable(6)" placeholder="Filter by Duration"></th>
+                <th>Body <br><input type="text" onkeyup="filterTable(7)" placeholder="Filter by Body"></th>
             </tr>
         </thead>
         <tbody>
@@ -39,7 +40,25 @@
             {% endfor %}
         </tbody>
     </table>
-									
+
+    <script>
+        function filterTable(columnIndex) {
+            // Get the input element for the specific column
+            const input = event.target;
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById("logsTable");
+            const rows = table.getElementsByTagName("tr");
+
+            // Loop through all table rows and filter them
+            for (let i = 1; i < rows.length; i++) { // Skip the header row
+                const cell = rows[i].getElementsByTagName("td")[columnIndex];
+                if (cell) {
+                    const textValue = cell.textContent || cell.innerText;
+                    rows[i].style.display = textValue.toLowerCase().includes(filter) ? "" : "none";
+                }
+            }
+        }
+    </script>									
 								</div>
 							</div>
                                                 </div>
