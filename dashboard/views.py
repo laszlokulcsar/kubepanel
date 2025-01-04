@@ -69,7 +69,7 @@ def livetraffic(request):
       response.raise_for_status()
       
       pods = response.json()["items"]
-
+      logs = []
       for pod in pods:
           pod_name = pod["metadata"]["name"]
           log_url = f"https://{host}:{port}/api/v1/namespaces/{namespace}/pods/{pod_name}/log"
