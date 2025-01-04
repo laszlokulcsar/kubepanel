@@ -9,11 +9,15 @@ from django.urls import reverse
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
+from datetime import datetime
 
 import os, random, base64, string, requests, json
 
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
 EXCLUDED_EXTENSIONS = [".js", ".css", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".map"]
+
+def sort_logs_by_time(logs):
+    return sorted(logs, key=lambda log: datetime.fromisoformat(log["time"]))
 
 def is_static_file(log_entry):
     """
@@ -88,6 +92,7 @@ def livetraffic(request):
                   except json.JSONDecodeError:
                       print(f"Skipping non-JSON line: {line}")
               logs.extend(pod_logs)
+      logs = sort_logs_by_time(logs)
       return render(request, "main/livetraffic.html", {"logs": logs})
     else:
       return HttpResponse("Permission denied")
