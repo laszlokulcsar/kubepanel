@@ -13,6 +13,15 @@ from cryptography.hazmat.backends import default_backend as crypto_default_backe
 import os, random, base64, string, requests, json
 
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
+EXCLUDED_EXTENSIONS = [".js", ".css", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".map"]
+
+def is_static_file(log_entry):
+    """
+    Check if the log entry is for a static file request.
+    """
+    path = log_entry.get("path", "")
+    # Match paths ending with excluded extensions
+    return any(path.endswith(ext) for ext in EXCLUDED_EXTENSIONS)
 
 def kplogin(request):
     try:
@@ -60,16 +69,25 @@ def livetraffic(request):
       response.raise_for_status()
       
       pods = response.json()["items"]
-      
-      # Get logs from each pod
-      logs = []
+
       for pod in pods:
           pod_name = pod["metadata"]["name"]
           log_url = f"https://{host}:{port}/api/v1/namespaces/{namespace}/pods/{pod_name}/log"
-          log_response = requests.get(log_url, headers=headers, verify=ca_cert_path)
-          log_response.raise_for_status()
-          pod_logs = [json.loads(line) for line in response.text.splitlines()]
-          logs.extend(pod_logs)
+          response = requests.get(log_url, headers=headers, verify=ca_cert_path)
+      
+          if response.status_code == 200:
+              pod_logs = []
+              for line in response.text.splitlines():
+                  if not line.strip():
+                      continue
+                  try:
+                      parsed_line = json.loads(line)
+                      parsed_line["pod_name"] = pod_name  # Add metadata
+                      if not is_static_file(parsed_line):
+                          pod_logs.append(parsed_line)
+                  except json.JSONDecodeError:
+                      print(f"Skipping non-JSON line: {line}")
+              logs.extend(pod_logs)
       return render(request, "main/livetraffic.html", {"logs": logs})
     else:
       return HttpResponse("Permission denied")
