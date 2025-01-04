@@ -62,14 +62,16 @@ def livetraffic(request):
       pods = response.json()["items"]
       
       # Get logs from each pod
+      logs = []
       for pod in pods:
           pod_name = pod["metadata"]["name"]
           log_url = f"https://{host}:{port}/api/v1/namespaces/{namespace}/pods/{pod_name}/log"
           log_response = requests.get(log_url, headers=headers, verify=ca_cert_path)
           log_response.raise_for_status()
-          print(f"Logs for pod {pod_name}:\n{log_response.text}\n")
-      return HttpResponse(log_response.text)
-      #return render(request, "main/livetraffic.html")
+          text = log_response.text
+          logs.append(text.split('\n'))
+      parsed_logs = [json.loads(log) for log in logs]
+      return render(request, "main/livetraffic.html", {"logs": parsed_logs})
     else:
       return HttpResponse("Permission denied")
     
