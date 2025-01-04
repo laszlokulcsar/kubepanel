@@ -41,6 +41,38 @@ def volumesnapshots(request,domain):
 def settings(request):
     return render(request, "main/settings.html")
 
+@login_required(login_url="/dashboard/")
+def livetraffic(request):
+    if request.user.is_superuser:
+      host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
+      port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
+      token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+      ca_cert_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+      with open(token_path, 'r') as f:
+        token = f.read().strip()
+      headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": f"application/json"
+      }
+      namespace = "ingress"
+      url = f"https://{host}:{port}/api/v1/namespaces/{namespace}/pods"
+      response = requests.get(url, headers=headers, verify=ca_cert_path)
+      response.raise_for_status()
+      
+      pods = response.json()["items"]
+      
+      # Get logs from each pod
+      for pod in pods:
+          pod_name = pod["metadata"]["name"]
+          log_url = f"https://{host}:{port}/api/v1/namespaces/{namespace}/pods/{pod_name}/log"
+          log_response = requests.get(log_url, headers=headers, verify=ca_cert_path)
+          log_response.raise_for_status()
+          print(f"Logs for pod {pod_name}:\n{log_response.text}\n")
+      return HttpResponse(log_response.text)
+      #return render(request, "main/livetraffic.html")
+    else:
+      return HttpResponse("Permission denied")
+    
 def logout_view(request):
     logout(request)
     return render(request, "login/login.html")
