@@ -98,7 +98,7 @@ def livetraffic(request):
       logs = []
       for pod in pods:
           pod_name = pod["metadata"]["name"]
-          log_url = f"https://{host}:{port}/api/v1/namespaces/{namespace}/pods/{pod_name}/log"
+          log_url = f"https://{host}:{port}/api/v1/namespaces/{namespace}/pods/{pod_name}/log?sinceSeconds=3600"
           response = requests.get(log_url, headers=headers, verify=ca_cert_path)
       
           if response.status_code == 200:
