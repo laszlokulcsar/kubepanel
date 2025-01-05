@@ -11,10 +11,32 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
 from datetime import datetime
 
-import os, random, base64, string, requests, json
+import os, random, base64, string, requests, json, geoip2.database
 
+GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
 EXCLUDED_EXTENSIONS = [".js", ".css", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".map"]
+
+def get_country_info(ip_address):
+    """
+    Resolve IP address to country name and flag using the local GeoLite2 database.
+    """
+    try:
+        with geoip2.database.Reader(GEOIP_DB_PATH) as reader:
+            response = reader.country(ip_address)
+            country_name = response.country.name
+            country_code = response.country.iso_code.lower()
+            return {
+                "country_name": country_name,
+                "flag_url": f"https://flagcdn.com/w40/{country_code}.png",
+            }
+    except geoip2.errors.AddressNotFoundError:
+        # Handle cases where the IP address is not found in the database
+        return {"country_name": "Unknown", "flag_url": ""}
+    except Exception as e:
+        # Log other exceptions
+        print(f"Error resolving IP {ip_address}: {e}")
+        return {"country_name": "Unknown", "flag_url": ""}
 
 def sort_logs_by_time(logs):
     return sorted(logs, key=lambda log: datetime.fromisoformat(log["time"]))
@@ -93,6 +115,12 @@ def livetraffic(request):
                       print(f"Skipping non-JSON line: {line}")
               logs.extend(pod_logs)
       logs = sort_logs_by_time(logs)
+      for log in logs:
+          ip = log.get("x_forwarded_for", "").split(",")[0].strip()  # Handle multiple forwarded IPs
+          if ip:
+              country_info = get_country_info(ip)
+              log["country_name"] = country_info["country_name"]
+              log["flag_url"] = country_info["flag_url"]
       return render(request, "main/livetraffic.html", {"logs": logs})
     else:
       return HttpResponse("Permission denied")

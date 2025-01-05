@@ -60,6 +60,12 @@
                 <td>{{ log.time }}</td>
                 <td>{{ log.vhost }}</td>
                 <td>{{ log.x_forwarded_for }}</td>
+                <td>
+                    {% if log.flag_url %}
+                    <img class="flag" src="{{ log.flag_url }}" alt="{{ log.country_name }}">
+                    {% endif %}
+                    {{ log.country_name }}
+                </td>
                 <td>{{ log.status }}</td>
                 <td>{{ log.method }}</td>
                 <td>{{ log.path }}</td>
