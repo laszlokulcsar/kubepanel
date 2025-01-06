@@ -123,7 +123,7 @@ def render_modsec_rules() -> str:
         if rule_str:
             rules_output.append(rule_str)
 
-    return "\n".join(rules_output)
+    return rules_output
 
 
 def get_country_info(ip_address):
