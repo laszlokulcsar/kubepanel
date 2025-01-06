@@ -7,6 +7,7 @@ urlpatterns = [
     path("", views.kplogin, name="kplogin"),
     path("main", views.kpmain, name="kpmain"),
     path("logout", views.logout_view, name="logout_view"),
+    path('blocked-objects/', views.blocked_objects, name='blocked_objects'),
     path("add_domain", views.add_domain, name="add_domain"),
     path("save_domain/<str:domain>", views.save_domain, name="save_domain"),
     path("view_domain/<str:domain>", views.view_domain, name="view_domain"),

@@ -18,6 +18,7 @@ GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
 EXCLUDED_EXTENSIONS = [".js", ".css", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".map"]
 
+@login_required(login_url="/dashboard/")
 def blocked_objects(request):
     all_blocks = BlockRule.objects.all().order_by('-created_at')
 
