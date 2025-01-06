@@ -57,8 +57,7 @@ def block_entry(request, vhost, x_forwarded_for, path):
             block_vhost = block_vhost,
             block_path = block_path
         )
-        return redirect(livetraffic)
-
+        return render(request, 'main/in_progress.html')
     else:
         context = {
             'vhost': vhost,
