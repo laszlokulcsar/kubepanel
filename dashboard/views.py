@@ -29,7 +29,8 @@ def blocked_objects(request):
     if request.method == 'POST' and 'generate_rules' in request.POST:
         rules = render_modsec_rules()
         template_dir = "fw_templates/"
-        context = { "rules" : rules }
+        jobid = random_string(5)
+        context = { "rules" : rules, "jobid" : jobid }
         domain_dirname = '/kubepanel/yaml_templates/fwrules'
         try:
           os.mkdir(domain_dirname)
