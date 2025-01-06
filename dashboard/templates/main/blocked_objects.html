@@ -2,13 +2,13 @@
 
 {% block content %}
 <div class="container">
-    <h1>Blocked Objects</h1>
+    <h1>Firewall Rules</h1>
 
     <!-- Form to trigger rule generation -->
     <form method="POST" style="margin-bottom: 20px;">
         {% csrf_token %}
         <button type="submit" name="generate_rules" class="btn btn-primary">
-            Generate ModSecurity Rules
+            Regenerate Firewall Rules
         </button>
     </form>
 

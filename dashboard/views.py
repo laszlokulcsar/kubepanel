@@ -28,7 +28,10 @@ def blocked_objects(request):
 
     if request.method == 'POST' and 'generate_rules' in request.POST:
         rules = render_modsec_rules()
-        return HttpResponse(rules, content_type="text/plain")
+        template_dir = "yaml_templates/"
+        context = { "rules" : rules }
+        iterate_input_templates(template_dir,"fwrules",context)
+        return redirect(livetraffic)
 
     return render(request, 'main/blocked_objects.html', {'page_obj': page_obj})
 
