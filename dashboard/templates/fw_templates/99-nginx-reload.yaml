@@ -13,6 +13,7 @@ spec:
         - /bin/sh
         - -c
         - |
+          sleep 15
           kubectl get pods -n ingress -l name=nginx-ingress-microk8s -o name | xargs -I {} kubectl exec -n ingress {} -- nginx -s reload
       restartPolicy: Never
   backoffLimit: 4
