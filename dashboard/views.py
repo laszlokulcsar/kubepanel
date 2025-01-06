@@ -166,7 +166,10 @@ def kplogin(request):
 
 @login_required(login_url="/dashboard/")
 def kpmain(request):
-    domains = { "domains" : Domains.objects.filter(owner=request.user) }
+    if request.user.is_superuser:
+      domains = { "domains" : Domains.objects.all() }
+    else:
+      domains = { "domains" : Domains.objects.filter(owner=request.user) }
     return render(request, "main/domain.html", domains)
 
 @login_required(login_url="/dashboard/")
