@@ -33,7 +33,7 @@ def block_entry(request, vhost, x_forwarded_for, path):
             block_vhost = block_vhost,
             block_path = block_path
         )
-        return redirect('home')
+        return redirect(kpmain)
 
     else:
         context = {
