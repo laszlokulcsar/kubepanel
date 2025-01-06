@@ -17,4 +17,5 @@ urlpatterns = [
     path("livetraffic", views.livetraffic, name="livetraffic"),
     path("delete_domain/<str:domain>", views.delete_domain, name="delete_domain"),
     path("startstop_domain/<str:domain>/<str:action>", views.startstop_domain, name="startstop_domain"),
+    path("block/<str:vhost>/<str:x_forwarded_for>/<path:path>/",views.block_entry,name='block_entry'),
 ]
