@@ -76,25 +76,32 @@
             {% endfor %}
         </tbody>
     </table>
-
     <script>
-        // Filter table rows by column
         function filterTable(columnIndex) {
             const input = event.target;
             const filter = input.value.toLowerCase();
+            const isNegativeFilter = filter.startsWith("!"); // Check for negative filter
             const table = document.getElementById("logsTable");
             const rows = table.getElementsByTagName("tr");
+
+            // Remove '!' for actual filtering value in negative filtering
+            const actualFilter = isNegativeFilter ? filter.slice(1) : filter;
 
             for (let i = 1; i < rows.length; i++) { // Skip header row
                 const cell = rows[i].getElementsByTagName("td")[columnIndex];
                 if (cell) {
                     const textValue = cell.textContent || cell.innerText;
-                    rows[i].style.display = textValue.toLowerCase().includes(filter) ? "" : "none";
+                    if (isNegativeFilter) {
+                        // Negative filter: Hide rows that match the filter
+                        rows[i].style.display = textValue.toLowerCase().includes(actualFilter) ? "none" : "";
+                    } else {
+                        // Regular filter: Show rows that match the filter
+                        rows[i].style.display = textValue.toLowerCase().includes(actualFilter) ? "" : "none";
+                    }
                 }
             }
         }
 
-        // Toggle body content between collapsed and expanded states
         function toggleBody(cell) {
             if (cell.classList.contains("collapsed")) {
                 cell.classList.remove("collapsed");

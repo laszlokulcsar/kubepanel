@@ -3,7 +3,7 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from .models import User, Domains, Volumesnapshot
+from .models import User, Domains, Volumesnapshot, BlockRule
 from dashboard.forms import DomainForm, DomainAddForm
 from django.urls import reverse
 from cryptography.hazmat.primitives import serialization as crypto_serialization
@@ -17,10 +17,92 @@ GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
 EXCLUDED_EXTENSIONS = [".js", ".css", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".map"]
 
+@login_required(login_url="/dashboard/")
+def block_entry(request, vhost, x_forwarded_for, path):
+    if request.method == 'POST':
+        block_ip = bool(request.POST.get('block_ip'))
+        block_vhost = bool(request.POST.get('block_vhost'))
+        block_path = bool(request.POST.get('block_path'))
+
+        # Save a new BlockRule row
+        BlockRule.objects.create(
+            ip_address = x_forwarded_for if block_ip else None,
+            vhost = vhost if block_vhost else None,
+            path = path if block_path else None,
+            block_ip = block_ip,
+            block_vhost = block_vhost,
+            block_path = block_path
+        )
+        return redirect('home')
+
+    else:
+        context = {
+            'vhost': vhost,
+            'x_forwarded_for': x_forwarded_for,
+            'path': path
+        }
+        return render(request, 'block_entry.html', context)
+
+def generate_modsec_rule(br: BlockRule) -> str:
+    conditions = []
+    if br.block_ip and br.ip_address:
+        conditions.append(("REMOTE_ADDR", br.ip_address))
+    if br.block_vhost and br.vhost:
+        conditions.append(("SERVER_NAME", br.vhost))
+    if br.block_path and br.path:
+        conditions.append(("REQUEST_URI", br.path))
+
+    if not conditions:
+        return ""
+
+    rule_id = 10000 + br.pk  
+    msg_parts = []
+
+    if br.block_ip:
+        msg_parts.append("IP")
+    if br.block_vhost:
+        msg_parts.append("vhost")
+    if br.block_path:
+        msg_parts.append("path")
+    msg_string = f"Blocking {', '.join(msg_parts)}"
+
+    if len(conditions) == 1:
+        var, val = conditions[0]
+        return (
+            f'SecRule {var} "@streq {val}" '
+            f'"phase:1,id:{rule_id},deny,msg:\'{msg_string}\'"'
+        )
+
+    rule_lines = []
+    
+    first_var, first_val = conditions[0]
+    rule_lines.append(
+        f'SecRule {first_var} "@streq {first_val}" '
+        f'"phase:1,id:{rule_id},deny,chain,msg:\'{msg_string}\'"'
+    )
+
+    for var, val in conditions[1:-1]:
+        rule_lines.append(f'    SecRule {var} "@streq {val}" "chain"')
+
+    last_var, last_val = conditions[-1]
+    rule_lines.append(f'    SecRule {last_var} "@streq {last_val}"')
+
+    return "\n".join(rule_lines)
+
+
+def render_modsec_rules() -> str:
+    block_rules = BlockRule.objects.all()
+    rules_output = []
+
+    for br in block_rules:
+        rule_str = generate_modsec_rule(br)
+        if rule_str:
+            rules_output.append(rule_str)
+
+    return "\n\n".join(rules_output)
+
+
 def get_country_info(ip_address):
-    """
-    Resolve IP address to country name and flag using the local GeoLite2 database.
-    """
     try:
         with geoip2.database.Reader(GEOIP_DB_PATH) as reader:
             response = reader.country(ip_address)
@@ -42,9 +124,6 @@ def sort_logs_by_time(logs):
     return sorted(logs, key=lambda log: datetime.fromisoformat(log["time"]))
 
 def is_static_file(log_entry):
-    """
-    Check if the log entry is for a static file request.
-    """
     path = log_entry.get("path", "")
     # Match paths ending with excluded extensions
     return any(path.endswith(ext) for ext in EXCLUDED_EXTENSIONS)
