@@ -30,7 +30,12 @@ def blocked_objects(request):
         rules = render_modsec_rules()
         template_dir = "fw_templates/"
         context = { "rules" : rules }
-        iterate_input_templates(template_dir,"/kubepanel/yaml_templates/fwrules",context)
+        domain_dirname = '/kubepanel/yaml_templates/fwrules'
+        try:
+          os.mkdir(domain_dirname)
+        except:
+          print("Can't create directories. Please check debug logs if you think this is an error.")
+        iterate_input_templates(template_dir,domain_dirname,context)
         return redirect(livetraffic)
 
     return render(request, 'main/blocked_objects.html', {'page_obj': page_obj})
