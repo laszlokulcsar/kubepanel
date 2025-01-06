@@ -28,9 +28,9 @@ def blocked_objects(request):
 
     if request.method == 'POST' and 'generate_rules' in request.POST:
         rules = render_modsec_rules()
-        template_dir = "yaml_templates/"
+        template_dir = "fw_templates/"
         context = { "rules" : rules }
-        iterate_input_templates(template_dir,"fwrules",context)
+        iterate_input_templates(template_dir,"/kubepanel/yaml_templates/fwrules",context)
         return redirect(livetraffic)
 
     return render(request, 'main/blocked_objects.html', {'page_obj': page_obj})
