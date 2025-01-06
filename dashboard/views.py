@@ -3,6 +3,7 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from .models import User, Domains, Volumesnapshot, BlockRule
 from dashboard.forms import DomainForm, DomainAddForm
 from django.urls import reverse
@@ -16,6 +17,19 @@ import os, random, base64, string, requests, json, geoip2.database
 GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
 EXCLUDED_EXTENSIONS = [".js", ".css", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".map"]
+
+def blocked_objects(request):
+    all_blocks = BlockRule.objects.all().order_by('-created_at')
+
+    paginator = Paginator(all_blocks, 100)  # Adjust the number of items per page as needed
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    if request.method == 'POST' and 'generate_rules' in request.POST:
+        rules = render_modsec_rules()
+        return HttpResponse(rules, content_type="text/plain")
+
+    return render(request, 'blocked_objects.html', {'page_obj': page_obj})
 
 @login_required(login_url="/dashboard/")
 def block_entry(request, vhost, x_forwarded_for, path):
