@@ -1,7 +1,11 @@
 apiVersion: v1
 data:
   custom-rules.conf: |
-    {{ rules }}
+    {% autoescape off %}
+    {% for line in rules.splitlines %}
+    {{ line }}
+    {% endfor %}
+    {% endautoescape %}
 kind: ConfigMap
 metadata:
   name: modsecurity-custom-rules
