@@ -41,7 +41,7 @@ def block_entry(request, vhost, x_forwarded_for, path):
             'x_forwarded_for': x_forwarded_for,
             'path': path
         }
-        return render(request, 'block_entry.html', context)
+        return render(request, 'main/block_entry.html', context)
 
 def generate_modsec_rule(br: BlockRule) -> str:
     conditions = []
