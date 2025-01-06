@@ -459,7 +459,10 @@ def delete_domain(request,domain):
 @login_required(login_url="/dashboard/")
 def view_domain(request,domain):
   try:
-    domain = Domains.objects.get(owner=request.user, domain_name = domain)
+    if request.user.is_superuser:
+      domain = Domains.objects.get(domain_name = domain)
+    else:
+      domain = Domains.objects.get(owner=request.user, domain_name = domain)
     form = DomainForm(instance=domain)
   except:
     return HttpResponse("Permission denied.")
