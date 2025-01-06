@@ -30,7 +30,7 @@ def blocked_objects(request):
         rules = render_modsec_rules()
         return HttpResponse(rules, content_type="text/plain")
 
-    return render(request, 'blocked_objects.html', {'page_obj': page_obj})
+    return render(request, 'main/blocked_objects.html', {'page_obj': page_obj})
 
 @login_required(login_url="/dashboard/")
 def block_entry(request, vhost, x_forwarded_for, path):
