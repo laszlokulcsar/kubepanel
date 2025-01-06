@@ -1,7 +1,7 @@
 apiVersion: v1
 data:
   custom-rules.conf: |
-    
+    {{ rules }}
 kind: ConfigMap
 metadata:
   name: modsecurity-custom-rules
