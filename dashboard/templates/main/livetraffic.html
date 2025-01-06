@@ -53,16 +53,6 @@
                 <th>Path <br><input type="text" onkeyup="filterTable(6)" placeholder="Filter by Path"></th>
                 <th>Duration <br><input type="text" onkeyup="filterTable(7)" placeholder="Filter by Duration"></th>
                 <th>Body</th>
-                <td>
-                    {% if log.vhost and log.x_forwarded_for and log.path %}
-                    <a 
-                        class="btn btn-danger btn-sm"
-                        href="{% url 'block_entry' vhost=log.vhost x_forwarded_for=log.x_forwarded_for path=log.path %}"
-                    >
-                        Block
-                    </a>
-                    {% endif %}
-                </td>
             </tr>
         </thead>
         <tbody>
@@ -82,6 +72,16 @@
                 <td>{{ log.path }}</td>
                 <td>{{ log.duration }}</td>
                 <td class="collapsed" onclick="toggleBody(this)">{{ log.request_body }}</td>
+                <td>
+                    {% if log.vhost and log.x_forwarded_for and log.path %}
+                    <a
+                        class="btn btn-danger btn-sm"
+                        href="{% url 'block_entry' vhost=log.vhost x_forwarded_for=log.x_forwarded_for path=log.path %}"
+                    >
+                        Block
+                    </a>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
