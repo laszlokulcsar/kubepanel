@@ -46,7 +46,7 @@ spec:
                   storageClassName: linstor-sc
                   resources:
                     requests:
-                      storage: {{ storage_size }}
+                      storage: {{ storage_size }}Gi
                   dataSource:
                     apiGroup: snapshot.storage.k8s.io
                     kind: VolumeSnapshot
