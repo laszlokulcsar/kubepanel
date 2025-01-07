@@ -174,7 +174,10 @@ def kpmain(request):
 
 @login_required(login_url="/dashboard/")
 def volumesnapshots(request,domain):
-    domain_obj = Domains.objects.get(domain_name=domain)
+    if request.user.is_superuser:
+      domain_obj = Domains.objects.get(domain_name=domain)
+    else:
+      domain_obj = Domains.objects.get(owner=request.user, domain_name=domain)
     context = {"volumesnapshots" : Volumesnapshot.objects.filter(domain=domain_obj), "domain" : domain }
     return render(request, "main/volumesnapshot.html", context)
 
