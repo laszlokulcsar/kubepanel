@@ -2,8 +2,10 @@ apiVersion: v1
 data:
   custom-rules.conf: |
     {% autoescape off %}
-    {% for line in rules.splitlines %}
+    {% for rule in rules %}
+    {% for line in rule.splitlines %}
     {{ line }}
+    {% endfor %}
     {% endfor %}
     {% endautoescape %}
 kind: ConfigMap

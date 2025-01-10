@@ -187,6 +187,50 @@ def volumesnapshots(request,domain):
 def settings(request):
     return render(request, "main/settings.html")
 
+def get_pods_status(request):
+    if request.user.is_superuser:
+      host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
+      port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
+      token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+      ca_cert_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+      
+      try:
+          with open(token_path, 'r') as f:
+              token = f.read().strip()
+      except FileNotFoundError:
+          return JsonResponse({"error": "Kubernetes token file not found."}, status=500)
+  
+      headers = {
+          "Authorization": f"Bearer {token}",
+          "Content-Type": "application/json"
+      }
+  
+      # Get pods information across all namespaces
+      url = f"https://{host}:{port}/api/v1/pods"
+      try:
+          response = requests.get(url, headers=headers, verify=ca_cert_path)
+          response.raise_for_status()
+          data = response.json()
+      except requests.exceptions.RequestException as e:
+          return JsonResponse({"error": str(e)}, status=500)
+  
+      # Extract relevant information from pods
+      pods_info = []
+      for pod in data.get("items", []):
+          pod_info = {
+              "name": pod["metadata"]["name"],
+              "namespace": pod["metadata"]["namespace"],
+              "node": pod.get("spec", {}).get("nodeName", "Unknown"),
+              "status": pod.get("status", {}).get("phase", "Unknown"),
+              "ip": pod.get("status", {}).get("podIP", "N/A"),
+              "host_ip": pod.get("status", {}).get("hostIP", "N/A"),
+              "containers": len(pod.get("spec", {}).get("containers", [])),
+          }
+          pods_info.append(pod_info)
+  
+      # Render the page with the data
+      return render(request, "pods_status.html", {"pods": pods_info})
+
 @login_required(login_url="/dashboard/")
 def livetraffic(request):
     if request.user.is_superuser:

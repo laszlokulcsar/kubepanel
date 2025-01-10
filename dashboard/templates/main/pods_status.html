@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+                        <main class="content">
+                                <div class="container-fluid p-0">
+
+                                        <h1 class="h3 mb-3"><strong>Domain</strong> list</h1>
+                                        <div class="row">
+                                                <div class="col-12 col-lg-12 col-xxl-12 d-flex">
+                                                        <div class="card flex-fill">
+                                                                <div class="card-header">
+
+                                                                        <h5 class="card-title mb-0">Domain List</h5>
+                                                                </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Namespace</th>
+                <th>Node</th>
+                <th>Status</th>
+                <th>Pod IP</th>
+                <th>Host IP</th>
+                <th>Containers</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pod in pods %}
+            <tr>
+                <td>{{ pod.name }}</td>
+                <td>{{ pod.namespace }}</td>
+                <td>{{ pod.node }}</td>
+                <td>{{ pod.status }}</td>
+                <td>{{ pod.ip }}</td>
+                <td>{{ pod.host_ip }}</td>
+                <td>{{ pod.containers }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+                                                        </div>
+                                                </div>
+                                        </div>
+
+                                </div>
+                        </main>
+{% endblock %}
