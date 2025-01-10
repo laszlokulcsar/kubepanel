@@ -229,7 +229,7 @@ def get_pods_status(request):
           pods_info.append(pod_info)
   
       # Render the page with the data
-      return render(request, "pods_status.html", {"pods": pods_info})
+      return render(request, "main/pods_status.html", {"pods": pods_info})
 
 @login_required(login_url="/dashboard/")
 def livetraffic(request):
