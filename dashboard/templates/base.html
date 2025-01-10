@@ -30,25 +30,25 @@
 					{% block title %}	Dashboard {% endblock %}
 					</li>
 
-					<li class="sidebar-item active">
+					<li class="sidebar-item {% if request.resolver_match.url_name == 'kpmain' %}active{% endif %}">
 						<a class="sidebar-link" href="{% url 'kpmain' %}">
               <i class="align-middle" data-feather="sliders"></i> <span class="align-middle">Domains</span>
             </a>
 					</li>
 
-					<li class="sidebar-item">
+					<li class="sidebar-item {% if request.resolver_match.url_name == 'livetraffic' %}active{% endif %}">
 						<a class="sidebar-link" href="{% url 'livetraffic' %}">
               <i class="align-middle" data-feather="user"></i> <span class="align-middle">Live Traffic</span>
             </a>
 					</li>
 
-                                        <li class="sidebar-item">
+                                        <li class="sidebar-item {% if request.resolver_match.url_name == 'blocked_objects' %}active{% endif %}">
                                                 <a class="sidebar-link" href="{% url 'blocked_objects' %}">
               <i class="align-middle" data-feather="log-in"></i> <span class="align-middle">Firewall</span>
             </a>
                                         </li>
 
-					<li class="sidebar-item">
+					<li class="sidebar-item {% if request.resolver_match.url_name == 'pods_status' %}active{% endif %}">
 						<a class="sidebar-link" href="{% url 'pods_status' %}">
               <i class="align-middle" data-feather="log-in"></i> <span class="align-middle">Live Cluster Status</span>
             </a>

@@ -214,21 +214,27 @@ def get_pods_status(request):
       except requests.exceptions.RequestException as e:
           return JsonResponse({"error": str(e)}, status=500)
   
-      # Extract relevant information from pods
       pods_info = []
       for pod in data.get("items", []):
-          pod_info = {
-              "name": pod["metadata"]["name"],
-              "namespace": pod["metadata"]["namespace"],
-              "node": pod.get("spec", {}).get("nodeName", "Unknown"),
-              "status": pod.get("status", {}).get("phase", "Unknown"),
-              "ip": pod.get("status", {}).get("podIP", "N/A"),
-              "host_ip": pod.get("status", {}).get("hostIP", "N/A"),
-              "containers": len(pod.get("spec", {}).get("containers", [])),
-          }
-          pods_info.append(pod_info)
+          metadata = pod.get("metadata", {})
+          spec = pod.get("spec", {})
+          status = pod.get("status", {})
   
-      # Render the page with the data
+          # Check if deletionTimestamp is set -> Pod is Terminating
+          if metadata.get("deletionTimestamp"):
+              pod_phase = "Terminating"
+          else:
+              pod_phase = status.get("phase", "Unknown")
+  
+          pods_info.append({
+              "name": metadata.get("name"),
+              "namespace": metadata.get("namespace"),
+              "node": spec.get("nodeName", "Unknown"),
+              "status": pod_phase,
+              "ip": status.get("podIP", "N/A"),
+              "host_ip": status.get("hostIP", "N/A"),
+              "containers": len(spec.get("containers", [])),
+          }) 
       return render(request, "main/pods_status.html", {"pods": pods_info})
 
 @login_required(login_url="/dashboard/")
