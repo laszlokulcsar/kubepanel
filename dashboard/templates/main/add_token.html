@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+
+                        <main class="content">
+                                <div class="container-fluid p-0">
+
+                                        <h1 class="h3 mb-3"><strong>Add a Cloudflare API Token</strong></h1>
+                                        <div class="row">
+                                                <div class="col-12 col-lg-12 col-xxl-12">
+							<div class="card">
+								<div class="card-header">
+								</div>
+								<div class="card-body">
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Add Token</button>
+  </form>
+								</div>
+							</div>
+                                                </div>
+                                        </div>
+
+                                </div>
+                        </main>
+
+{% endblock %}

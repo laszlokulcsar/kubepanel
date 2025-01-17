@@ -4,19 +4,69 @@ from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from .models import User, Domains, Volumesnapshot, BlockRule
-from dashboard.forms import DomainForm, DomainAddForm
+from .models import User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
+from dashboard.forms import DomainForm, DomainAddForm, APITokenForm, ZoneCreationForm
 from django.urls import reverse
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
 from datetime import datetime
+from cloudflare import Cloudflare
 
-import os, random, base64, string, requests, json, geoip2.database
+import cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
 
 GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
 EXCLUDED_EXTENSIONS = [".js", ".css", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".map"]
+
+def list_api_tokens(request):
+    tokens = CloudflareAPIToken.objects.filter(user=request.user)
+    return render(request, "main/list_api_tokens.html", {"tokens": tokens})
+
+def zones_list(request):
+    tokens = CloudflareAPIToken.objects.filter(user=request.user)
+    if not tokens.exists():
+        return render(request, "main/zones_list.html", {"zones": []})
+    token_obj = tokens.first()  # For demonstration, use the first token
+    client = Cloudflare(api_token=token_obj.api_token)
+    zones = list(client.zones.list())
+    return render(request, "main/zones_list.html", {"zones": zones})
+
+def add_api_token(request):
+    if request.method == "POST":
+        form = APITokenForm(request.POST)
+        if form.is_valid():
+            token_obj = form.save(commit=False)
+            token_obj.user = request.user
+            token_obj.save()
+            return redirect("list_api_tokens")
+    else:
+        form = APITokenForm()
+    return render(request, "main/add_token.html", {"form": form})
+
+def create_zone(request):
+    if request.method == "POST":
+        form = ZoneCreationForm(request.user, request.POST)
+        if form.is_valid():
+            zone_name = form.cleaned_data["zone_name"]
+            user_token = form.cleaned_data["token"]
+            client = Cloudflare(api_token=user_token.api_token)
+            logging.warning(client)
+            accounts = client.accounts.list().result
+            if not accounts:
+                raise ValueError("No accounts found for this API token.")
+            account_id = accounts[0].id
+            logging.warning(account_id)
+            logging.warning(zone_name)
+            client.zones.create(
+                account={"id": account_id},
+                name=zone_name,
+                type="full",
+            )
+            return redirect("main/zones_list")
+    else:
+        form = ZoneCreationForm(request.user)
+    return render(request, "main/create_zone.html", {"form": form})
 
 @login_required(login_url="/dashboard/")
 def blocked_objects(request):
@@ -167,18 +217,18 @@ def kplogin(request):
 @login_required(login_url="/dashboard/")
 def kpmain(request):
     if request.user.is_superuser:
-      domains = { "domains" : Domains.objects.all() }
+      domains = { "domains" : Domain.objects.all() }
     else:
-      domains = { "domains" : Domains.objects.filter(owner=request.user) }
+      domains = { "domains" : Domain.objects.filter(owner=request.user) }
     return render(request, "main/domain.html", domains)
 
 @login_required(login_url="/dashboard/")
 def volumesnapshots(request,domain):
     try:
       if request.user.is_superuser:
-        domain_obj = Domains.objects.get(domain_name=domain)
+        domain_obj = Domain.objects.get(domain_name=domain)
       else:
-        domain_obj = Domains.objects.get(owner=request.user, domain_name=domain)
+        domain_obj = Domain.objects.get(owner=request.user, domain_name=domain)
     except:
       return HttpResponse("Permission denied")
     context = {"volumesnapshots" : Volumesnapshot.objects.filter(domain=domain_obj), "domain" : domain }
@@ -294,7 +344,7 @@ def generate_scp_port():
     scp_port_taken = 1
     while(scp_port_taken):
       scp_port = random.randint(30000,32767)
-      scp_port_taken = Domains.objects.filter(scp_port=scp_port)
+      scp_port_taken = Domain.objects.filter(scp_port=scp_port)
     return scp_port
 
 def random_string(num):
@@ -354,9 +404,9 @@ def add_domain(request):
         jobid = random_string(5)
         mariadb_user = new_domain_name.replace(".","_")
         status = "Startup in progress"
-        new_domain = Domains(owner=request.user, mem_limit = mem_limit, cpu_limit = cpu_limit, storage_size = storage_size, domain_name = new_domain_name, title = new_domain_name, scp_privkey = private_key, scp_pubkey = public_key, scp_port = scp_port, dkim_privkey = dkim_privkey, dkim_pubkey = dkim_txt_record, mariadb_pass = mariadb_pass, mariadb_user = mariadb_user, status = status)
+        new_domain = Domain(owner=request.user, mem_limit = mem_limit, cpu_limit = cpu_limit, storage_size = storage_size, domain_name = new_domain_name, title = new_domain_name, scp_privkey = private_key, scp_pubkey = public_key, scp_port = scp_port, dkim_privkey = dkim_privkey, dkim_pubkey = dkim_txt_record, mariadb_pass = mariadb_pass, mariadb_user = mariadb_user, status = status)
         domain_dirname = '/kubepanel/yaml_templates/'+new_domain_name
-        context = { "domain_instance" : new_domain, "domains" : Domains.objects.all(), "jobid" : jobid, "domain_name_dash" : new_domain.domain_name.replace(".","-"), "domain_name_underscore" : new_domain.domain_name.replace(".","_"), "domain_name" : new_domain.domain_name, "public_key" : public_key, "scp_port" : scp_port, "dkim_privkey" : dkim_privkey, "wp_preinstall" : wp_preinstall}
+        context = { "domain_instance" : new_domain, "domains" : Domain.objects.all(), "jobid" : jobid, "domain_name_dash" : new_domain.domain_name.replace(".","-"), "domain_name_underscore" : new_domain.domain_name.replace(".","_"), "domain_name" : new_domain.domain_name, "public_key" : public_key, "scp_port" : scp_port, "dkim_privkey" : dkim_privkey, "wp_preinstall" : wp_preinstall}
         try:
           new_domain.full_clean()
           new_domain.save()
@@ -388,7 +438,7 @@ def startstop_domain(request,domain,action):
     if request.method == 'POST':
       if request.POST["imsure"] == domain:
         try:
-          permission_valid = Domains.objects.get(owner=request.user, domain_name = domain)
+          permission_valid = Domain.objects.get(owner=request.user, domain_name = domain)
         except:
           return HttpResponse("Permission denied.")
         if permission_valid:
@@ -437,7 +487,7 @@ def restore_volumesnapshot(request,volumesnapshot,domain):
     if request.method == 'POST':
       if request.POST["imsure"] == domain:
         try:
-          domain_obj = Domains.objects.get(owner=request.user, domain_name = domain)
+          domain_obj = Domain.objects.get(owner=request.user, domain_name = domain)
         except:
           return HttpResponse("Permission denied.")
         if domain_obj:
@@ -464,7 +514,7 @@ def start_backup(request,domain):
     if request.method == 'POST':
       if request.POST["imsure"] == domain:
         try:
-          permission_valid = Domains.objects.get(owner=request.user, domain_name = domain)
+          permission_valid = Domain.objects.get(owner=request.user, domain_name = domain)
         except:
           return HttpResponse("Permission denied.")
         if permission_valid:
@@ -490,7 +540,7 @@ def delete_domain(request,domain):
     if request.method == 'POST':
       if request.POST["imsure"] == domain:
         try:
-            domain_to_delete = Domains.objects.get(owner=request.user, domain_name = domain)
+            domain_to_delete = Domain.objects.get(owner=request.user, domain_name = domain)
         except:
             return HttpResponse("Permission denied.")
         if domain_to_delete:
@@ -516,9 +566,9 @@ def delete_domain(request,domain):
 def view_domain(request,domain):
   try:
     if request.user.is_superuser:
-      domain = Domains.objects.get(domain_name = domain)
+      domain = Domain.objects.get(domain_name = domain)
     else:
-      domain = Domains.objects.get(owner=request.user, domain_name = domain)
+      domain = Domain.objects.get(owner=request.user, domain_name = domain)
     form = DomainForm(instance=domain)
   except:
     return HttpResponse("Permission denied.")
@@ -526,7 +576,7 @@ def view_domain(request,domain):
 
 @login_required(login_url="/dashboard/")
 def save_domain(request,domain):
-  domain_instance = Domains.objects.get(owner=request.user, domain_name = domain)
+  domain_instance = Domain.objects.get(owner=request.user, domain_name = domain)
   if request.method == 'POST':
       form = DomainForm(request.POST, instance=domain_instance)
       if form.is_valid():
@@ -539,7 +589,7 @@ def save_domain(request,domain):
           except:
             print("Can't create directories. Please check debug logs if you think this is an error.")
           jobid = random_string(5)
-          domain_instance = Domains.objects.get(owner=request.user, domain_name = domain)
+          domain_instance = Domain.objects.get(owner=request.user, domain_name = domain)
           context = { "domain_instance" : domain_instance, "domain_name" : domain, "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-") }
           iterate_input_templates(template_dir,domain_dirname,context)
       else:

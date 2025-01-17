@@ -54,6 +54,12 @@
             </a>
 					</li>
 
+                                        <li class="sidebar-item {% if request.resolver_match.url_name == 'list_api_tokens' %}active{% endif %}">
+                                                <a class="sidebar-link" href="{% url 'list_api_tokens' %}">
+              <i class="align-middle" data-feather="log-in"></i> <span class="align-middle">Cloudflare API tokens</span>
+            </a>
+                                        </li>
+
 					<li class="sidebar-item">
 						<a class="sidebar-link" href="https://kubepanel.io">
               <i class="align-middle" data-feather="book"></i> <span class="align-middle">Support</span>

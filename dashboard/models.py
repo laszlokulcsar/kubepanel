@@ -4,7 +4,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from .defaultconfigs import NGINX_DEFAULT_CONFIG
 
-class Domains(models.Model):
+class Domain(models.Model):
     title = models.CharField(max_length=255)
     def __str__(self):
         return self.title
@@ -32,7 +32,7 @@ class Volumesnapshot(models.Model):
     def __str__(self):
         return self.snapshotname
 
-    domain = models.ForeignKey(Domains, on_delete=models.CASCADE)
+    domain = models.ForeignKey(Domain, on_delete=models.CASCADE)
     snapshotname = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -49,3 +49,33 @@ class BlockRule(models.Model):
 
     def __str__(self):
         return f"BlockRule {self.pk} [IP={self.ip_address}, vhost={self.vhost}, path={self.path}]"
+
+class DNSRecord(models.Model):
+    RECORD_TYPES = [
+        ("A", "A"),
+        ("AAAA", "AAAA"),
+        ("CNAME", "CNAME"),
+        ("TXT", "TXT"),
+        ("MX", "MX"),
+        ("NS", "NS"),
+        ("SRV", "SRV"),
+    ]
+
+    domain = models.ForeignKey(Domain, on_delete=models.CASCADE, related_name="dns_records")
+    record_type = models.CharField(max_length=10, choices=RECORD_TYPES)
+    name = models.CharField(max_length=253)
+    content = models.CharField(max_length=65535)
+    ttl = models.IntegerField(default=120)
+    proxied = models.BooleanField(default=False)
+    priority = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.record_type} {self.name} -> {self.content}"
+
+class CloudflareAPIToken(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    api_token = models.TextField()  # Consider encrypting in production
+
+    def __str__(self):
+        return f"{self.user.username} - {self.name}"

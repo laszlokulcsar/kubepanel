@@ -20,4 +20,8 @@ urlpatterns = [
     path("startstop_domain/<str:domain>/<str:action>", views.startstop_domain, name="startstop_domain"),
     path("block_entry/<str:vhost>/<str:x_forwarded_for>/<path:path>/",views.block_entry,name='block_entry'),
     path('pods-status/', views.get_pods_status, name='pods_status'),
+    path('tokens/add/', views.add_api_token, name='add_api_token'),
+    path('tokens/list/', views.list_api_tokens, name='list_api_tokens'),
+    path('zones/create/', views.create_zone, name='create_zone'),
+    path('zones/list/', views.zones_list, name='zones_list'),
 ]

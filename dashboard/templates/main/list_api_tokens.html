@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+
+                        <main class="content">
+                                <div class="container-fluid p-0">
+
+                                        <h1 class="h3 mb-3"><strong>Add a Cloudflare API Token</strong></h1>
+                                        <div class="row">
+                                                <div class="col-12 col-lg-12 col-xxl-12">
+							<div class="card">
+								<div class="card-header">
+								</div>
+								<div class="card-body">
+
+  <ul>
+    {% for token in tokens %}
+      <li>
+        <strong>{{ token.name }}</strong><br>
+        {{ token.api_token }}
+      </li>
+    {% endfor %}
+  </ul>
+  <a href="{% url 'add_api_token' %}">Add a new token</a>								</div>
+							</div>
+                                                </div>
+                                        </div>
+
+                                </div>
+                        </main>
+
+{% endblock %}

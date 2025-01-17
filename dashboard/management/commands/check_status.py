@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect
 from django.template.loader import render_to_string
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from dashboard.models import User, Domains, Volumesnapshot
+from dashboard.models import User, Domain, Volumesnapshot
 import os, random, base64, requests
 
 class Command(BaseCommand):
@@ -13,7 +13,7 @@ class Command(BaseCommand):
 #    parser.add_argument('-d', '--domain', type=ascii)
 
   def handle(self, *args, **kwargs):
-    domains = Domains.objects.all()
+    domains = Domain.objects.all()
     host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
     port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
     token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"

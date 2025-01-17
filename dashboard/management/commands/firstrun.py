@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect
 from django.template.loader import render_to_string
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from dashboard.models import User, Domains
+from dashboard.models import User, Domain
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
@@ -26,13 +26,13 @@ class Command(BaseCommand):
     dkim_pubkey.pop(0)
     dkim_txt = ''.join(dkim_pubkey)
     dkim_txt_record = "v=DKIM1; k=rsa; p="+dkim_txt+";"
-    new_domain = Domains(owner=root[0], domain_name = new_domain_name, title = new_domain_name, dkim_privkey = dkim_privkey, dkim_pubkey = dkim_txt_record)
+    new_domain = Domain(owner=root[0], domain_name = new_domain_name, title = new_domain_name, dkim_privkey = dkim_privkey, dkim_pubkey = dkim_txt_record)
     new_domain.save()
 
     #RENDER DKIM CONFIGMAPS AND PRIVATE KEYS
     dkim_privkeys_dir = '/dkim-privkeys/'+new_domain_name
     os.mkdir('/dkim-privkeys/'+new_domain_name)
-    domains = { "domains" : Domains.objects.all() }
+    domains = { "domains" : Domain.objects.all() }
     render_to_file = render_to_string('yaml_templates/dkim-keytable-configmap.yaml', domains)
     with open(domain_dirname+'/dkim-keytable-configmap.yaml', 'w') as static_file:
         static_file.write(render_to_file)
