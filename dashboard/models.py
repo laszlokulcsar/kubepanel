@@ -50,6 +50,23 @@ class BlockRule(models.Model):
     def __str__(self):
         return f"BlockRule {self.pk} [IP={self.ip_address}, vhost={self.vhost}, path={self.path}]"
 
+class CloudflareAPIToken(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    api_token = models.TextField()
+
+    def __str__(self):
+        return f"{self.user.username} - {self.name}"
+
+class DNSZone(models.Model):
+    name = models.CharField(max_length=253)
+    zone_id = models.CharField(max_length=64)
+    token = models.ForeignKey(CloudflareAPIToken, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.zone_id})"
+
 class DNSRecord(models.Model):
     RECORD_TYPES = [
         ("A", "A"),
@@ -61,21 +78,38 @@ class DNSRecord(models.Model):
         ("SRV", "SRV"),
     ]
 
-    domain = models.ForeignKey(Domain, on_delete=models.CASCADE, related_name="dns_records")
+    zone = models.ForeignKey("DNSZone", on_delete=models.CASCADE, related_name="dns_records")
     record_type = models.CharField(max_length=10, choices=RECORD_TYPES)
     name = models.CharField(max_length=253)
     content = models.CharField(max_length=65535)
     ttl = models.IntegerField(default=120)
     proxied = models.BooleanField(default=False)
     priority = models.IntegerField(null=True, blank=True)
+    cf_record_id = models.CharField(max_length=64, null=True, blank=True)
 
     def __str__(self):
         return f"{self.record_type} {self.name} -> {self.content}"
 
-class CloudflareAPIToken(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100)
-    api_token = models.TextField()  # Consider encrypting in production
+#class DNSRecord(models.Model):
+#    RECORD_TYPES = [
+#        ("A", "A"),
+#        ("AAAA", "AAAA"),
+#        ("CNAME", "CNAME"),
+#        ("TXT", "TXT"),
+#        ("MX", "MX"),
+#        ("NS", "NS"),
+#        ("SRV", "SRV"),
+#    ]
+#
+#    domain = models.ForeignKey(Domain, on_delete=models.CASCADE, related_name="dns_records")
+#    record_type = models.CharField(max_length=10, choices=RECORD_TYPES)
+#    name = models.CharField(max_length=253)
+#    content = models.CharField(max_length=65535)
+#    ttl = models.IntegerField(default=120)
+#    proxied = models.BooleanField(default=False)
+#    priority = models.IntegerField(null=True, blank=True)
+#
+#    def __str__(self):
+#        return f"{self.record_type} {self.name} -> {self.content}"
+#
 
-    def __str__(self):
-        return f"{self.user.username} - {self.name}"

@@ -1,5 +1,5 @@
 from django import forms  
-from dashboard.models import Domain, CloudflareAPIToken
+from dashboard.models import Domain, CloudflareAPIToken, DNSRecord, DNSZone
 
 class DomainForm(forms.ModelForm):
   class Meta:
@@ -65,3 +65,14 @@ class ZoneCreationForm(forms.Form):
 #      super().__init__(*args, **kwargs)
 #      # Mark scp_port as disabled (rendered as read-only)
 #      self.fields['scp_port'].disabled = True
+
+class DNSRecordForm(forms.ModelForm):
+    class Meta:
+        model = DNSRecord
+        fields = ["zone", "record_type", "name", "content", "ttl", "proxied", "priority"]
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user:
+            self.fields["zone"].queryset = DNSZone.objects.filter(token__user=user)
+

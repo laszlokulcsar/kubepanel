@@ -60,6 +60,12 @@
             </a>
                                         </li>
 
+                                        <li class="sidebar-item {% if request.resolver_match.url_name == 'zones_list' %}active{% endif %}">
+                                                <a class="sidebar-link" href="{% url 'zones_list' %}">
+              <i class="align-middle" data-feather="log-in"></i> <span class="align-middle">DNS Zones</span>
+            </a>
+                                        </li>
+
 					<li class="sidebar-item">
 						<a class="sidebar-link" href="https://kubepanel.io">
               <i class="align-middle" data-feather="book"></i> <span class="align-middle">Support</span>

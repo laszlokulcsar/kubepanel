@@ -24,4 +24,6 @@ urlpatterns = [
     path('tokens/list/', views.list_api_tokens, name='list_api_tokens'),
     path('zones/create/', views.create_zone, name='create_zone'),
     path('zones/list/', views.zones_list, name='zones_list'),
+    path('records/create/', views.create_dns_record, name='create_dns_record'),
+    path("zones/<int:zone_id>/records/", views.list_dns_records, name="list_dns_records"),
 ]
