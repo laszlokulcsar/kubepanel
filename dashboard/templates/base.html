@@ -2,157 +2,186 @@
 <html lang="en">
 
 <head>
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<link rel="preconnect" href="https://fonts.gstatic.com">
-	<link rel="shortcut icon" href="img/icons/icon-48x48.png" />
-
-	<link rel="canonical" href="https://kubepanel.io/" />
-
-	<title>Kubepanel.io</title>
-{% load static %}
-	<link href="{% static 'app.css' %}" rel="stylesheet">
-
-	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link rel="shortcut icon" href="img/icons/icon-48x48.png" />
+  <link rel="canonical" href="https://kubepanel.io/" />
+  <title>Kubepanel.io</title>
+  {% load static %}
+  <!-- Your main CSS -->
+  <link href="{% static 'app.css' %}" rel="stylesheet">
+  <!-- Inter font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 
 <body>
-	<div class="wrapper">
-		<nav id="sidebar" class="sidebar js-sidebar">
-			<div class="sidebar-content js-simplebar">
-				<a class="sidebar-brand" href="">
-          <span class="align-middle">KubePanel</span>
+  <div class="wrapper">
+    <!-- Sidebar -->
+    <nav id="sidebar" class="sidebar js-sidebar">
+      <div class="sidebar-content js-simplebar">
+        <a class="sidebar-brand text-decoration-none" href="#">
+          <span class="align-middle fw-bold">KubePanel</span>
         </a>
 
-				<ul class="sidebar-nav">
-					<li class="sidebar-header">
-					{% block title %}	Dashboard {% endblock %}
-					</li>
+        <ul class="sidebar-nav">
+          <li class="sidebar-header text-uppercase small fw-bold">
+            {% block title %}Dashboard{% endblock %}
+          </li>
 
-					<li class="sidebar-item {% if request.resolver_match.url_name == 'kpmain' %}active{% endif %}">
-						<a class="sidebar-link" href="{% url 'kpmain' %}">
-              <i class="align-middle" data-feather="sliders"></i> <span class="align-middle">Domains</span>
+          <li class="sidebar-item {% if request.resolver_match.url_name == 'kpmain' %}active{% endif %}">
+            <a class="sidebar-link" href="{% url 'kpmain' %}">
+              <i class="align-middle" data-feather="sliders"></i>
+              <span class="align-middle">Domains</span>
             </a>
-					</li>
+          </li>
 
-					<li class="sidebar-item {% if request.resolver_match.url_name == 'livetraffic' %}active{% endif %}">
-						<a class="sidebar-link" href="{% url 'livetraffic' %}">
-              <i class="align-middle" data-feather="user"></i> <span class="align-middle">Live Traffic</span>
+          <li class="sidebar-item {% if request.resolver_match.url_name == 'livetraffic' %}active{% endif %}">
+            <a class="sidebar-link" href="{% url 'livetraffic' %}">
+              <i class="align-middle" data-feather="activity"></i>
+              <span class="align-middle">Live Traffic</span>
             </a>
-					</li>
+          </li>
 
-                                        <li class="sidebar-item {% if request.resolver_match.url_name == 'blocked_objects' %}active{% endif %}">
-                                                <a class="sidebar-link" href="{% url 'blocked_objects' %}">
-              <i class="align-middle" data-feather="log-in"></i> <span class="align-middle">Firewall</span>
+          <li class="sidebar-item {% if request.resolver_match.url_name == 'blocked_objects' %}active{% endif %}">
+            <a class="sidebar-link" href="{% url 'blocked_objects' %}">
+              <i class="align-middle" data-feather="shield"></i>
+              <span class="align-middle">Firewall</span>
             </a>
-                                        </li>
+          </li>
 
-					<li class="sidebar-item {% if request.resolver_match.url_name == 'pods_status' %}active{% endif %}">
-						<a class="sidebar-link" href="{% url 'pods_status' %}">
-              <i class="align-middle" data-feather="log-in"></i> <span class="align-middle">Live Cluster Status</span>
+          <li class="sidebar-item {% if request.resolver_match.url_name == 'pods_status' %}active{% endif %}">
+            <a class="sidebar-link" href="{% url 'pods_status' %}">
+              <i class="align-middle" data-feather="server"></i>
+              <span class="align-middle">Live Cluster Status</span>
             </a>
-					</li>
+          </li>
 
-                                        <li class="sidebar-item {% if request.resolver_match.url_name == 'list_api_tokens' %}active{% endif %}">
-                                                <a class="sidebar-link" href="{% url 'list_api_tokens' %}">
-              <i class="align-middle" data-feather="log-in"></i> <span class="align-middle">Cloudflare API tokens</span>
+          <li class="sidebar-item {% if request.resolver_match.url_name == 'list_api_tokens' %}active{% endif %}">
+            <a class="sidebar-link" href="{% url 'list_api_tokens' %}">
+              <i class="align-middle" data-feather="key"></i>
+              <span class="align-middle">Cloudflare API Tokens</span>
             </a>
-                                        </li>
+          </li>
 
-                                        <li class="sidebar-item {% if request.resolver_match.url_name == 'zones_list' %}active{% endif %}">
-                                                <a class="sidebar-link" href="{% url 'zones_list' %}">
-              <i class="align-middle" data-feather="log-in"></i> <span class="align-middle">DNS Zones</span>
+          <li class="sidebar-item {% if request.resolver_match.url_name == 'zones_list' %}active{% endif %}">
+            <a class="sidebar-link" href="{% url 'zones_list' %}">
+              <i class="align-middle" data-feather="globe"></i>
+              <span class="align-middle">DNS Zones</span>
             </a>
-                                        </li>
+          </li>
 
-					<li class="sidebar-item">
-						<a class="sidebar-link" href="https://kubepanel.io">
-              <i class="align-middle" data-feather="book"></i> <span class="align-middle">Support</span>
+          <li class="sidebar-item">
+            <a class="sidebar-link" href="https://kubepanel.io" target="_blank">
+              <i class="align-middle" data-feather="book"></i>
+              <span class="align-middle">Support</span>
             </a>
-					</li>
-			</div>
-		</nav>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <!-- End sidebar -->
 
-		<div class="main">
-			<nav class="navbar navbar-expand navbar-light navbar-bg">
-				<a class="sidebar-toggle js-sidebar-toggle">
+    <!-- Main content -->
+    <div class="main">
+      <!-- Navbar -->
+      <nav class="navbar navbar-expand navbar-light navbar-bg">
+        <a class="sidebar-toggle js-sidebar-toggle ms-3">
           <i class="hamburger align-self-center"></i>
         </a>
 
-				<div class="navbar-collapse collapse">
-					<ul class="navbar-nav navbar-align">
-						<li class="nav-item dropdown">
-							<a class="nav-icon dropdown-toggle" href="#" id="alertsDropdown" data-bs-toggle="dropdown">
-								<div class="position-relative">
-									<i class="align-middle" data-feather="bell"></i>
-									<span class="indicator">1</span>
-								</div>
-							</a>
-							<div class="dropdown-menu dropdown-menu-lg dropdown-menu-end py-0" aria-labelledby="alertsDropdown">
-								<div class="dropdown-menu-header">
-									1 New Notifications
-								</div>
-								<div class="list-group">
-									<a href="#" class="list-group-item">
-										<div class="row g-0 align-items-center">
-											<div class="col-2">
-												<i class="text-danger" data-feather="alert-circle"></i>
-											</div>
-											<div class="col-10">
-												<div class="text-dark">Sample notification</div>
-												<div class="text-muted small mt-1">New update for Kubepanel v0.1</div>
-											</div>
-										</div>
-									</a>
-								</div>
-								<div class="dropdown-menu-footer">
-									<a href="#" class="text-muted">Show all notifications</a>
-								</div>
-							</div>
-						</li>
-						<li class="nav-item dropdown">
-							<a class="nav-icon dropdown-toggle d-inline-block d-sm-none" href="#" data-bs-toggle="dropdown">
-                <i class="align-middle" data-feather="settings"></i>
+        <div class="navbar-collapse collapse">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item dropdown">
+              <a class="nav-icon dropdown-toggle" href="#" id="alertsDropdown" data-bs-toggle="dropdown">
+                <div class="position-relative">
+                  <i class="align-middle" data-feather="bell"></i>
+                  <span class="indicator">1</span>
+                </div>
               </a>
-
-							<a class="nav-link dropdown-toggle d-none d-sm-inline-block" href="#" data-bs-toggle="dropdown">
-               <span class="text-dark">{{ user.username }}</span>
+              <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end py-0" aria-labelledby="alertsDropdown">
+                <div class="dropdown-menu-header">
+                  1 New Notification
+                </div>
+                <div class="list-group">
+                  <a href="#" class="list-group-item">
+                    <div class="row g-0 align-items-center">
+                      <div class="col-2">
+                        <i class="text-danger" data-feather="alert-circle"></i>
+                      </div>
+                      <div class="col-10">
+                        <div class="text-dark">Sample notification</div>
+                        <div class="text-muted small mt-1">New update for Kubepanel v0.1</div>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                <div class="dropdown-menu-footer">
+                  <a href="#" class="text-muted">Show all notifications</a>
+                </div>
+              </div>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle d-none d-sm-inline-block" href="#" data-bs-toggle="dropdown">
+                <i class="align-middle me-1" data-feather="user"></i>
+                <span class="text-dark">{{ user.username }}</span>
               </a>
-							<div class="dropdown-menu dropdown-menu-end">
-								<a class="dropdown-item" href=""><i class="align-middle me-1" data-feather="user"></i> Profile</a>
-								<div class="dropdown-divider"></div>
-								<div class="dropdown-divider"></div>
-								<a class="dropdown-item" href="logout">Log out</a>
-							</div>
-						</li>
-					</ul>
-				</div>
-			</nav>
+              <div class="dropdown-menu dropdown-menu-end">
+                <a class="dropdown-item" href="#"><i class="align-middle me-1" data-feather="settings"></i> Settings</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="{% url 'logout_view' %}">
+                  <i class="align-middle me-1" data-feather="log-out"></i> Log out
+                </a>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </nav>
+      <!-- End Navbar -->
 
-{% block content %}
+      <!-- Main Content Area -->
+      {% block content %}
+      {% endblock %}
 
-{% endblock %}
-			<footer class="footer">
-				<div class="container-fluid">
-					<div class="row text-muted">
-						<div class="col-6 text-start">
-							<p class="mb-0">
-								<a class="text-muted" href="https://kubepanel.io/" target="_blank"><strong>KubePanel</strong></a> - <a class="text-muted" href="https://kubepanel.io/" target="_blank"><strong>Example Company Ltd.</strong></a>								&copy;
-							</p>
-						</div>
-						<div class="col-6 text-end">
-							<ul class="list-inline">
+      <!-- Footer -->
+      <footer class="footer">
+        <div class="container-fluid">
+          <div class="row text-muted">
+            <div class="col-6 text-start">
+              <p class="mb-0">
+                <a class="text-muted text-decoration-none" href="https://kubepanel.io/" target="_blank">
+                  <strong>KubePanel</strong>
+                </a> - 
+                <a class="text-muted text-decoration-none" href="https://kubepanel.io/" target="_blank">
+                  <strong>Example Company Ltd.</strong>
+                </a> &copy;
+              </p>
+            </div>
+            <div class="col-6 text-end">
+              <ul class="list-inline mb-0">
+                <!-- Add any footer links or social icons as needed -->
+              </ul>
+            </div>
+          </div>
+        </div>
+      </footer>
+      <!-- End Footer -->
+    </div>
+    <!-- End main -->
+  </div>
+  <!-- End wrapper -->
 
-							</ul>
-						</div>
-					</div>
-				</div>
-			</footer>
-		</div>
-	</div>
-{% load static %}
-	<script src="{% static 'app.js' %}"></script>
+  {% load static %}
+  <script src="{% static 'app.js' %}"></script>
+  <!-- Ensure Feather icons initialize -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      if (typeof feather !== 'undefined') {
+        feather.replace();
+      }
+    });
+  </script>
 </body>
-
 </html>
+

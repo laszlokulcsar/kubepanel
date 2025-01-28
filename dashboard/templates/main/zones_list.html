@@ -1,28 +1,63 @@
 {% extends "base.html" %}
+{% load static %}
 {% block content %}
+<main class="content">
+  <div class="container-fluid p-0">
+    <div class="row mb-3">
+      <div class="col-12">
+        <h1 class="h3 mb-3"><strong>DNS Zones</strong></h1>
+      </div>
+    </div>
 
-                        <main class="content">
-                                <div class="container-fluid p-0">
+    <div class="row">
+      <div class="col-12 col-lg-12 col-xxl-12">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Zones</h5>
+            <a href="{% url 'create_zone' %}" class="btn btn-primary btn-sm">
+              <i data-feather="plus"></i> Create New Zone
+            </a>
+          </div>
 
-                                        <h1 class="h3 mb-3"><strong>List DNS zones</strong></h1>
-                                        <div class="row">
-                                                <div class="col-12 col-lg-12 col-xxl-12">
-                                                        <div class="card">
-                                                                <div class="card-header">
-                                                                </div>
-                                                                <div class="card-body">
-    {% for zone in zones %}
-      <li>
-<a href="{% url 'list_dns_records' zone.id %}">{{ zone.name }}</a> (Zone ID: {{ zone.zone_id }})
-      </li>
-    {% endfor %}
-<a href="{% url 'create_zone' %}">Create new zone</a>
-								</div>
-							</div>
-                                                </div>
-                                        </div>
-
-                                </div>
-                        </main>
-
+          <div class="table-responsive">
+            <table class="table table-hover table-nowrap mb-0">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Zone ID</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for zone in zones %}
+                <tr>
+                  <td>
+                    <a href="{% url 'list_dns_records' zone.id %}">
+                      {{ zone.name }}
+                    </a>
+                  </td>
+                  <td>{{ zone.zone_id }}</td>
+                  <td>
+                    <!-- Example delete route: adjust if needed -->
+                    <a href="{% url 'delete_zone' zone.id %}" class="btn btn-danger btn-sm">
+                      Delete
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center">
+                    No DNS zones found.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div> <!-- /.table-responsive -->
+        </div> <!-- /.card -->
+      </div> <!-- /.col -->
+    </div> <!-- /.row -->
+  </div> <!-- /.container-fluid -->
+</main>
 {% endblock %}
+

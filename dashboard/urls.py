@@ -22,8 +22,14 @@ urlpatterns = [
     path('pods-status/', views.get_pods_status, name='pods_status'),
     path('tokens/add/', views.add_api_token, name='add_api_token'),
     path('tokens/list/', views.list_api_tokens, name='list_api_tokens'),
+    path('tokens/<int:token_id>/delete/', views.delete_api_token, name='delete_api_token'),  # Delete token
     path('zones/create/', views.create_zone, name='create_zone'),
+    path('zones/<int:zone_id>/delete/', views.delete_zone, name='delete_zone'),
     path('zones/list/', views.zones_list, name='zones_list'),
     path('records/create/', views.create_dns_record, name='create_dns_record'),
+    path('records/<int:record_id>/delete/', views.delete_dns_record, name='delete_dns_record'),  # Delete record
     path("zones/<int:zone_id>/records/", views.list_dns_records, name="list_dns_records"),
+    path("ips/manage/", views.manage_ips, name="manage_ips"),
+    path("ips/add/", views.add_ip, name="add_ip"),
+    path("ips/<int:ip_id>/delete/", views.delete_ip, name="delete_ip"),
 ]

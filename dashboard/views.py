@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from .models import DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
+from .models import ClusterIP, DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
 from dashboard.forms import DomainForm, DomainAddForm, APITokenForm, ZoneCreationForm, DNSRecordForm
 from django.urls import reverse
 from cryptography.hazmat.primitives import serialization as crypto_serialization
@@ -19,6 +19,71 @@ import cloudflare, logging, os, random, base64, string, requests, json, geoip2.d
 GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
 EXCLUDED_EXTENSIONS = [".js", ".css", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".map"]
+
+def manage_ips(request):
+    ip_list = ClusterIP.objects.all()
+    return render(request, "main/ip_management.html", {"ip_list": ip_list})
+
+def add_ip(request):
+    if request.method == "POST":
+        ip_address = request.POST.get("ip_address")
+        description = request.POST.get("description", "").strip()
+
+        if not ip_address:
+            messages.error(request, "IP address is required.")
+            return redirect("manage_ips")
+
+        try:
+            ClusterIP.objects.create(ip_address=ip_address, description=description)
+            messages.success(request, f"IP Address '{ip_address}' added successfully.")
+        except Exception as e:
+            messages.error(request, f"Error adding IP: {e}")
+
+        return redirect("manage_ips")
+
+# Delete an IP address
+def delete_ip(request, ip_id):
+    ip = get_object_or_404(ClusterIP, id=ip_id)
+    if request.method == "POST":
+        ip.delete()
+        messages.success(request, f"IP Address '{ip.ip_address}' deleted successfully.")
+        return redirect("manage_ips")
+
+def delete_zone(request, zone_id):
+    zone = get_object_or_404(DNSZone, id=zone_id, token__user=request.user)
+    if request.method == "POST":
+        try:
+            # Optionally, add logic to delete the zone from Cloudflare
+            zone.delete()
+            messages.success(request, f"DNS Zone '{zone.name}' deleted successfully.")
+        except Exception as e:
+            messages.error(request, f"Error deleting zone: {e}")
+        return redirect("zones_list")
+    return render(request, "main/delete_confirm.html", {"object": zone, "type": "DNS Zone"})
+
+def delete_dns_record(request, record_id):
+    record = get_object_or_404(DNSRecord, id=record_id, zone__token__user=request.user)
+    if request.method == "POST":
+        try:
+            record.delete()
+            messages.success(request, f"DNS Record '{record.name}' deleted successfully.")
+        except Exception as e:
+            messages.error(request, f"Error deleting record: {e}")
+        return redirect("list_dns_records", zone_id=record.zone.id)
+    return render(request, "main/delete_confirm.html", {"object": record, "type": "DNS Record"})
+
+# Delete a Cloudflare API Token
+def delete_api_token(request, token_id):
+    token = get_object_or_404(CloudflareAPIToken, id=token_id, user=request.user)
+    if request.method == "POST":
+        try:
+            token.delete()
+            messages.success(request, f"API Token '{token.name}' deleted successfully.")
+        except Exception as e:
+            messages.error(request, f"Error deleting token: {e}")
+        return redirect("list_api_tokens")
+    return render(request, "main/delete_confirm.html", {"object": token, "type": "API Token"})
+
 
 def list_api_tokens(request):
     tokens = CloudflareAPIToken.objects.filter(user=request.user)
@@ -67,41 +132,6 @@ def create_dns_record(request):
     return render(request, "main/create_dns_record.html", {"form": form})
 
 
-#def create_dns_record(request):
-#    if request.method == "POST":
-#        form = DNSRecordForm(request.POST, user=request.user)
-#        if form.is_valid():
-#            record_obj = form.save(commit=False)
-#
-#            # Initialize the Cloudflare client using this record's associated token
-#            client = Cloudflare(api_token=record_obj.zone.token.api_token)
-#
-#            # Prepare the data for creating a DNS record
-#            # The new library expects keyword args rather than .post(..., data=data)
-#            try:
-#                response = client.dns.records.create(
-#                    zone_id=record_obj.zone.zone_id,
-#                    type=record_obj.record_type,
-#                    name=record_obj.name,
-#                    content=record_obj.content,
-#                    ttl=record_obj.ttl,
-#                    proxied=record_obj.proxied
-#                )
-#                # Store the ID of the newly created record
-#                record_obj.cf_record_id = response.id
-#                record_obj.save()
-#                messages.success(request, "DNS record created successfully.")
-#            except Exception as e:
-#                messages.error(request, f"Error creating DNS record: {e}")
-#
-#            return redirect("/zones/list")  # or wherever you'd like
-#        else:
-#          messages.error(request, f"Form invalid {e}")
-#    else:
-#        form = DNSRecordForm(user=request.user)
-#    return render(request, "main/create_dns_record.html", {"form": form})
-
-
 def zones_list(request):
     tokens = CloudflareAPIToken.objects.filter(user=request.user)
     user_zones = DNSZone.objects.filter(token__in=tokens)
@@ -119,35 +149,42 @@ def add_api_token(request):
         form = APITokenForm()
     return render(request, "main/add_token.html", {"form": form})
 
+def create_cf_zone(zone_name, token):
+    """
+    Creates a zone in Cloudflare using the given token.
+    Returns the newly created zone ID on success.
+    Raises an exception on error.
+    """
+    client = Cloudflare(api_token=token.api_token)
+    accounts = client.accounts.list().result
+
+    if not accounts:
+        raise ValueError("No accounts found for this token.")
+
+    account_id = accounts[0].id
+    result = client.zones.create(
+        account={"id": account_id},
+        name=zone_name,
+        type="full",
+    )
+    return result.id
+
 def create_zone(request):
     if request.method == "POST":
         form = ZoneCreationForm(request.user, request.POST)
         if form.is_valid():
             zone_name = form.cleaned_data["zone_name"]
             user_token = form.cleaned_data["token"]
-
-            client = Cloudflare(api_token=user_token.api_token)
             try:
-                accounts = client.accounts.list().result
-                if not accounts:
-                    messages.error(request, "No accounts found for this token.")
-                    return redirect("zones_list")
-
-                account_id = accounts[0].id
-                result = client.zones.create(
-                    account={"id": account_id},
-                    name=zone_name,
-                    type="full",
-                )
-
+                zone_id = create_cf_zone(zone_name, user_token)
                 DNSZone.objects.create(
                     name=zone_name,
-                    zone_id=result.id,
+                    zone_id=zone_id,
                     token=user_token
                 )
-                logging.success(request, f"Zone '{zone_name}' created successfully.")
+                messages.success(request, f"Zone '{zone_name}' created successfully.")
             except Exception as e:
-                logging.error(request, f"Error creating zone: {str(e)}")
+                messages.error(request, f"Error creating zone: {str(e)}")
             return redirect("zones_list")
     else:
         form = ZoneCreationForm(request.user)
@@ -464,20 +501,20 @@ def add_domain(request):
         except:
           return render(request, "main/add_domain.html")
         try:
-          if request.POST["wordpress_preinstall"] == 'on':
+          if request.POST["wordpress_preinstall"] == '1':
             wp_preinstall = True
           else:
             wp_preinstall = False
         except:
           wp_preinstall = False
         try:
-          if request.POST["auto_dns"] == 'on':
+          if request.POST["auto_dns"] == '1':
+            api_token = request.POST["api_token"]
             auto_dns = True
           else:
             auto_dns = False
         except:
           auto_dns = False
-
         #GENERATE SSH AND DKIM PRIV/PUB KEYS
         sshkey = rsa.generate_private_key(backend=crypto_default_backend(), public_exponent=65537, key_size=2048)
         private_key = sshkey.private_bytes(crypto_serialization.Encoding.PEM, crypto_serialization.PrivateFormat.TraditionalOpenSSL, crypto_serialization.NoEncryption()).decode("utf-8")
@@ -505,6 +542,29 @@ def add_domain(request):
         except:
           print("Ooops, can't save domain, please check debug logs.")
           return render(request, "main/domain_error.html",{ "domain" : new_domain_name,})
+        if auto_dns == True:
+          try:
+            ips = ClusterIP.objects.all().values_list("ip_address", flat=True)
+            spf_record = "v=spf1 " + " ".join(f"ip4:{ip}" for ip in ips) + " -all"
+            user_token = CloudflareAPIToken.objects.get(api_token=api_token, user=request.user)
+            zone_id = create_cf_zone(new_domain_name, user_token)
+            zone_obj = DNSZone.objects.create(name=new_domain_name, zone_id=zone_id, token=user_token)
+            zone_obj.save()
+            dkim_record_obj = DNSRecord(zone=zone_obj,record_type="TXT",name="default._domainkey",content=dkim_txt_record)
+            response = create_dns_record_in_cloudflare(dkim_record_obj)
+            dkim_record_obj.cf_record_id = response.id
+            dkim_record_obj.save()
+            spf_record_obj = DNSRecord(zone=zone_obj,record_type="TXT",name="@",content=spf_record)
+            response = create_dns_record_in_cloudflare(spf_record_obj)
+            spf_record_obj.cf_record_id = response.id
+            spf_record_obj.save()
+            for ip in ips:
+              a_record_obj = DNSRecord(zone=zone_obj,record_type="A",name="@",content=ip)
+              response = create_dns_record_in_cloudflare(a_record_obj)
+              a_record_obj.cf_record_id = response.id
+              a_record_obj.save()
+          except Exception as e:
+            logging.warning(f"Can't create DNS zone. Please check debug logs if you think this is an error: {e}")
         try:
           os.mkdir(domain_dirname)
           os.mkdir('/dkim-privkeys/'+new_domain_name)

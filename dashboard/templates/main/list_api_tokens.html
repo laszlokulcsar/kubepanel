@@ -1,31 +1,57 @@
 {% extends "base.html" %}
+{% load static %}
 {% block content %}
+<main class="content">
+  <div class="container-fluid p-0">
+    <div class="row mb-3">
+      <div class="col-12">
+        <h1 class="h3 mb-3"><strong>Cloudflare API Tokens</strong></h1>
+      </div>
+    </div>
 
-                        <main class="content">
-                                <div class="container-fluid p-0">
+    <div class="row">
+      <div class="col-12 col-lg-12 col-xxl-12">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Tokens</h5>
+            <a href="{% url 'add_api_token' %}" class="btn btn-primary btn-sm">
+              <i data-feather="plus"></i> Add Token
+            </a>
+          </div>
 
-                                        <h1 class="h3 mb-3"><strong>Add a Cloudflare API Token</strong></h1>
-                                        <div class="row">
-                                                <div class="col-12 col-lg-12 col-xxl-12">
-							<div class="card">
-								<div class="card-header">
-								</div>
-								<div class="card-body">
-
-  <ul>
-    {% for token in tokens %}
-      <li>
-        <strong>{{ token.name }}</strong><br>
-        {{ token.api_token }}
-      </li>
-    {% endfor %}
-  </ul>
-  <a href="{% url 'add_api_token' %}">Add a new token</a>								</div>
-							</div>
-                                                </div>
-                                        </div>
-
-                                </div>
-                        </main>
-
+          <div class="table-responsive">
+            <table class="table table-hover table-nowrap mb-0">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Token</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for token in tokens %}
+                <tr>
+                  <td>{{ token.name }}</td>
+                  <td>{{ token.api_token }}</td>
+                  <td>
+                    <!-- Example delete route: adjust if needed -->
+                    <a href="{% url 'delete_api_token' token.id %}" class="btn btn-danger btn-sm">
+                      Delete
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center">No tokens found.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div> <!-- /.table-responsive -->
+        </div> <!-- /.card -->
+      </div> <!-- /.col -->
+    </div> <!-- /.row -->
+  </div> <!-- /.container-fluid -->
+</main>
 {% endblock %}
+

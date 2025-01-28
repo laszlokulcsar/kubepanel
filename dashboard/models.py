@@ -90,26 +90,10 @@ class DNSRecord(models.Model):
     def __str__(self):
         return f"{self.record_type} {self.name} -> {self.content}"
 
-#class DNSRecord(models.Model):
-#    RECORD_TYPES = [
-#        ("A", "A"),
-#        ("AAAA", "AAAA"),
-#        ("CNAME", "CNAME"),
-#        ("TXT", "TXT"),
-#        ("MX", "MX"),
-#        ("NS", "NS"),
-#        ("SRV", "SRV"),
-#    ]
-#
-#    domain = models.ForeignKey(Domain, on_delete=models.CASCADE, related_name="dns_records")
-#    record_type = models.CharField(max_length=10, choices=RECORD_TYPES)
-#    name = models.CharField(max_length=253)
-#    content = models.CharField(max_length=65535)
-#    ttl = models.IntegerField(default=120)
-#    proxied = models.BooleanField(default=False)
-#    priority = models.IntegerField(null=True, blank=True)
-#
-#    def __str__(self):
-#        return f"{self.record_type} {self.name} -> {self.content}"
-#
+class ClusterIP(models.Model):
+    ip_address = models.GenericIPAddressField(unique=True)
+    description = models.CharField(max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.ip_address} ({self.description or 'No Description'})"
 
