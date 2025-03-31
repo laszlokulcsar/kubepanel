@@ -10,13 +10,15 @@ Since it's kubernetes native, the infrastructure is modular, you can add own con
 - A public IP address and a DNS entry with an A record pointing to your public IP address. This is required to reach the Kubepanel UI after the installation. i.e.: if you have a domain name 'example.com' you can create an A record 'kubepanel.example.com' which resolves to your servers public IP address.
 - Open port 443 on your firewall
   
-# INSTALL
+# INSTALL on the 1st node:
 
 ```
-1st node:
 bash <(curl \
 https://raw.githubusercontent.com/laszlokulcsar/kubepanel-infra/refs/heads/main/kubepanel-install.sh)
-2nd and 3rd node:
+```
+# INSTALL on the 2nd and 3rd node:
+
+```
 bash <(curl \
 https://raw.githubusercontent.com/laszlokulcsar/kubepanel-infra/refs/heads/main/join-node.sh)
 ```
