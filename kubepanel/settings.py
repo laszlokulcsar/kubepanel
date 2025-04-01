@@ -25,8 +25,8 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-&psk#na5l=p3q8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = 'False'
 
-#ALLOWED_HOSTS = ["localhost"]
-ALLOWED_HOSTS = ["<KUBEPANEL_DOMAIN>"]
+ALLOWED_HOSTS = ["localhost"]
+#ALLOWED_HOSTS = ["<KUBEPANEL_DOMAIN>"]
 CSRF_TRUSTED_ORIGINS = ["https://<KUBEPANEL_DOMAIN>"]
 
 # Application definition
@@ -75,10 +75,23 @@ WSGI_APPLICATION = 'kubepanel.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.sqlite3',
+#        'NAME': BASE_DIR / 'db.sqlite3',
+#    }
+#}
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'kubepanel',
+        'USER': 'kubepanel',
+        'PASSWORD': '<MARIADB_ROOT_PASSWORD>',
+        'HOST': 'mariadb.kubepanel.svc.cluster.local',
+        'PORT': '3306',
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
 
