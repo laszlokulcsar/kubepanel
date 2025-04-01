@@ -81,7 +81,7 @@ class DNSRecord(models.Model):
     zone = models.ForeignKey("DNSZone", on_delete=models.CASCADE, related_name="dns_records")
     record_type = models.CharField(max_length=10, choices=RECORD_TYPES)
     name = models.CharField(max_length=253)
-    content = models.CharField(max_length=65535)
+    content = models.TextField(db_default="")
     ttl = models.IntegerField(default=120)
     proxied = models.BooleanField(default=False)
     priority = models.IntegerField(null=True, blank=True)
