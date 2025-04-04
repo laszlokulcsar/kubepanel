@@ -34,5 +34,5 @@ urlpatterns = [
     path("ips/<int:ip_id>/delete/", views.delete_ip, name="delete_ip"),
     path('users/', views.list_mail_users, name='list_mail_users'),
     path('users/create/', views.create_mail_user, name='create_mail_user'),
-    path('users/edit/', views.edit_mail_user, name='edit_mail_user'),
+    path('users/<int:user_id>/edit/', views.edit_mail_user, name='edit_mail_user'),
 ]
