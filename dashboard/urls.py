@@ -32,4 +32,6 @@ urlpatterns = [
     path("ips/manage/", views.manage_ips, name="manage_ips"),
     path("ips/add/", views.add_ip, name="add_ip"),
     path("ips/<int:ip_id>/delete/", views.delete_ip, name="delete_ip"),
+    path('users/', views.list_mail_users, name='list_mail_users'),
+    path('users/create/', views.create_mail_user, name='create_mail_user'),
 ]
