@@ -1,19 +1,75 @@
+
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
 <main class="content">
   <div class="container-fluid p-0">
-    <div class="row mb-3">
+    <div class="row">
       <div class="col-12">
-        <h1 class="h3 mb-3">Mailboxes for</h1>
-<ul>
-  {% for user in mail_users %}
-    <li>{{ user.email }}</li>
-  {% endfor %}
-</ul>
+        <h1 class="h3 mb-3"><strong>Mail Users</strong></h1>
       </div>
     </div>
-  </div> <!-- /.container-fluid -->
+
+    <div class="row">
+      <div class="col-12 col-lg-12 col-xxl-12">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Existing Mail Users</h5>
+            <a class="btn btn-sm btn-primary" href="{% url 'create_mail_user' %}">
+              <i data-feather="plus"></i> Add Mail User
+            </a>
+          </div>
+          <div class="card-body">
+            {% if mail_users %}
+            <div class="table-responsive">
+              <table class="table table-striped table-bordered">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Domain</th>
+                    <th>Local Part</th>
+                    <th>Email Address</th>
+                    <th>Active</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for mu in mail_users %}
+                  <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ mu.domain.domain_name }}</td>
+                    <td>{{ mu.local_part }}</td>
+                    <td>{{ mu.email }}</td>
+                    <td>
+                      {% if mu.active %}
+                        <span class="badge bg-success">Yes</span>
+                      {% else %}
+                        <span class="badge bg-danger">No</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <!-- Edit link -->
+                      <a class="btn btn-sm btn-warning" href="{% url 'edit_mail_user' mu.id %}">
+                        <i data-feather="edit"></i> Edit
+                      </a>
+                      <!-- Delete link -->
+                      <a class="btn btn-sm btn-danger" href="{% url 'delete_mail_user' mu.id %}">
+                        <i data-feather="trash-2"></i> Delete
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+              <p>No mail users found.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </main>
 {% endblock %}
 
