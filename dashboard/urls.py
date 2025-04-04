@@ -35,4 +35,5 @@ urlpatterns = [
     path('users/', views.list_mail_users, name='list_mail_users'),
     path('users/create/', views.create_mail_user, name='create_mail_user'),
     path('users/<int:user_id>/edit/', views.edit_mail_user, name='edit_mail_user'),
+    path('users/<int:user_id>/delete/', views.delete_mail_user, name='delete_mail_user'),
 ]

@@ -790,3 +790,15 @@ def edit_mail_user(request, user_id):
         # Initialize form with existing mail user data
         form = MailUserForm(instance=mail_user)
     return render(request, "main/edit_mail_user.html", {"form": form})
+
+@login_required
+def delete_mail_user(request, user_id):
+    mail_user = get_object_or_404(MailUser, pk=user_id)
+    if not request.user.is_superuser and mail_user.domain.owner != request.user:
+        return render(request, "mail/error.html", {"error": "Permission denied."})
+    
+    if request.method == 'POST':
+        mail_user.delete()
+        return redirect("list_mail_users")
+    return render(request, "mail/delete_mail_user.html", {"mail_user": mail_user})
+
