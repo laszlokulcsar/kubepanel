@@ -756,7 +756,7 @@ def list_mail_users(request):
         mail_users = MailUser.objects.all()
     else:
         mail_users = MailUser.objects.filter(domain__owner=request.user)
-    return render(request, "mail/list_mail_users.html", {"mail_users": mail_users})
+    return render(request, "main/list_mail_users.html", {"mail_users": mail_users})
 
 @login_required
 def create_mail_user(request):
