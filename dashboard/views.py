@@ -767,10 +767,26 @@ def create_mail_user(request):
             if not request.user.is_superuser:
                 domain_obj = form.cleaned_data['domain']
                 if domain_obj.owner != request.user:
-                    return render(request, "mail/error.html", {"error": "You do not own this domain."})
+                    return render(request, "main/error.html", {"error": "You do not own this domain."})
 
             form.save()
             return redirect("list_mail_users")
     else:
         form = MailUserForm()
-    return render(request, "mail/create_mail_user.html", {"form": form})
+    return render(request, "main/create_mail_user.html", {"form": form})
+
+@login_required
+def edit_mail_user(request, user_id):
+    mail_user = get_object_or_404(MailUser, pk=user_id)
+    if not request.user.is_superuser and mail_user.domain.owner != request.user:
+        return render(request, "main/error.html", {"error": "Permission denied."})
+
+    if request.method == 'POST':
+        form = MailUserForm(request.POST, instance=mail_user)
+        if form.is_valid():
+            form.save()
+            return redirect("list_mail_users")
+    else:
+        # Initialize form with existing mail user data
+        form = MailUserForm(instance=mail_user)
+    return render(request, "main/edit_mail_user.html", {"form": form})

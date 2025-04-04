@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<main class="content">
+  <div class="container-fluid p-0">
+    <div class="row">
+      <div class="col-12">
+        <h1 class="h3 mb-3"><strong>Edit Mail User</strong></h1>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-12 col-lg-12 col-xxl-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Update Mail User Information</h5>
+          </div>
+          <div class="card-body">
+            <!-- The action URL should match your 'edit_mail_user' route, 
+                 e.g., /users/<user_id>/edit/ -->
+            <form action="" method="post">
+              {% csrf_token %}
+
+              <!--
+                Because we’re using a form instance (e.g., MailUserForm(instance=mail_user)),
+                the fields will be pre-populated with the user’s data.
+              -->
+
+              <div class="mb-3">
+                <label for="id_domain" class="form-label">Domain</label>
+                {{ form.domain }}
+              </div>
+
+              <div class="mb-3">
+                <label for="id_local_part" class="form-label">Local Part (username)</label>
+                {{ form.local_part }}
+              </div>
+
+              <div class="mb-3">
+                <label for="id_plain_password" class="form-label">Password</label>
+                <!--
+                  If you want to let users update the password, keep this field.
+                  If you only want them to change it conditionally, you could make
+                  it optional or show a "Change Password" checkbox. 
+                -->
+                {{ form.plain_password }}
+              </div>
+
+              <div class="form-check mb-3">
+                {{ form.active }}
+                <label for="id_active" class="form-check-label">Active</label>
+              </div>
+
+              <button class="btn btn-primary" type="submit">
+                <i data-feather="save"></i> Update Mail User
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
