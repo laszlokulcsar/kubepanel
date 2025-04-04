@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.contrib.auth.hashers import make_password
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from .defaultconfigs import NGINX_DEFAULT_CONFIG
@@ -97,3 +98,21 @@ class ClusterIP(models.Model):
     def __str__(self):
         return f"{self.ip_address} ({self.description or 'No Description'})"
 
+class MailUser(models.Model):
+    domain = models.ForeignKey(Domain, on_delete=models.CASCADE, related_name='mail_users')
+    local_part = models.CharField(max_length=64)  # e.g. "info"
+    password = models.CharField(max_length=255)   # store hashed value
+    active = models.BooleanField(default=True)
+
+    @property
+    def email(self):
+        return f"{self.local_part}@{self.domain.domain_name}"
+
+    def __str__(self):
+        return self.email
+
+class MailAlias(models.Model):
+    domain = models.ForeignKey(Domain, on_delete=models.CASCADE, related_name='mail_aliases')
+    source = models.CharField(max_length=255)      # e.g. "alias@example.com"
+    destination = models.CharField(max_length=255) # e.g. "real@example.com"
+    active = models.BooleanField(default=True)

@@ -748,3 +748,29 @@ def save_domain(request,domain):
       else:
         return render(request, "main/view_domain.html", { "domain" : domain_instance, "form" : form})
   return redirect(kpmain)
+
+@login_required
+def list_mail_users(request):
+    # Show only the mail accounts belonging to domains the user owns (if not superuser).
+    if request.user.is_superuser:
+        mail_users = MailUser.objects.all()
+    else:
+        mail_users = MailUser.objects.filter(domain__owner=request.user)
+    return render(request, "mail/list_mail_users.html", {"mail_users": mail_users})
+
+@login_required
+def create_mail_user(request):
+    if request.method == 'POST':
+        form = MailUserForm(request.POST)
+        if form.is_valid():
+            # Ensure the user owns the domain (if not superuser)
+            if not request.user.is_superuser:
+                domain_obj = form.cleaned_data['domain']
+                if domain_obj.owner != request.user:
+                    return render(request, "mail/error.html", {"error": "You do not own this domain."})
+
+            form.save()
+            return redirect("list_mail_users")
+    else:
+        form = MailUserForm()
+    return render(request, "mail/create_mail_user.html", {"form": form})
