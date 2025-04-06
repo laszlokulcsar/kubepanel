@@ -108,7 +108,8 @@ def create_dns_record_in_cloudflare(record_obj):
         name=record_obj.name,
         content=record_obj.content,
         ttl=record_obj.ttl,
-        proxied=record_obj.proxied
+        proxied=record_obj.proxied,
+        priority=record_obj.priority
     )
     return response
 
@@ -125,7 +126,7 @@ def create_dns_record(request):
             except Exception as e:
                 messages.error(request, f"Error creating DNS record: {e}")
             return redirect("/zones/list")
-        else:
+        elseien
             messages.error(request, "Form invalid.")
     else:
         form = DNSRecordForm(user=request.user)
@@ -563,7 +564,7 @@ def add_domain(request):
               response = create_dns_record_in_cloudflare(a_record_obj)
               a_record_obj.cf_record_id = response.id
               a_record_obj.save()
-            mx_record_obj = DNSRecord(zone=zone_obj,record_type="MX",name="@",content=new_domain_name,priority=float(10))
+            mx_record_obj = DNSRecord(zone=zone_obj,record_type="MX",name="@",content=new_domain_name,priority=10)
             response = create_dns_record_in_cloudflare(mx_record_obj)
             mx_record_obj.cf_record_id = response.id
             mx_record_obj.save()
