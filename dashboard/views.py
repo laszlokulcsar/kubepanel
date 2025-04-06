@@ -126,7 +126,7 @@ def create_dns_record(request):
             except Exception as e:
                 messages.error(request, f"Error creating DNS record: {e}")
             return redirect("/zones/list")
-        elseien
+        else:
             messages.error(request, "Form invalid.")
     else:
         form = DNSRecordForm(user=request.user)
