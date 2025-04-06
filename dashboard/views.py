@@ -563,7 +563,7 @@ def add_domain(request):
               response = create_dns_record_in_cloudflare(a_record_obj)
               a_record_obj.cf_record_id = response.id
               a_record_obj.save()
-            mx_record_obj = DNSRecord(zone=zone_obj,record_type="MX",name="@",content=new_domain_name,priority=10)
+            mx_record_obj = DNSRecord(zone=zone_obj,record_type="MX",name="@",content=new_domain_name,priority=float(10))
             response = create_dns_record_in_cloudflare(mx_record_obj)
             mx_record_obj.cf_record_id = response.id
             mx_record_obj.save()
