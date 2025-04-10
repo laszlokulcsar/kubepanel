@@ -569,11 +569,11 @@ def add_domain(request):
               response = create_dns_record_in_cloudflare(a_record_obj)
               a_record_obj.cf_record_id = response.id
               a_record_obj.save()
-              a_record_obj = DNSRecord(zone=zone_obj,record_type="A",name="mx"+counter,content=ip)
+              a_record_obj = DNSRecord(zone=zone_obj,record_type="A",name="mx"+str(counter),content=ip)
               response = create_dns_record_in_cloudflare(a_record_obj)
               a_record_obj.cf_record_id = response.id
               a_record_obj.save()
-              mx_record_obj = DNSRecord(zone=zone_obj,record_type="MX",name="@",content=mx+counter+"."+new_domain_name,priority=counter)
+              mx_record_obj = DNSRecord(zone=zone_obj,record_type="MX",name="@",content="mx"+str(counter)+"."+new_domain_name,priority=counter)
               response = create_dns_record_in_cloudflare(mx_record_obj)
               mx_record_obj.cf_record_id = response.id
               mx_record_obj.save()
