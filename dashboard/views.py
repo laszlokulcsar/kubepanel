@@ -559,6 +559,7 @@ def add_domain(request):
             response = create_dns_record_in_cloudflare(spf_record_obj)
             spf_record_obj.cf_record_id = response.id
             spf_record_obj.save()
+            counter = 0
             for ip in ips:
               a_record_obj = DNSRecord(zone=zone_obj,record_type="A",name="@",content=ip)
               response = create_dns_record_in_cloudflare(a_record_obj)
@@ -568,10 +569,15 @@ def add_domain(request):
               response = create_dns_record_in_cloudflare(a_record_obj)
               a_record_obj.cf_record_id = response.id
               a_record_obj.save()
-            mx_record_obj = DNSRecord(zone=zone_obj,record_type="MX",name="@",content=new_domain_name,priority=10)
-            response = create_dns_record_in_cloudflare(mx_record_obj)
-            mx_record_obj.cf_record_id = response.id
-            mx_record_obj.save()
+              a_record_obj = DNSRecord(zone=zone_obj,record_type="A",name="mx"+counter,content=ip)
+              response = create_dns_record_in_cloudflare(a_record_obj)
+              a_record_obj.cf_record_id = response.id
+              a_record_obj.save()
+              mx_record_obj = DNSRecord(zone=zone_obj,record_type="MX",name="@",content=mx+counter+"."+new_domain_name,priority=counter)
+              response = create_dns_record_in_cloudflare(mx_record_obj)
+              mx_record_obj.cf_record_id = response.id
+              mx_record_obj.save()
+              counter = counter + 1
           except Exception as e:
             logging.warning(f"Can't create DNS zone. Please check debug logs if you think this is an error: {e}")
         try:
