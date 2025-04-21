@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect
 from django.template.loader import render_to_string
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from dashboard.models import User, Domain
+from dashboard.models import User, Domain, ClusterIP
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
@@ -15,6 +15,25 @@ class Command(BaseCommand):
     parser.add_argument('-d', '--domain', type=ascii)
 
   def handle(self, *args, **kwargs):
+    ip_envs = {
+        'NODE_1_IP': 'Node 1',
+        'NODE_2_IP': 'Node 2',
+        'NODE_3_IP': 'Node 3',
+    }
+    for env_var, desc in ip_envs.items():
+        ip = os.getenv(env_var)
+        if not ip:
+            self.stderr.write(f"Warning: {env_var} is not set; skipping.")
+            continue
+        obj, created = ClusterIP.objects.get_or_create(
+            ip_address=ip,
+            defaults={'description': desc}
+        )
+        if created:
+            self.stdout.write(self.style.SUCCESS(f"Created ClusterIP {ip} ({desc})"))
+        else:
+            self.stdout.write(f"ClusterIP {ip} already exists; skipped.")
+
     new_domain_name = eval(kwargs['domain'])
     domain_dirname = '/kubepanel/yaml_templates/'+new_domain_name
     os.mkdir(domain_dirname)
