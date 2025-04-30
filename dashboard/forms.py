@@ -1,6 +1,7 @@
 from django import forms  
 from django.contrib.auth.hashers import make_password
 from dashboard.models import Domain, CloudflareAPIToken, DNSRecord, DNSZone, MailUser
+from passlib.hash import sha512_crypt
 
 class DomainForm(forms.ModelForm):
   class Meta:
