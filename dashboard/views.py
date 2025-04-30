@@ -776,7 +776,7 @@ def list_mail_users(request):
 @login_required
 def create_mail_user(request):
     if request.method == 'POST':
-        form = MailUserForm(request.POST)
+        form = MailUserForm(request.POST, user=request.user)
         if form.is_valid():
             # Ensure the user owns the domain (if not superuser)
             if not request.user.is_superuser:
@@ -787,7 +787,7 @@ def create_mail_user(request):
             form.save()
             return redirect("list_mail_users")
     else:
-        form = MailUserForm()
+        form = MailUserForm(user=request.user)
     return render(request, "main/create_mail_user.html", {"form": form})
 
 @login_required
