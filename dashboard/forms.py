@@ -78,19 +78,26 @@ class DNSRecordForm(forms.ModelForm):
             self.fields["zone"].queryset = DNSZone.objects.filter(token__user=user)
 
 class MailUserForm(forms.ModelForm):
-    plain_password = forms.CharField(max_length=128, widget=forms.PasswordInput(), required=True)
+    plain_password = forms.CharField(
+        max_length=128,
+        widget=forms.PasswordInput(),
+        required=True,
+        label="Password",
+    )
 
     class Meta:
         model = MailUser
         fields = ['domain', 'local_part', 'plain_password', 'active']
 
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        # if a user was passed and they're not superuser, limit domains
+        if user is not None and not user.is_superuser:
+            self.fields['domain'].queryset = Domain.objects.filter(owner=user)
+
     def save(self, commit=True):
         instance = super().save(commit=False)
-        # Use SHA512 or other crypt scheme if you want direct Dovecot compatibility:
-        # If you rely on Dovecot's "SHA512-CRYPT", you may need a custom hasher or call out to a library.
-        #
-        # For a quick fix, you can do:
-        from passlib.hash import sha512_crypt
+        # hash the password
         hashed = sha512_crypt.using(rounds=5000).hash(self.cleaned_data['plain_password'])
         instance.password = hashed
 
