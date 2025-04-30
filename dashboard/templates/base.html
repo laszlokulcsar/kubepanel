@@ -37,6 +37,13 @@
             </a>
           </li>
 
+          <li class="sidebar-item {% if request.resolver_match.url_name == 'users' %}active{% endif %}">
+            <a class="sidebar-link" href="{% url 'users' %}">
+              <i class="align-middle" data-feather="mail"></i>
+              <span class="align-middle">E-mail accounts</span>
+            </a>
+          </li>
+
           <li class="sidebar-item {% if request.resolver_match.url_name == 'livetraffic' %}active{% endif %}">
             <a class="sidebar-link" href="{% url 'livetraffic' %}">
               <i class="align-middle" data-feather="activity"></i>
