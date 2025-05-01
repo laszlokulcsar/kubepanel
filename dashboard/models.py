@@ -29,6 +29,44 @@ class Domain(models.Model):
     mem_limit = models.IntegerField(db_default=256, validators=[MinValueValidator(32), MaxValueValidator(4096)])
     nginx_config = models.TextField(default=NGINX_DEFAULT_CONFIG)
 
+    @property
+    def all_hostnames(self):
+        """
+        Returns a list of the primary domain plus any aliases
+        """
+        names = [self.domain_name]
+        names += [alias.alias_name for alias in self.aliases.all()]
+        return names
+
+    @property
+    def server_name_directive(self):
+        """
+        Returns a string for NGINX's `server_name` directive,
+        e.g. "example.com sample.com www.sample.com"
+        """
+        return " ".join(self.all_hostnames)
+
+class DomainAlias(models.Model):
+    domain = models.ForeignKey(
+        Domain,
+        on_delete=models.CASCADE,
+        related_name='aliases'
+    )
+    alias_name = models.CharField(
+        max_length=255,
+        unique=True,
+        validators=[Domain.validate_not_empty]
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Domain Alias"
+        verbose_name_plural = "Domain Aliases"
+        ordering = ['domain__domain_name', 'alias_name']
+
+    def __str__(self):
+        return f"{self.alias_name} → {self.domain.domain_name}"
+
 class Volumesnapshot(models.Model):
     def __str__(self):
         return self.snapshotname
