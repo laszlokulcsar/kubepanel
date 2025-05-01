@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from .models import MailUser, ClusterIP, DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
-from dashboard.forms import MailUserForm, DomainForm, DomainAddForm, APITokenForm, ZoneCreationForm, DNSRecordForm
+from dashboard.forms import MailUserForm, DomainForm, DomainAddForm, DomainAliasForm, APITokenForm, ZoneCreationForm, DNSRecordForm
 from django.urls import reverse
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
