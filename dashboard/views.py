@@ -752,7 +752,7 @@ def save_domain(request,domain):
           template_dir = "yaml_templates/"
           domain_dirname = '/kubepanel/yaml_templates/'+domain_instance.domain_name
           try:
-            os.mkdir(domain_dirn
+            os.mkdir(domain_dirname)
             os.mkdir('/dkim-privkeys/'+domain)
           except:
             print("Can't create directories. Please check debug logs if you think this is an error.")
