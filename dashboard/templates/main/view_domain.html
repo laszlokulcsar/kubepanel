@@ -29,22 +29,32 @@
                                         </div>
 {% endif %}
 
-<h2>Domain Aliases</h2>
-<a href="{% url 'alias_add' domain.pk %}" class="btn btn-sm btn-primary mb-2">Add Alias</a>
+                                        <div class="row">
+                                                <div class="col-12 col-lg-12 col-xxl-12 d-flex">
+                                                        <div class="card flex-fill">
+                                                                <div class="card-header">
 
-{% if domain.aliases.exists %}
-  <ul class="list-group">
-    {% for alias in domain.aliases.all %}
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-        {{ alias.alias_name }}
-        <a href="{% url 'alias_delete' alias.pk %}" class="badge badge-danger badge-pill">×</a>
-      </li>
-    {% endfor %}
-  </ul>
-{% else %}
-  <p class="text-muted">No aliases defined.</p>
-{% endif %}
+                                                                        <h5 class="card-title mb-0">Database details</h5>
+                                                                </div>
+                                                                  <h2>Domain Aliases</h2>
+                                                                  <a href="{% url 'alias_add' domain.pk %}" class="btn btn-sm btn-primary mb-2">Add Alias</a>
+                                                                  
+                                                                  {% if domain.aliases.exists %}
+                                                                    <ul class="list-group">
+                                                                      {% for alias in domain.aliases.all %}
+                                                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                                          {{ alias.alias_name }}
+                                                                          <a href="{% url 'alias_delete' alias.pk %}" class="badge badge-danger badge-pill">×</a>
+                                                                        </li>
+                                                                      {% endfor %}
+                                                                    </ul>
+                                                                  {% else %}
+                                                                    <p class="text-muted">No aliases defined.</p>
+                                                                  {% endif %}
+                                                        </div>
 
+                                                </div>
+                                        </div>
 
                                         <div class="row">
                                                 <div class="col-12 col-lg-12 col-xxl-12 d-flex">
