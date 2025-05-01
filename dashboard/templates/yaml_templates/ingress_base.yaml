@@ -8,7 +8,8 @@ metadata:
 spec:
   ingressClassName: public
   rules:
-  - host: "{{ domain_name }}"
+{% for host in domain.all_hostnames %}
+  - host: "{{ host }}"
     http:
       paths:
       - pathType: Prefix
@@ -18,7 +19,7 @@ spec:
             name: nginx
             port:
               number: 8080
-  - host: "www.{{ domain_name }}"
+  - host: "www.{{ host }}"
     http:
       paths:
       - pathType: Prefix
@@ -28,8 +29,11 @@ spec:
             name: nginx
             port:
               number: 8080
+{% endfor %}
   tls:
   - hosts:
-    - {{ domain_name }}
-    - www.{{ domain_name }}
+{% for host in domain.all_hostnames %}
+    - "{{ host }}"
+    - "www.{{ host }}"
+{% endfor %}
     secretName: {{ domain_name_dash }}-cert
