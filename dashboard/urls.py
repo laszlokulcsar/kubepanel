@@ -39,4 +39,8 @@ urlpatterns = [
     path('domain/<int:pk>/aliases/', views.alias_list,      name='alias_list'),
     path('domain/<int:pk>/aliases/add/', views.alias_add,   name='alias_add'),
     path('aliases/<int:pk>/delete/', views.alias_delete,    name='alias_delete'),
+    path('mail-aliases/',views.mail_alias_list,name='mail_alias_list'),
+    path('mail-aliases/add/',views.mail_alias_create,name='mail_alias_add'),
+    path('mail-aliases/<int:pk>/edit/',views.mail_alias_edit,name='mail_alias_edit'),
+    path('mail-aliases/<int:pk>/delete/',views.mail_alias_delete,name='mail_alias_delete'),
 ]

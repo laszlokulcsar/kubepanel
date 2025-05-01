@@ -1,6 +1,6 @@
 from django import forms  
 from django.contrib.auth.hashers import make_password
-from dashboard.models import Domain, DomainAlias, CloudflareAPIToken, DNSRecord, DNSZone, MailUser
+from dashboard.models import Domain, DomainAlias, CloudflareAPIToken, DNSRecord, DNSZone, MailUser, MailAlias
 from passlib.hash import sha512_crypt
 
 class DomainForm(forms.ModelForm):
@@ -105,6 +105,21 @@ class MailUserForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+class MailAliasForm(forms.ModelForm):
+    class Meta:
+        model = MailAlias
+        fields = ['domain', 'source', 'destination', 'active']
+        widgets = {
+            'source': forms.TextInput(attrs={'placeholder': 'alias@example.com'}),
+            'destination': forms.TextInput(attrs={'placeholder': 'user@example.com'}),
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        # limit domains for non-superusers
+        if user is not None and not user.is_superuser:
+            self.fields['domain'].queryset = Domain.objects.filter(owner=user)
 
 class DomainAliasForm(forms.ModelForm):
     class Meta:

@@ -146,6 +146,14 @@ class MailUser(models.Model):
     def email(self):
         return f"{self.local_part}@{self.domain.domain_name}"
 
+    @property
+    def aliases(self):
+        # return all active MailAlias objects that forward *to* this mailbox
+        return MailAlias.objects.filter(
+            destination__iexact=self.email,
+            active=True
+        )
+
     def __str__(self):
         return self.email
 

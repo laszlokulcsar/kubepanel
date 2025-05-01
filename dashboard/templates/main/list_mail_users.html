@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
@@ -11,7 +10,7 @@
     </div>
 
     <div class="row">
-      <div class="col-12 col-lg-12 col-xxl-12">
+      <div class="col-12">
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">Existing Mail Users</h5>
@@ -26,9 +25,8 @@
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th>Domain</th>
-                    <th>Local Part</th>
                     <th>Email Address</th>
+                    <th>Aliases</th>
                     <th>Active</th>
                     <th>Actions</th>
                   </tr>
@@ -37,9 +35,16 @@
                   {% for mu in mail_users %}
                   <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{ mu.domain.domain_name }}</td>
-                    <td>{{ mu.local_part }}</td>
                     <td>{{ mu.email }}</td>
+                    <td>
+                      {% if mu.aliases %}
+                        {% for alias in mu.aliases %}
+                          {{ alias.source }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                      {% else %}
+                        <em>No aliases</em>
+                      {% endif %}
+                    </td>
                     <td>
                       {% if mu.active %}
                         <span class="badge bg-success">Yes</span>
@@ -47,14 +52,20 @@
                         <span class="badge bg-danger">No</span>
                       {% endif %}
                     </td>
-                    <td>
-                      <!-- Edit link -->
-                      <a class="btn btn-sm btn-warning" href="{% url 'edit_mail_user' mu.id %}">
-                        <i data-feather="edit"></i> Edit
+                    <td class="d-flex gap-1">
+                      <!-- Add a new alias for this mailbox -->
+                      <a class="btn btn-sm btn-success"
+                         href="{% url 'mail_alias_add' %}?destination={{ mu.email|urlencode }}">
+                        <i data-feather="plus"></i> Add alias
                       </a>
-                      <!-- Delete link -->
-                      <a class="btn btn-sm btn-danger" href="{% url 'delete_mail_user' mu.id %}">
-                        <i data-feather="trash-2"></i> Delete
+                      <!-- existing Edit/Delete -->
+                      <a class="btn btn-sm btn-warning"
+                         href="{% url 'edit_mail_user' mu.id %}">
+                        <i data-feather="edit"></i>
+                      </a>
+                      <a class="btn btn-sm btn-danger"
+                         href="{% url 'delete_mail_user' mu.id %}">
+                        <i data-feather="trash-2"></i>
                       </a>
                     </td>
                   </tr>

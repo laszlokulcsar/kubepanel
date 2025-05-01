@@ -4,8 +4,8 @@ from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from .models import MailUser, ClusterIP, DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
-from dashboard.forms import MailUserForm, DomainForm, DomainAddForm, DomainAliasForm, APITokenForm, ZoneCreationForm, DNSRecordForm
+from .models import MailUser, MailAlias, ClusterIP, DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
+from dashboard.forms import MailUserForm, MailAliasForm, DomainForm, DomainAddForm, DomainAliasForm, APITokenForm, ZoneCreationForm, DNSRecordForm
 from django.urls import reverse
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -752,7 +752,7 @@ def save_domain(request,domain):
           template_dir = "yaml_templates/"
           domain_dirname = '/kubepanel/yaml_templates/'+domain_instance.domain_name
           try:
-            os.mkdir(domain_dirname)
+            os.mkdir(domain_dirn
             os.mkdir('/dkim-privkeys/'+domain)
           except:
             print("Can't create directories. Please check debug logs if you think this is an error.")
@@ -766,7 +766,6 @@ def save_domain(request,domain):
 
 @login_required
 def list_mail_users(request):
-    # Show only the mail accounts belonging to domains the user owns (if not superuser).
     if request.user.is_superuser:
         mail_users = MailUser.objects.all()
     else:
@@ -854,3 +853,63 @@ def alias_delete(request, pk):
         alias.delete()
         return redirect('alias_list', pk=domain.pk)
     return render(request, 'main/delete_alias.html', {'alias': alias})
+
+@login_required
+def mail_alias_list(request):
+    qs = MailAlias.objects.select_related('domain')
+    if not request.user.is_superuser:
+        qs = qs.filter(domain__owner=request.user)
+    return render(request, 'mail/mail_alias_list.html', {
+        'aliases': qs.order_by('source'),
+    })
+
+@login_required
+def mail_alias_create(request):
+    # pull ?destination=foo@bar.com from the URL
+    initial = {}
+    dest = request.GET.get('destination')
+    if dest:
+        initial['destination'] = dest
+
+    if request.method == 'POST':
+        form = MailAliasForm(request.POST, user=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect('mail_alias_list')
+    else:
+        form = MailAliasForm(initial=initial, user=request.user)
+
+    return render(request, 'mail/mail_alias_form.html', {'form': form})
+
+@login_required
+def mail_alias_edit(request, pk):
+    alias = get_object_or_404(MailAlias, pk=pk)
+    if not request.user.is_superuser and alias.domain.owner != request.user:
+        return redirect('mail_alias_list')
+
+    if request.method == 'POST':
+        form = MailAliasForm(request.POST, instance=alias, user=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect('mail_alias_list')
+    else:
+        form = MailAliasForm(instance=alias, user=request.user)
+
+    return render(request, 'mail/mail_alias_form.html', {
+        'form': form,
+        'alias': alias,
+    })
+
+@login_required
+def mail_alias_delete(request, pk):
+    alias = get_object_or_404(MailAlias, pk=pk)
+    if not request.user.is_superuser and alias.domain.owner != request.user:
+        return redirect('mail_alias_list')
+
+    if request.method == 'POST':
+        alias.delete()
+        return redirect('mail_alias_list')
+
+    return render(request, 'mail/mail_alias_confirm_delete.html', {
+        'alias': alias,
+    })

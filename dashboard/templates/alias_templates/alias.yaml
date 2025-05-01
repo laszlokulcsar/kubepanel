@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ domain_name_dash }}-ingress
+  name: ingress
   namespace: {{ domain_name_dash }}
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
@@ -36,4 +36,4 @@ spec:
     - "{{ host }}"
     - "www.{{ host }}"
 {% endfor %}
-    secretName: {{ domain_name_dash }}-tls
+    secretName: {{ domain_name_dash }}-cert
