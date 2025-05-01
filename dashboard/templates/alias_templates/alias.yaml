@@ -1,14 +1,15 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ingress
+  name: {{ domain_name_dash }}-ingress
   namespace: {{ domain_name_dash }}
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: public
   rules:
-  - host: "{{ domain_alias_name }}"
+{% for host in domain.all_hostnames %}
+  - host: "{{ host }}"
     http:
       paths:
       - pathType: Prefix
@@ -18,7 +19,7 @@ spec:
             name: nginx
             port:
               number: 8080
-  - host: "www.{{ domain_alias_name }}"
+  - host: "www.{{ host }}"
     http:
       paths:
       - pathType: Prefix
@@ -28,8 +29,11 @@ spec:
             name: nginx
             port:
               number: 8080
+{% endfor %}
   tls:
   - hosts:
-    - {{ domain_alias_name }}
-    - www.{{ domain_alias_name }}
-    secretName: {{ domain_name_dash }}-cert
+{% for host in domain.all_hostnames %}
+    - "{{ host }}"
+    - "www.{{ host }}"
+{% endfor %}
+    secretName: {{ domain_name_dash }}-tls

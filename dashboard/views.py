@@ -833,7 +833,7 @@ def alias_add(request, pk):
             alias.domain = domain
             alias.save()
             domain_dirname = '/kubepanel/yaml_templates/'+alias.alias_name
-            context = { "domain_alias_name" : alias.alias_name, "domain_name_dash" : domain.domain_name.replace(".","-")}
+            context = { "domain" : domain, "domain_name_dash" : domain.domain_name.replace(".","-")}
             template_dir = "alias_templates/"
             try:
               os.mkdir(domain_dirname)
