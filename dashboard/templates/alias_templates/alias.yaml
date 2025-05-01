@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: public
   rules:
-  - host: "{{ domain_name }}"
+  - host: "{{ domain_alias_name }}"
     http:
       paths:
       - pathType: Prefix
@@ -18,7 +18,7 @@ spec:
             name: nginx
             port:
               number: 8080
-  - host: "www.{{ domain_name }}"
+  - host: "www.{{ domain_alias_name }}"
     http:
       paths:
       - pathType: Prefix
@@ -30,6 +30,6 @@ spec:
               number: 8080
   tls:
   - hosts:
-    - {{ domain_name }}
-    - www.{{ domain_name }}
+    - {{ domain_alias_name }}
+    - www.{{ domain_alias_name }}
     secretName: {{ domain_name_dash }}-cert

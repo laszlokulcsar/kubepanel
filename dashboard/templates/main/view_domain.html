@@ -36,7 +36,6 @@
 
                                                                         <h5 class="card-title mb-0">Domain Aliases</h5>
                                                                 </div>
-                                                                  <a href="{% url 'alias_add' domain.pk %}" class="btn btn-sm btn-primary mb-2">Add Alias</a>
                                                                   
                                                                   {% if domain.aliases.exists %}
                                                                     <ul class="list-group">
@@ -50,6 +49,8 @@
                                                                   {% else %}
                                                                     <p class="text-muted">No aliases defined.</p>
                                                                   {% endif %}
+
+                                                                  <a href="{% url 'alias_add' domain.pk %}" class="btn btn-sm btn-primary mb-2">Add Alias</a>
                                                         </div>
 
                                                 </div>

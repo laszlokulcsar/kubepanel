@@ -832,6 +832,10 @@ def alias_add(request, pk):
             alias = form.save(commit=False)
             alias.domain = domain
             alias.save()
+            domain_dirname = '/kubepanel/yaml_templates/'+alias.domain
+            context = { "domain_alias_name" : alias.domain, "domain_name_dash" : domain.domain_name.replace(".","-")}
+            template_dir = "alias_templates/"
+            iterate_input_templates(template_dir,domain_dirname,context)
             return redirect('alias_list', pk=domain.pk)
     else:
         form = DomainAliasForm()
