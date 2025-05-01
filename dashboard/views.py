@@ -875,7 +875,7 @@ def mail_alias_create(request):
         form = MailAliasForm(request.POST, user=request.user)
         if form.is_valid():
             form.save()
-            return redirect('mail_alias_list')
+            return redirect('list_mail_users')
     else:
         form = MailAliasForm(initial=initial, user=request.user)
 
