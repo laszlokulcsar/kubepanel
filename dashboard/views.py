@@ -859,7 +859,7 @@ def mail_alias_list(request):
     qs = MailAlias.objects.select_related('domain')
     if not request.user.is_superuser:
         qs = qs.filter(domain__owner=request.user)
-    return render(request, 'mail/mail_alias_list.html', {
+    return render(request, 'main/mail_alias_list.html', {
         'aliases': qs.order_by('source'),
     })
 
@@ -879,7 +879,7 @@ def mail_alias_create(request):
     else:
         form = MailAliasForm(initial=initial, user=request.user)
 
-    return render(request, 'mail/mail_alias_form.html', {'form': form})
+    return render(request, 'main/mail_alias_form.html', {'form': form})
 
 @login_required
 def mail_alias_edit(request, pk):
@@ -895,7 +895,7 @@ def mail_alias_edit(request, pk):
     else:
         form = MailAliasForm(instance=alias, user=request.user)
 
-    return render(request, 'mail/mail_alias_form.html', {
+    return render(request, 'main/mail_alias_form.html', {
         'form': form,
         'alias': alias,
     })
@@ -910,6 +910,6 @@ def mail_alias_delete(request, pk):
         alias.delete()
         return redirect('mail_alias_list')
 
-    return render(request, 'mail/mail_alias_confirm_delete.html', {
+    return render(request, 'main/mail_alias_confirm_delete.html', {
         'alias': alias,
     })
