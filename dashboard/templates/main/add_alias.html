@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Add Alias to {{ domain.domain_name }}</h1>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <div class="form-group">
+    {{ form.alias_name.label_tag }}
+    {{ form.alias_name }}
+    {{ form.alias_name.errors }}
+  </div>
+  <button type="submit" class="btn btn-success">Create</button>
+  <a href="{% url 'alias_list' domain.pk %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}
+

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+                        <main class="content">
+                                <div class="container-fluid p-0">
+
+                                        <h1 class="h3 mb-3"><strong>Domain</strong> list</h1>
+                                        <div class="row">
+                                                <div class="col-12 col-lg-12 col-xxl-12 d-flex">
+                                                        <div class="card flex-fill">
+                                                                <div class="card-header">
+
+                                                                        <h5 class="card-title mb-0">Domain List</h5>
+                                                                </div>
+                                                                <table class="table table-hover my-0">
+                                                                        <thead>
+                                                                                <tr>
+                                                                                        <th>Name</th>
+                                                                                        <th class="d-none d-xl-table-cell">SFTP port</th>
+                                                                                        <th>Filesystem backups</th>
+                                                                                        <th>Status</th>
+                                                                                        <th class="d-none d-md-table-cell">Actions</th>
+                                                                                </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                                {% for domain in domains.all %}
+                                                                                <tr>
+                                                                                        <td>{{ domain.domain_name }}</td>
+                                                                                        <td class="d-none d-xl-table-cell">{{ domain.scp_port  }}</td>
+                                                                                        <td><a href="{% url 'volumesnapshots' domain=domain.domain_name %}"><button class="btn btn-success">Show Backups</button></a><a href="{% url 'start_backup' domain=domain.domain_name %}"><button class="btn btn-info">Create Backup</button></a></td>
+                                  							<td>{{ domain.status|safe }}</td>
+                                                                                        <td class="d-none d-md-table-cell"><a href="{% url 'view_domain' domain=domain.domain_name %}"><button class="btn btn-success">View</button></a> <a href="{% url 'startstop_domain' domain=domain.domain_name action="start" %}"><button class="btn btn-success">Start</button></a> <a href="{% url 'startstop_domain' domain=domain.domain_name action="stop" %}"><button class="btn btn-warning">Pause</button></a>   <a href="{% url 'delete_domain' domain=domain.domain_name %}"><button class="btn btn-danger">Delete</button></a></td>
+                                                                                </tr>
+                                                                                {% endfor %}
+                                                                        </tbody>
+                                                                </table>
+                                                                        <div class="d-grid">
+                                                                                <a href="add_domain" class="btn btn-primary">
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
+                                                                                  <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                                                                                </svg>
+                                                                                Add new domain</a>
+                                                                        </div>
+                                                        </div>
+                                                </div>
+                                        </div>
+
+                                </div>
+                        </main>
+{% endblock %}

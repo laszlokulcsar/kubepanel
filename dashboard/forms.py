@@ -1,6 +1,6 @@
 from django import forms  
 from django.contrib.auth.hashers import make_password
-from dashboard.models import Domain, CloudflareAPIToken, DNSRecord, DNSZone, MailUser
+from dashboard.models import Domain, DomainAlias, CloudflareAPIToken, DNSRecord, DNSZone, MailUser
 from passlib.hash import sha512_crypt
 
 class DomainForm(forms.ModelForm):
@@ -105,3 +105,11 @@ class MailUserForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+class DomainAliasForm(forms.ModelForm):
+    class Meta:
+        model = DomainAlias
+        fields = ['alias_name']
+        widgets = {
+            'alias_name': forms.TextInput(attrs={'placeholder': 'e.g. sample.com'}),
+        }

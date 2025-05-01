@@ -817,3 +817,31 @@ def delete_mail_user(request, user_id):
         return redirect("list_mail_users")
     return render(request, "mail/delete_mail_user.html", {"mail_user": mail_user})
 
+@login_required
+def alias_list(request, pk):
+    domain = get_object_or_404(Domain, pk=pk)
+    aliases = domain.aliases.order_by('created_at')
+    return render(request, 'main/list_aliases.html', {'domain': domain, 'aliases': aliases})
+
+@login_required
+def alias_add(request, pk):
+    domain = get_object_or_404(Domain, pk=pk)
+    if request.method == 'POST':
+        form = DomainAliasForm(request.POST)
+        if form.is_valid():
+            alias = form.save(commit=False)
+            alias.domain = domain
+            alias.save()
+            return redirect('alias_list', pk=domain.pk)
+    else:
+        form = DomainAliasForm()
+    return render(request, 'main/add_alias.html', {'domain': domain, 'form': form})
+
+@login_required
+def alias_delete(request, pk):
+    alias = get_object_or_404(DomainAlias, pk=pk)
+    domain = alias.domain
+    if request.method == 'POST':
+        alias.delete()
+        return redirect('alias_list', pk=domain.pk)
+    return render(request, 'main/delete_alias.html', {'alias': alias})
