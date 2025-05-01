@@ -835,6 +835,11 @@ def alias_add(request, pk):
             domain_dirname = '/kubepanel/yaml_templates/'+alias.alias_name
             context = { "domain_alias_name" : alias.alias_name, "domain_name_dash" : domain.domain_name.replace(".","-")}
             template_dir = "alias_templates/"
+            try:
+              os.mkdir(domain_dirname)
+              os.mkdir('/dkim-privkeys/'+new_domain_name)
+            except:
+              print("Can't create directories. Please check debug logs if you think this is an error.")
             iterate_input_templates(template_dir,domain_dirname,context)
             return redirect('alias_list', pk=domain.pk)
     else:
