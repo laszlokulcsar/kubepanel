@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>{% if alias %}Edit{% else %}Add{% endif %} Alias</h1>
+  <form method="post">{% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-success">{% if alias %}Save{% else %}Create{% endif %}</button>
+    <a href="{% url 'alias_list' %}" class="btn btn-secondary">Cancel</a>
+  </form>
+{% endblock %}
+
