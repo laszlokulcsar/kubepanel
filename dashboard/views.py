@@ -792,6 +792,7 @@ def create_mail_user(request):
 @login_required
 def edit_mail_user(request, user_id):
     mail_user = get_object_or_404(MailUser, pk=user_id)
+    aliases   = MailAlias.objects.filter(destination__iexact=mail_user.email)
     if not request.user.is_superuser and mail_user.domain.owner != request.user:
         return render(request, "main/error.html", {"error": "Permission denied."})
 
@@ -803,7 +804,7 @@ def edit_mail_user(request, user_id):
     else:
         # Initialize form with existing mail user data
         form = MailUserForm(instance=mail_user)
-    return render(request, "main/edit_mail_user.html", {"form": form})
+    return render(request, "main/edit_mail_user.html", {"form": form, 'mail_user': mail_user, 'aliases': aliases,})
 
 @login_required
 def delete_mail_user(request, user_id):
