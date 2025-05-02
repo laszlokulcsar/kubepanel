@@ -196,7 +196,8 @@ def blocked_objects(request):
     all_blocks = BlockRule.objects.all().order_by('-created_at')
 
     paginator = Paginator(all_blocks, 100)  # Adjust the number of items per page as needed
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
 
     if request.method == 'POST' and 'generate_rules' in request.POST:
         rules = render_modsec_rules()
