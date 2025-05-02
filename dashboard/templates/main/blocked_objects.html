@@ -102,14 +102,17 @@
                   </li>
                   {% endif %}
                 {% endfor %}
-
-                <!-- Next Page -->
-                <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
-                  <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next &rsaquo;</a>
-                </li>
-                <!-- Last Page -->
-                <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
-                  <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next &rsaquo;</a>
+      </li>
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Next &rsaquo;</span></li>
+      <li class="page-item disabled"><span class="page-link">Last &raquo;</span></li>
+    {% endif %}
                 </li>
               </ul>
             </nav>
