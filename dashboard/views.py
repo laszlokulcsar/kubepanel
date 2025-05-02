@@ -905,11 +905,11 @@ def mail_alias_edit(request, pk):
 def mail_alias_delete(request, pk):
     alias = get_object_or_404(MailAlias, pk=pk)
     if not request.user.is_superuser and alias.domain.owner != request.user:
-        return redirect('mail_alias_list')
+        return redirect('list_mail_users')
 
     if request.method == 'POST':
         alias.delete()
-        return redirect('mail_alias_list')
+        return redirect('list_mail_users')
 
     return render(request, 'main/mail_alias_confirm_delete.html', {
         'alias': alias,
