@@ -266,7 +266,7 @@ def generate_modsec_rule(br: BlockRule) -> str:
         var, val = conditions[0]
         return (
             f'SecRule {var} "@streq {val}" '
-            f'"phase:1,id:{rule_id},deny,msg:\'{msg_string}\'"'
+            f'"phase:1,id:{rule_id},deny,msg:\"{msg_string}\""'
         )
 
     rule_lines = []
@@ -274,7 +274,7 @@ def generate_modsec_rule(br: BlockRule) -> str:
     first_var, first_val = conditions[0]
     rule_lines.append(
         f'SecRule {first_var} "@streq {first_val}" '
-        f'"phase:1,id:{rule_id},deny,chain,msg:\'{msg_string}\'"'
+        f'"phase:1,id:{rule_id},deny,chain,msg:\"{msg_string}\""'
     )
 
     for var, val in conditions[1:-1]:
