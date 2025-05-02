@@ -15,7 +15,7 @@ spec:
                 app: opendkim # because opendkim is running on the same node as kubepanel. Fix this later
             topologyKey: "kubernetes.io/hostname"
       containers:
-      - name: dbclient
+      - name: db-client
         env:
         - name: MARIADB_ROOT_PASSWORD
           valueFrom:
@@ -26,7 +26,7 @@ spec:
           value: "{{ domain_name_underscore }}"
         - name: DBNAME
           value: "{{ domain_name_underscore }}"
-        image: laszlokulcsar/dbclient:v0.1
+        image: laszlokulcsar/db-client:v0.1
         imagePullPolicy: Always
         command:
           - /bin/bash

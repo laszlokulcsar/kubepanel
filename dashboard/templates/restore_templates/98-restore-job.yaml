@@ -23,7 +23,7 @@ spec:
           value: "{{ domain_name_underscore }}"
         - name: DBNAME
           value: "{{ domain_name_underscore }}"
-        image: laszlokulcsar/dbclient:v0.1
+        image: laszlokulcsar/db-client:v0.1
         imagePullPolicy: Always
         volumeMounts:
         - name: backup

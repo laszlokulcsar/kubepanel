@@ -7,7 +7,7 @@ spec:
   template:
     spec:
       containers:
-      - name: dbclient
+      - name: db-client
         env:
         - name: MARIADB_ROOT_PASSWORD
           valueFrom:
@@ -20,7 +20,7 @@ spec:
           value: "{{ domain_instance.mariadb_user }}"
         - name: DBPASS
           value: "{{ domain_instance.mariadb_pass }}"
-        image: laszlokulcsar/dbclient:v0.1
+        image: laszlokulcsar/db-client:v0.1
         imagePullPolicy: Always
         command: ["/bin/bash"]
         args: ["/create_db.sh"]
