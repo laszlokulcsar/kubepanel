@@ -121,6 +121,34 @@ class MailAliasForm(forms.ModelForm):
         if user is not None and not user.is_superuser:
             self.fields['domain'].queryset = Domain.objects.filter(owner=user)
 
+    def clean_source(self):
+        src = self.cleaned_data.get('source', '').strip()
+        if '@' not in src:
+            raise ValidationError("Enter a valid email address for the alias source.")
+        local, domain_part = src.rsplit('@', 1)
+        domain_obj = self.cleaned_data.get('domain')
+        # sanity: must have picked a domain
+        if not domain_obj:
+            return src
+
+        # check user actually owns this domain
+        if not self.user.is_superuser and domain_obj.owner != self.user:
+            raise ValidationError("You don’t have permission to make aliases on that domain.")
+
+        # gather allowed hostnames: the real domain + any of its DomainAlias entries
+        allowed = { domain_obj.domain_name.lower() }
+        allowed |= set(
+            DomainAlias.objects
+                .filter(domain=domain_obj)
+                .values_list('alias_name', flat=True)
+        )
+
+        if domain_part.lower() not in allowed:
+            raise ValidationError(
+                "The domain part of the alias must be one you control (either the domain itself or one of its aliases)."
+            )
+        return src
+
 class DomainAliasForm(forms.ModelForm):
     class Meta:
         model = DomainAlias
