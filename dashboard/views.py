@@ -609,7 +609,7 @@ def startstop_domain(request,domain,action):
           permission_valid = Domain.objects.get(owner=request.user, domain_name = domain)
         except:
           return HttpResponse("Permission denied.")
-        if permission_valid:
+        if permission_valid or request.user.is_superuser:
           host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
           port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
           namespace = domain.replace(".","-")
