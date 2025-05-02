@@ -210,7 +210,7 @@ def blocked_objects(request):
         except:
           print("Can't create directories. Please check debug logs if you think this is an error.")
         iterate_input_templates(template_dir,domain_dirname,context)
-        return render(request, 'main/in_progress.html')
+        return render(request, 'main/blocked_objects.html')
 
     return render(request, 'main/blocked_objects.html', {'page_obj': page_obj})
 
@@ -230,7 +230,7 @@ def block_entry(request, vhost, x_forwarded_for, path):
             block_vhost = block_vhost,
             block_path = block_path
         )
-        return render(request, 'main/in_progress.html')
+        return render(request, 'main/blocked_objects.html')
     else:
         context = {
             'vhost': vhost,
@@ -923,3 +923,130 @@ def firewall_rule_delete(request, pk):
         block.delete()
         messages.success(request, f"Deleted rule #{pk}.")
     return redirect('blocked_objects')  # name of your list‐view URL
+
+
+def _load_k8s_auth():
+    host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
+    port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
+    token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    ca_cert   = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+
+    try:
+        token = open(token_path).read().strip()
+    except FileNotFoundError:
+        raise RuntimeError("Kubernetes token file not found")
+
+    base = f"https://{host}:{port}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    return base, headers, ca_cert
+
+@login_required
+def node_list(request):
+    if not request.user.is_superuser:
+        return redirect("node_list")  # or 403
+
+    try:
+        base, headers, verify = _load_k8s_auth()
+        resp = requests.get(f"{base}/api/v1/nodes", headers=headers, verify=verify)
+        resp.raise_for_status()
+        items = resp.json().get("items", [])
+    except Exception as e:
+        messages.error(request, f"Failed to list nodes: {e}")
+        items = []
+
+    nodes = []
+    for item in items:
+        # pick InternalIP if present
+        addrs = item["status"].get("addresses", [])
+        ip = next((a["address"] for a in addrs if a["type"]=="InternalIP"), None)
+        ip = ip or (addrs[0]["address"] if addrs else "–")
+
+        conds = {c["type"]: c["status"] for c in item["status"].get("conditions", [])}
+        ready = conds.get("Ready") == "True"
+        unsched = item["spec"].get("unschedulable", False)
+
+        status = "Ready" if ready and not unsched else (
+                 "Unschedulable" if unsched else "NotReady"
+        )
+        nodes.append({
+            "name":       item["metadata"]["name"],
+            "ip":         ip,
+            "start_time": item["metadata"]["creationTimestamp"],
+            "status":     status,
+        })
+
+    return render(request, "main/node_list.html", {"nodes": nodes})
+
+@login_required
+def node_detail(request, name):
+    if not request.user.is_superuser:
+        return redirect("node_list")
+
+    try:
+        base, headers, verify = _load_k8s_auth()
+        # get node object
+        r_node = requests.get(f"{base}/api/v1/nodes/{name}", headers=headers, verify=verify)
+        r_node.raise_for_status()
+        node = r_node.json()
+
+        # get events for this node
+        sel = f"involvedObject.kind=Node,involvedObject.name={name}"
+        r_evt = requests.get(f"{base}/api/v1/events?fieldSelector={sel}",
+                             headers=headers, verify=verify)
+        r_evt.raise_for_status()
+        events = r_evt.json().get("items", [])
+    except Exception as e:
+        messages.error(request, f"Failed to fetch node detail: {e}")
+        node, events = None, []
+
+    return render(request, "main/node_detail.html", {
+        "node":   node,
+        "events": events,
+    })
+
+
+@login_required
+def node_drain(request, name):
+    if not request.user.is_superuser:
+        return redirect("node_list")
+
+    if request.method == "POST":
+        try:
+            base, headers, verify = _load_k8s_auth()
+            # 1) cordon the node
+            patch = {"spec": {"unschedulable": True}}
+            r1 = requests.patch(
+                f"{base}/api/v1/nodes/{name}",
+                json=patch, headers=headers, verify=verify
+            )
+            r1.raise_for_status()
+
+            # 2) list pods on that node
+            sel_pods = f"spec.nodeName={name}"
+            r2 = requests.get(f"{base}/api/v1/pods?fieldSelector={sel_pods}",
+                              headers=headers, verify=verify)
+            r2.raise_for_status()
+            pods = r2.json().get("items", [])
+
+            # 3) evict each pod
+            for p in pods:
+                ns  = p["metadata"]["namespace"]
+                pod = p["metadata"]["name"]
+                eviction_body = {
+                    "apiVersion": "policy/v1",
+                    "kind":       "Eviction",
+                    "metadata": {"name": pod, "namespace": ns}
+                }
+                ev_url = f"{base}/api/v1/namespaces/{ns}/pods/{pod}/eviction"
+                re = requests.post(ev_url, json=eviction_body,
+                                   headers=headers, verify=verify)
+                # best‐effort: ignore failures per‐pod
+
+            messages.success(request, f"Node {name} cordoned and pods evicted.")
+        except Exception as e:
+            messages.error(request, f"Drain failed: {e}")
+
+    return redirect("node_detail", name=name)

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<main class="content">
+  <div class="container-fluid p-0">
+    <!-- Header -->
+    <div class="row mb-3">
+      <div class="col-12 d-flex justify-content-between align-items-center">
+        <h1 class="h3"><strong>Node Details:</strong> {{ node.metadata.name }}</h1>
+        <a href="{% url 'node_list' %}" class="btn btn-secondary">
+          <i data-feather="chevron-left"></i> Back
+        </a>
+      </div>
+    </div>
+    <div class="row">
+      <!-- Basic info card -->
+      <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">General</h5>
+            <dl class="row">
+              <dt class="col-sm-4">Name</dt><dd class="col-sm-8">{{ node.metadata.name }}</dd>
+              <dt class="col-sm-4">Labels</dt>
+              <dd class="col-sm-8">
+                {% for key, val in node.metadata.labels.items %}
+                  <span class="badge bg-light text-dark">{{ key }}={{ val }}</span>
+                {% empty %}
+                  <em>None</em>
+                {% endfor %}
+              </dd>
+              <dt class="col-sm-4">Creation Time</dt>
+              <dd class="col-sm-8">{{ node.metadata.creation_timestamp }}</dd>
+              <dt class="col-sm-4">Unschedulable</dt>
+              <dd class="col-sm-8">{{ node.spec.unschedulable|yesno:"Yes,No" }}</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+      <!-- Conditions & Capacity -->
+      <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">Status & Capacity</h5>
+            <dl class="row">
+              <dt class="col-sm-4">Conditions</dt>
+              <dd class="col-sm-8">
+                {% for cond in node.status.conditions %}
+                  <strong>{{ cond.type }}:</strong> {{ cond.status }}<br/>
+                {% endfor %}
+              </dd>
+              <dt class="col-sm-4">CPU</dt>
+              <dd class="col-sm-8">{{ node.status.capacity.cpu }}</dd>
+              <dt class="col-sm-4">Memory</dt>
+              <dd class="col-sm-8">{{ node.status.capacity.memory }}</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Events table -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Recent Events</h5>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Type</th><th>Reason</th><th>Message</th><th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ev in events %}
+                <tr>
+                  <td>{{ ev.type }}</td>
+                  <td>{{ ev.reason }}</td>
+                  <td>{{ ev.message }}</td>
+                  <td>{{ ev.last_timestamp }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">No recent events.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}
+

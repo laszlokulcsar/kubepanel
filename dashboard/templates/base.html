@@ -65,6 +65,14 @@
             </a>
           </li>
 
+          <li class="sidebar-item {% if request.resolver_match.url_name|slice:':5' == 'node_'  %}active{% endif %}">
+            <a class="sidebar-link" href="{% url 'node_list' %}">
+              <i class="align-middle" data-feather="server"></i>
+              <span class="align-middle">Node management</span>
+            </a>
+          </li>
+
+
           <li class="sidebar-item {% if request.resolver_match.url_name == 'list_api_tokens' %}active{% endif %}">
             <a class="sidebar-link" href="{% url 'list_api_tokens' %}">
               <i class="align-middle" data-feather="key"></i>
