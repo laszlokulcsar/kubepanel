@@ -117,6 +117,7 @@ class MailAliasForm(forms.ModelForm):
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.user = user
         # limit domains for non-superusers
         if user is not None and not user.is_superuser:
             self.fields['domain'].queryset = Domain.objects.filter(owner=user)
