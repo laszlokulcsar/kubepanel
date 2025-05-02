@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<main class="content">
+  <div class="container-fluid p-0">
+    <!-- Page header -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <h1 class="h3"><strong>Delete Mail Alias</strong></h1>
+      </div>
+    </div>
+
+    <!-- Confirmation card -->
+    <div class="row">
+      <div class="col-12 col-md-8 col-lg-6">
+        <div class="card">
+          <div class="card-body">
+            <p>Are you sure you want to delete the alias <strong>{{ alias.source }}</strong> → <strong>{{ alias.destination }}</strong>?</p>
+            <form method="post">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger">
+                <i data-feather="trash-2"></i> Yes, delete alias
+              </button>
+              <a href="{% url 'mail_alias_list' %}" class="btn btn-secondary ms-2">
+                <i data-feather="chevron-left"></i> Cancel
+              </a>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
