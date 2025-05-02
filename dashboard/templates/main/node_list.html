@@ -3,12 +3,12 @@
 {% block content %}
 <main class="content">
   <div class="container-fluid p-0">
-    <!-- Page title -->
     <div class="row mb-3">
       <div class="col-12">
         <h1 class="h3"><strong>Node Management</strong></h1>
       </div>
     </div>
+
     <div class="row">
       <div class="col-12">
         <div class="card">
@@ -23,7 +23,7 @@
                     <th>IP Address</th>
                     <th>Start Time</th>
                     <th>Status</th>
-                    <th>Details</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -43,10 +43,33 @@
                       {% endif %}
                     </td>
                     <td>
-                      <a href="{% url 'node_detail' node.name %}"
-                         class="btn btn-sm btn-primary">
-                        <i data-feather="eye"></i> View
-                      </a>
+                      <div class="btn-group" role="group">
+                        <!-- Cordon -->
+                        <form method="post"
+                              action="{% url 'node_cordon' node.name %}"
+                              onsubmit="return confirm('Cordon node {{ node.name }}?');">
+                          {% csrf_token %}
+                          <button type="submit" class="btn btn-sm btn-outline-warning">
+                            <i data-feather="slash"></i>
+                          </button>
+                        </form>
+
+                        <!-- Drain -->
+                        <form method="post"
+                              action="{% url 'node_drain' node.name %}"
+                              onsubmit="return confirm('Drain node {{ node.name }}? Pods will be evicted.');">
+                          {% csrf_token %}
+                          <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i data-feather="zap"></i>
+                          </button>
+                        </form>
+
+                        <!-- Detail -->
+                        <a href="{% url 'node_detail' node.name %}"
+                           class="btn btn-sm btn-outline-primary">
+                          <i data-feather="eye"></i>
+                        </a>
+                      </div>
                     </td>
                   </tr>
                   {% endfor %}

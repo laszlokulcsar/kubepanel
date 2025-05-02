@@ -1049,4 +1049,27 @@ def node_drain(request, name):
         except Exception as e:
             messages.error(request, f"Drain failed: {e}")
 
-    return redirect("node_detail", name=name)
+    return redirect("node_list")
+
+@login_required
+def node_cordon(request, name):
+    """
+    Mark the node Unschedulable (cordon) and redirect back to the list.
+    """
+    if not request.user.is_superuser:
+        return redirect('node_list')
+
+    if request.method == "POST":
+        try:
+            base, headers, verify = _load_k8s_auth()
+            patch = {"spec": {"unschedulable": True}}
+            resp = requests.patch(
+                f"{base}/api/v1/nodes/{name}",
+                json=patch, headers=headers, verify=verify
+            )
+            resp.raise_for_status()
+            messages.success(request, f"Node {name} cordoned successfully.")
+        except Exception as e:
+            messages.error(request, f"Cordon failed: {e}")
+
+    return redirect('node_list')
