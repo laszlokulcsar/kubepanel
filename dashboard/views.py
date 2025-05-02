@@ -914,3 +914,12 @@ def mail_alias_delete(request, pk):
     return render(request, 'main/mail_alias_confirm_delete.html', {
         'alias': alias,
     })
+
+@login_required
+def firewall_rule_delete(request, pk):
+    block = get_object_or_404(BlockRule, pk=pk)
+
+    if request.method == 'POST':
+        block.delete()
+        messages.success(request, f"Deleted rule #{pk}.")
+    return redirect('blocked_objects')  # name of your list‐view URL

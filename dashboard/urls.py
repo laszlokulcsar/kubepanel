@@ -43,4 +43,5 @@ urlpatterns = [
     path('mail-aliases/add/',views.mail_alias_create,name='mail_alias_add'),
     path('mail-aliases/<int:pk>/edit/',views.mail_alias_edit,name='mail_alias_edit'),
     path('mail-aliases/<int:pk>/delete/',views.mail_alias_delete,name='mail_alias_delete'),
+    path('firewall-rules/<int:pk>/delete/', views.firewall_rule_delete, name='firewall_rule_delete')
 ]
