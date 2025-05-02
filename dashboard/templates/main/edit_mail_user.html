@@ -3,58 +3,112 @@
 {% block content %}
 <main class="content">
   <div class="container-fluid p-0">
-    <div class="row">
+    <!-- Page title -->
+    <div class="row mb-4">
       <div class="col-12">
-        <h1 class="h3 mb-3"><strong>Edit Mail User</strong></h1>
+        <h1 class="h3"><strong>Edit Mail User</strong></h1>
       </div>
     </div>
 
     <div class="row">
-      <div class="col-12 col-lg-12 col-xxl-12">
-        <div class="card">
+      <!-- Form card -->
+      <div class="col-lg-6 mb-4">
+        <div class="card h-100">
           <div class="card-header">
-            <h5 class="card-title mb-0">Update Mail User Information</h5>
+            <h5 class="card-title mb-0">Update Mail User</h5>
           </div>
           <div class="card-body">
-            <!-- The action URL should match your 'edit_mail_user' route, 
-                 e.g., /users/<user_id>/edit/ -->
-            <form action="" method="post">
+            <form method="post">
               {% csrf_token %}
 
-              <!--
-                Because we’re using a form instance (e.g., MailUserForm(instance=mail_user)),
-                the fields will be pre-populated with the user’s data.
-              -->
-
-              <div class="mb-3">
-                <label for="id_domain" class="form-label">Domain</label>
-                {{ form.domain }}
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="id_domain" class="form-label">Domain</label>
+                  {{ form.domain }}
+                </div>
+                <div class="col-md-6">
+                  <label for="id_local_part" class="form-label">Local Part</label>
+                  {{ form.local_part }}
+                </div>
               </div>
 
-              <div class="mb-3">
-                <label for="id_local_part" class="form-label">Local Part (username)</label>
-                {{ form.local_part }}
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="id_plain_password" class="form-label">Password</label>
+                  {{ form.plain_password }}
+                </div>
+                <div class="col-md-6 d-flex align-items-center">
+                  <div class="form-check mt-4">
+                    {{ form.active }}
+                    <label for="id_active" class="form-check-label ms-2">Active</label>
+                  </div>
+                </div>
               </div>
 
-              <div class="mb-3">
-                <label for="id_plain_password" class="form-label">Password</label>
-                <!--
-                  If you want to let users update the password, keep this field.
-                  If you only want them to change it conditionally, you could make
-                  it optional or show a "Change Password" checkbox. 
-                -->
-                {{ form.plain_password }}
-              </div>
-
-              <div class="form-check mb-3">
-                {{ form.active }}
-                <label for="id_active" class="form-check-label">Active</label>
-              </div>
-
-              <button class="btn btn-primary" type="submit">
-                <i data-feather="save"></i> Update Mail User
+              <button type="submit" class="btn btn-primary">
+                <i data-feather="save"></i> Save Changes
               </button>
+              <a href="{% url 'list_mail_users' %}" class="btn btn-secondary ms-2">
+                <i data-feather="chevron-left"></i> Cancel
+              </a>
             </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aliases card -->
+      <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Email Aliases for {{ mail_user.email }}</h5>
+          </div>
+          <div class="card-body">
+
+            {% if aliases %}
+              <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Source</th>
+                      <th>Destination</th>
+                      <th>Active</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for alias in aliases %}
+                    <tr>
+                      <td>{{ forloop.counter }}</td>
+                      <td>{{ alias.source }}</td>
+                      <td>{{ alias.destination }}</td>
+                      <td>
+                        {% if alias.active %}
+                          <span class="badge bg-success">Yes</span>
+                        {% else %}
+                          <span class="badge bg-danger">No</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        <a href="{% url 'mail_alias_delete' alias.pk %}" 
+                           class="btn btn-sm btn-outline-danger">
+                          <i data-feather="trash-2"></i>
+                        </a>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted mb-3">No aliases defined for this user.</p>
+            {% endif %}
+
+            <a href="{% url 'mail_alias_add' %}?destination={{ mail_user.email|urlencode }}"
+               class="btn btn-sm btn-primary">
+              <i data-feather="plus"></i> Add Alias
+            </a>
+
           </div>
         </div>
       </div>
