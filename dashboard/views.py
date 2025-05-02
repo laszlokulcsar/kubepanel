@@ -814,7 +814,7 @@ def delete_mail_user(request, user_id):
     if request.method == 'POST':
         mail_user.delete()
         return redirect("list_mail_users")
-    return render(request, "mail/delete_mail_user.html", {"mail_user": mail_user})
+    return render(request, "main/delete_mail_user.html", {"mail_user": mail_user})
 
 @login_required
 def alias_list(request, pk):
