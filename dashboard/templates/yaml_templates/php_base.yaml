@@ -47,6 +47,9 @@ spec:
           limits:
             cpu: "{{ domain_instance.cpu_limit }}m"
             memory: "{{ domain_instance.mem_limit }}Mi"
+          requests:
+            cpu: 32m
+            memory: 64Mi
         imagePullPolicy: Always
         ports:
         - containerPort: 9001
