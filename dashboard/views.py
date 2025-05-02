@@ -924,7 +924,6 @@ def firewall_rule_delete(request, pk):
         messages.success(request, f"Deleted rule #{pk}.")
     return redirect('blocked_objects')  # name of your list‐view URL
 
-
 def _load_k8s_auth():
     host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
     port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
@@ -939,7 +938,7 @@ def _load_k8s_auth():
     base = f"https://{host}:{port}"
     headers = {
         "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
+        # we'll override Content-Type when patching
     }
     return base, headers, ca_cert
 
@@ -1007,69 +1006,105 @@ def node_detail(request, name):
         "events": events,
     })
 
-
-@login_required
-def node_drain(request, name):
-    if not request.user.is_superuser:
-        return redirect("node_list")
-
-    if request.method == "POST":
-        try:
-            base, headers, verify = _load_k8s_auth()
-            # 1) cordon the node
-            patch = {"spec": {"unschedulable": True}}
-            r1 = requests.patch(
-                f"{base}/api/v1/nodes/{name}",
-                json=patch, headers=headers, verify=verify
-            )
-            r1.raise_for_status()
-
-            # 2) list pods on that node
-            sel_pods = f"spec.nodeName={name}"
-            r2 = requests.get(f"{base}/api/v1/pods?fieldSelector={sel_pods}",
-                              headers=headers, verify=verify)
-            r2.raise_for_status()
-            pods = r2.json().get("items", [])
-
-            # 3) evict each pod
-            for p in pods:
-                ns  = p["metadata"]["namespace"]
-                pod = p["metadata"]["name"]
-                eviction_body = {
-                    "apiVersion": "policy/v1",
-                    "kind":       "Eviction",
-                    "metadata": {"name": pod, "namespace": ns}
-                }
-                ev_url = f"{base}/api/v1/namespaces/{ns}/pods/{pod}/eviction"
-                re = requests.post(ev_url, json=eviction_body,
-                                   headers=headers, verify=verify)
-                # best‐effort: ignore failures per‐pod
-
-            messages.success(request, f"Node {name} cordoned and pods evicted.")
-        except Exception as e:
-            messages.error(request, f"Drain failed: {e}")
-
-    return redirect("node_list")
-
 @login_required
 def node_cordon(request, name):
-    """
-    Mark the node Unschedulable (cordon) and redirect back to the list.
-    """
     if not request.user.is_superuser:
         return redirect('node_list')
 
     if request.method == "POST":
         try:
             base, headers, verify = _load_k8s_auth()
-            patch = {"spec": {"unschedulable": True}}
+
+            # use strategic merge patch
+            patch_headers = headers.copy()
+            patch_headers["Content-Type"] = "application/strategic-merge-patch+json"
+
+            body = {"spec": {"unschedulable": True}}
             resp = requests.patch(
                 f"{base}/api/v1/nodes/{name}",
-                json=patch, headers=headers, verify=verify
+                json=body,
+                headers=patch_headers,
+                verify=verify
             )
-            resp.raise_for_status()
-            messages.success(request, f"Node {name} cordoned successfully.")
+
+            # Debugging: log status and body if not 200
+            if not resp.ok:
+                messages.error(request,
+                    f"Cordon failed (status={resp.status_code}): {resp.text}"
+                )
+            else:
+                messages.success(request, f"Node {name} cordoned successfully.")
+
         except Exception as e:
-            messages.error(request, f"Cordon failed: {e}")
+            messages.error(request, f"Cordon exception: {e}")
+
+    return redirect('node_list')
+
+
+@login_required
+def node_drain(request, name):
+    if not request.user.is_superuser:
+        return redirect('node_list')
+
+    if request.method == "POST":
+        try:
+            base, headers, verify = _load_k8s_auth()
+
+            # 1) cordon first (same merge-patch headers)
+            patch_headers = headers.copy()
+            patch_headers["Content-Type"] = "application/strategic-merge-patch+json"
+            cordon_body = {"spec": {"unschedulable": True}}
+            r1 = requests.patch(
+                f"{base}/api/v1/nodes/{name}",
+                json=cordon_body,
+                headers=patch_headers,
+                verify=verify
+            )
+            if not r1.ok:
+                messages.error(request,
+                    f"Cordon in drain failed (status={r1.status_code}): {r1.text}"
+                )
+                return redirect('node_list')
+
+            # 2) list pods scheduled on this node
+            sel = f"spec.nodeName={name}"
+            r2 = requests.get(
+                f"{base}/api/v1/pods?fieldSelector={sel}",
+                headers=headers,
+                verify=verify
+            )
+            r2.raise_for_status()
+            pods = r2.json().get("items", [])
+
+            # 3) evict each pod
+            errors = []
+            for p in pods:
+                ns  = p["metadata"]["namespace"]
+                pod = p["metadata"]["name"]
+                eviction = {
+                    "apiVersion": "policy/v1",
+                    "kind":       "Eviction",
+                    "metadata": {"name": pod, "namespace": ns}
+                }
+                ev_url = f"{base}/api/v1/namespaces/{ns}/pods/{pod}/eviction"
+                rev = requests.post(
+                    ev_url,
+                    json=eviction,
+                    headers=headers,
+                    verify=verify
+                )
+                if not rev.ok:
+                    errors.append(f"{pod}@{ns}: {rev.status_code}")
+
+            if errors:
+                messages.warning(
+                    request,
+                    f"Drained (cordoned) but evictions failed for: {', '.join(errors)}"
+                )
+            else:
+                messages.success(request, f"Node {name} drained successfully.")
+
+        except Exception as e:
+            messages.error(request, f"Drain exception: {e}")
 
     return redirect('node_list')
