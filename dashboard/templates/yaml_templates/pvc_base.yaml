@@ -6,7 +6,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: linstor-sc  # This must match the PV's storageClassName
+  storageClassName: linstor-sc-xfs  # This must match the PV's storageClassName
   resources:
     requests:
       storage: {{ domain_instance.storage_size }}Gi
@@ -19,7 +19,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: linstor-sc  # This must match the PV's storageClassName
+  storageClassName: linstor-sc-xfs  # This must match the PV's storageClassName
   resources:
     requests:
       storage: {{ domain_instance.storage_size }}Gi
