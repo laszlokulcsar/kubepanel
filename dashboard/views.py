@@ -1173,7 +1173,7 @@ def pod_logs(request, namespace, name):
         messages.error(request, f"Error fetching logs: {e}")
         logs = []
 
-    return render(request, 'pod_logs.html', {
+    return render(request, 'main/pod_logs.html', {
         'namespace': namespace,
         'pod_name': name,
         'logs': logs,
