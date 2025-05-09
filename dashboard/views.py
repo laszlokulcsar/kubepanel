@@ -1144,37 +1144,63 @@ def node_uncordon(request, name):
 
     return redirect('node_list')
 
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+import requests
+
 @login_required
 def pod_logs(request, namespace, name):
     if not request.user.is_superuser:
         return redirect('pod_list')
 
+    logs_by_container = {}
     try:
         base, headers, verify = _load_k8s_auth()
-        # fetch plain text logs
-        resp = requests.get(
-            f"{base}/api/v1/namespaces/{namespace}/pods/{name}/log",
+
+        # 1) Fetch the Pod object to discover its containers
+        pod_resp = requests.get(
+            f"{base}/api/v1/namespaces/{namespace}/pods/{name}",
             headers=headers,
             verify=verify,
             timeout=10
         )
-
-        if not resp.ok:
+        if not pod_resp.ok:
             messages.error(
                 request,
-                f"Could not fetch logs (status={resp.status_code}): {resp.text}"
+                f"Could not fetch pod details (status={pod_resp.status_code}): {pod_resp.text}"
             )
-            logs = []
+            container_names = []
         else:
-            # split into lines for easier rendering
-            logs = resp.text.splitlines()
+            pod_json = pod_resp.json()
+            container_specs = pod_json.get("spec", {}).get("containers", [])
+            container_names = [c.get("name") for c in container_specs]
+
+        # 2) For each container, fetch its logs
+        for c in container_names:
+            params = {"container": c}
+            log_resp = requests.get(
+                f"{base}/api/v1/namespaces/{namespace}/pods/{name}/log",
+                headers=headers,
+                verify=verify,
+                params=params,
+                timeout=10
+            )
+            if log_resp.ok:
+                logs_by_container[c] = log_resp.text.splitlines()
+            else:
+                messages.error(
+                    request,
+                    f"Failed to fetch logs for container «{c}» (status={log_resp.status_code}): {log_resp.text}"
+                )
+                logs_by_container[c] = []
 
     except Exception as e:
-        messages.error(request, f"Error fetching logs: {e}")
-        logs = []
+        messages.error(request, f"Error fetching pod logs: {e}")
 
-    return render(request, 'main/pod_logs.html', {
+    return render(request, 'pod_logs.html', {
         'namespace': namespace,
         'pod_name': name,
-        'logs': logs,
+        'logs_by_container': logs_by_container,
     })
+
