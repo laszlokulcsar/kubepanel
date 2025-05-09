@@ -1198,7 +1198,7 @@ def pod_logs(request, namespace, name):
     except Exception as e:
         messages.error(request, f"Error fetching pod logs: {e}")
 
-    return render(request, 'pod_logs.html', {
+    return render(request, 'main/pod_logs.html', {
         'namespace': namespace,
         'pod_name': name,
         'logs_by_container': logs_by_container,
