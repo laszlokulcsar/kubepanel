@@ -1,20 +1,21 @@
 {% extends "base.html" %}
+{% load static %}
 {% block content %}
-                        <main class="content">
-                                <div class="container-fluid p-0">
+<main class="content">
+  <div class="container-fluid p-0">
+    <h1 class="h3 mb-3"><strong>Pod</strong> list</h1>
 
-                                        <h1 class="h3 mb-3"><strong>Domain</strong> list</h1>
-                                        <div class="row">
-                                                <div class="col-12 col-lg-12 col-xxl-12 d-flex">
-                                                        <div class="card flex-fill">
-                                                                <div class="card-header">
-
-                                                                        <h5 class="card-title mb-0">Domain List</h5>
-                                                                </div>
-
-    <table>
-        <thead>
-            <tr>
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Pod List</h5>
+      </div>
+      <div class="card-body">
+        {% if pods %}
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle">
+            <thead>
+              <tr>
+                <th>#</th>
                 <th>Name</th>
                 <th>Namespace</th>
                 <th>Node</th>
@@ -22,26 +23,50 @@
                 <th>Pod IP</th>
                 <th>Host IP</th>
                 <th>Containers</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for pod in pods %}
-            <tr>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for pod in pods %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
                 <td>{{ pod.name }}</td>
-                <td>{{ pod.namespace }}</td>
+                <td><code>{{ pod.namespace }}</code></td>
                 <td>{{ pod.node }}</td>
-                <td>{{ pod.status }}</td>
+                <td>
+                  {% if pod.status == "Running" %}
+                    <span class="badge bg-success">Running</span>
+                  {% elif pod.status == "Pending" %}
+                    <span class="badge bg-warning">Pending</span>
+                  {% elif pod.status == "Succeeded" %}
+                    <span class="badge bg-primary">Succeeded</span>
+                  {% elif pod.status == "Failed" %}
+                    <span class="badge bg-danger">Failed</span>
+                  {% else %}
+                    <span class="badge bg-secondary">{{ pod.status }}</span>
+                  {% endif %}
+                </td>
                 <td>{{ pod.ip }}</td>
                 <td>{{ pod.host_ip }}</td>
-                <td>{{ pod.containers }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-                                                        </div>
-                                                </div>
-                                        </div>
-
-                                </div>
-                        </main>
+                <td>{{ pod.containers|length }}</td>
+                <td>
+                  <a href="{% url 'pod_logs' pod.namespace pod.name %}"
+                     class="btn btn-sm btn-outline-secondary"
+                     onclick="return confirm('Fetch logs for {{ pod.name }}?');">
+                    Logs
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <p class="text-muted">No pods found.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</main>
 {% endblock %}
+

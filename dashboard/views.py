@@ -1143,3 +1143,38 @@ def node_uncordon(request, name):
             messages.error(request, f"Uncordon exception: {e}")
 
     return redirect('node_list')
+
+@login_required
+def pod_logs(request, namespace, name):
+    if not request.user.is_superuser:
+        return redirect('pod_list')
+
+    try:
+        base, headers, verify = _load_k8s_auth()
+        # fetch plain text logs
+        resp = requests.get(
+            f"{base}/api/v1/namespaces/{namespace}/pods/{name}/log",
+            headers=headers,
+            verify=verify,
+            timeout=10
+        )
+
+        if not resp.ok:
+            messages.error(
+                request,
+                f"Could not fetch logs (status={resp.status_code}): {resp.text}"
+            )
+            logs = []
+        else:
+            # split into lines for easier rendering
+            logs = resp.text.splitlines()
+
+    except Exception as e:
+        messages.error(request, f"Error fetching logs: {e}")
+        logs = []
+
+    return render(request, 'pod_logs.html', {
+        'namespace': namespace,
+        'pod_name': name,
+        'logs': logs,
+    })

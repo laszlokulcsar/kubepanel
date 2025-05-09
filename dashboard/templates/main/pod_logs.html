@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<main class="content">
+  <div class="container-fluid p-0">
+    <h1 class="h3 mb-3">Logs for <strong>{{ pod_name }}</strong> ({{ namespace }})</h1>
+    <div class="card">
+      <div class="card-body">
+        {% if logs %}
+          <pre style="max-height: 70vh; overflow:auto; background:#1e1e1e; color:#ddd; padding:1rem;">
+{% for line in logs %}
+{{ line }}
+{% endfor %}
+          </pre>
+        {% else %}
+          <p class="text-muted">No logs available.</p>
+        {% endif %}
+        <a href="{% url 'pod_list' %}" class="btn btn-sm btn-primary mt-3">Back to Pods</a>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
