@@ -1112,7 +1112,7 @@ def node_drain(request, name):
     return redirect('node_list')
 
 @login_required
-def node_cordon(request, name):
+def node_uncordon(request, name):
     if not request.user.is_superuser:
         return redirect('node_list')
 
@@ -1120,11 +1120,10 @@ def node_cordon(request, name):
         try:
             base, headers, verify = _load_k8s_auth()
 
-            # use strategic merge patch
             patch_headers = headers.copy()
             patch_headers["Content-Type"] = "application/strategic-merge-patch+json"
 
-            body = {"spec": {"unschedulable": True}}
+            body = {"spec": {"unschedulable": False}}
             resp = requests.patch(
                 f"{base}/api/v1/nodes/{name}",
                 json=body,
@@ -1135,12 +1134,12 @@ def node_cordon(request, name):
             if not resp.ok:
                 messages.error(
                     request,
-                    f"Cordon failed (status={resp.status_code}): {resp.text}"
+                    f"Uncordon failed (status={resp.status_code}): {resp.text}"
                 )
             else:
-                messages.success(request, f"Node {name} cordoned successfully.")
+                messages.success(request, f"Node {name} uncordoned successfully.")
 
         except Exception as e:
-            messages.error(request, f"Cordon exception: {e}")
+            messages.error(request, f"Uncordon exception: {e}")
 
     return redirect('node_list')
