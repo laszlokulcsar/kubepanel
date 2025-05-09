@@ -48,4 +48,5 @@ urlpatterns = [
     path('nodes/<str:name>/',       views.node_detail, name='node_detail'),
     path('nodes/<str:name>/drain/', views.node_drain,  name='node_drain'),
     path('nodes/<str:name>/cordon/', views.node_cordon, name='node_cordon'),
+    path('nodes/<str:name>/uncordon/',views.node_uncordon, name='node_uncordon'),
 ]

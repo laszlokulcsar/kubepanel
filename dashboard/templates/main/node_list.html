@@ -3,84 +3,89 @@
 {% block content %}
 <main class="content">
   <div class="container-fluid p-0">
-    <div class="row mb-3">
-      <div class="col-12">
-        <h1 class="h3"><strong>Node Management</strong></h1>
-      </div>
-    </div>
+    <h1 class="h3 mb-3"><strong>Node Management</strong></h1>
 
-    <div class="row">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-body">
-            {% if nodes %}
-            <div class="table-responsive">
-              <table class="table table-striped align-middle">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Node Name</th>
-                    <th>IP Address</th>
-                    <th>Start Time</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for node in nodes %}
-                  <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ node.name }}</td>
-                    <td>{{ node.ip }}</td>
-                    <td>{{ node.start_time }}</td>
-                    <td>
-                      {% if node.status == "Ready" %}
-                        <span class="badge bg-success">Ready</span>
-                      {% elif node.status == "Unschedulable" %}
-                        <span class="badge bg-warning">Unschedulable</span>
-                      {% else %}
-                        <span class="badge bg-danger">{{ node.status }}</span>
-                      {% endif %}
-                    </td>
-                    <td>
-                      <div class="btn-group" role="group">
-                        <!-- Cordon -->
-                        <form method="post"
-                              action="{% url 'node_cordon' node.name %}"
-                              onsubmit="return confirm('Cordon node {{ node.name }}?');">
-                          {% csrf_token %}
-                          <button type="submit" class="btn btn-sm btn-outline-warning">
-                            <i data-feather="slash"></i>
-                          </button>
-                        </form>
+    <div class="card">
+      <div class="card-body">
+        {% if nodes %}
+        <div class="table-responsive">
+          <table class="table table-striped align-middle">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Node Name</th>
+                <th>IP Address</th>
+                <th>Start Time</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for node in nodes %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ node.name }}</td>
+                <td>{{ node.ip }}</td>
+                <td>{{ node.start_time }}</td>
+                <td>
+                  {% if node.status == "Ready" %}
+                    <span class="badge bg-success">Ready</span>
+                  {% elif node.status == "Unschedulable" %}
+                    <span class="badge bg-warning">Unschedulable</span>
+                  {% else %}
+                    <span class="badge bg-danger">{{ node.status }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="btn-group" role="group">
 
-                        <!-- Drain -->
-                        <form method="post"
-                              action="{% url 'node_drain' node.name %}"
-                              onsubmit="return confirm('Drain node {{ node.name }}? Pods will be evicted.');">
-                          {% csrf_token %}
-                          <button type="submit" class="btn btn-sm btn-outline-danger">
-                            <i data-feather="zap"></i>
-                          </button>
-                        </form>
+                    {# Cordon or Uncordon #}
+                    {% if node.status == "Ready" %}
+                      <form method="post"
+                            action="{% url 'node_cordon' node.name %}"
+                            onsubmit="return confirm('Cordon node {{ node.name }}?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-warning">
+                          Cordon
+                        </button>
+                      </form>
+                    {% elif node.status == "Unschedulable" %}
+                      <form method="post"
+                            action="{% url 'node_uncordon' node.name %}"
+                            onsubmit="return confirm('Uncordon node {{ node.name }}?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-success">
+                          Uncordon
+                        </button>
+                      </form>
+                    {% endif %}
 
-                        <!-- Detail -->
-                        <a href="{% url 'node_detail' node.name %}"
-                           class="btn btn-sm btn-outline-primary">
-                          <i data-feather="eye"></i>
-                        </a>
-                      </div>
-                    </td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-            {% else %}
-              <p>No nodes found.</p>
-            {% endif %}
-          </div>
+                    {# Drain #}
+                    <form method="post"
+                          action="{% url 'node_drain' node.name %}"
+                          onsubmit="return confirm('Drain node {{ node.name }}? Pods will be evicted.');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        Drain
+                      </button>
+                    </form>
+
+                    {# Details #}
+                    <a href="{% url 'node_detail' node.name %}"
+                       class="btn btn-sm btn-outline-primary">
+                      Details
+                    </a>
+
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
+        {% else %}
+          <p>No nodes found.</p>
+        {% endif %}
       </div>
     </div>
   </div>
