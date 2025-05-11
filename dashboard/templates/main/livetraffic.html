@@ -1,71 +1,56 @@
 {% extends "base.html" %}
+{% load static %}
 {% block content %}
-                        <main class="content">
-                                <div class="container-fluid p-0">
+<main class="content">
+  <div class="container-fluid p-0">
+    <h1 class="h3 mb-3"><strong>Live Traffic Inspector</strong></h1>
 
-                                        <h1 class="h3 mb-3"><strong>Live Traffic Inspector</strong></h1>
-                                        <div class="row">
-                                                <div class="col-12 col-lg-12 col-xxl-12">
-                                                        <div class="card">
-                                                                <div class="card-body">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Live Traffic</h5>
+      </div>
+      <div class="card-body">
 
-    <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 1px;
-            text-align: left;
-        }
-        th {
-            background-color: #f4f4f4;
-        }
-        input {
-            width: 90%;
-            padding: 5px;
-            margin-bottom: 10px;
-            box-sizing: border-box;
-        }
-        .collapsed {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 200px;
-            cursor: pointer;
-        }
-        .expanded {
-            white-space: normal;
-            cursor: pointer;
-        }
-    </style>
-
-    <table id="logsTable">
-        <thead>
-            <tr>
-                <th>Time <br><input type="text" onkeyup="filterTable(0)" placeholder="Filter by Time"></th>
-                <th>Host <br><input type="text" onkeyup="filterTable(1)" placeholder="Filter by Host"></th>
-                <th>Forwarded For <br><input type="text" onkeyup="filterTable(2)" placeholder="Filter by Forwarded For"></th>
-                <th>Country <br><input type="text" onkeyup="filterTable(3)" placeholder="Filter by Forwarded For"></th>
-                <th>Status <br><input type="text" onkeyup="filterTable(4)" placeholder="Filter by Status"></th>
-                <th>Method <br><input type="text" onkeyup="filterTable(5)" placeholder="Filter by Method"></th>
-                <th>Path <br><input type="text" onkeyup="filterTable(6)" placeholder="Filter by Path"></th>
-                <th>Duration <br><input type="text" onkeyup="filterTable(7)" placeholder="Filter by Duration"></th>
+        {% if logs %}
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle" id="logsTable">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Host</th>
+                <th>Forwarded For</th>
+                <th>Country</th>
+                <th>Status</th>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Duration</th>
                 <th>Body</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for log in logs %}
-            <tr>
+                <th>Actions</th>
+              </tr>
+              <tr class="table-filter">
+                <th><input type="text" class="form-control form-control-sm" data-col="0" placeholder="Filter Time"></th>
+                <th><input type="text" class="form-control form-control-sm" data-col="1" placeholder="Filter Host"></th>
+                <th><input type="text" class="form-control form-control-sm" data-col="2" placeholder="Filter Forwarded For"></th>
+                <th><input type="text" class="form-control form-control-sm" data-col="3" placeholder="Filter Country"></th>
+                <th><input type="text" class="form-control form-control-sm" data-col="4" placeholder="Filter Status"></th>
+                <th><input type="text" class="form-control form-control-sm" data-col="5" placeholder="Filter Method"></th>
+                <th><input type="text" class="form-control form-control-sm" data-col="6" placeholder="Filter Path"></th>
+                <th><input type="text" class="form-control form-control-sm" data-col="7" placeholder="Filter Duration"></th>
+                <th></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in logs %}
+              <tr>
                 <td>{{ log.time }}</td>
                 <td>{{ log.vhost }}</td>
                 <td>{{ log.x_forwarded_for }}</td>
                 <td>
-                    {% if log.flag_url %}
-                    <img class="flag" src="{{ log.flag_url }}" alt="{{ log.country_name }}">
-                    {% endif %}
-                    {{ log.country_name }}
+                  {% if log.flag_url %}
+                    <img class="flag" src="{{ log.flag_url }}" alt="{{ log.country_name }}" style="width:18px;margin-right:4px;">
+                  {% endif %}
+                  {{ log.country_name }}
                 </td>
                 <td>{{ log.status }}</td>
                 <td>{{ log.method }}</td>
@@ -73,61 +58,80 @@
                 <td>{{ log.duration }}</td>
                 <td class="collapsed" onclick="toggleBody(this)">{{ log.request_body }}</td>
                 <td>
-                    {% if log.vhost and log.x_forwarded_for and log.path %}
-                    <a
-                        class="btn btn-danger btn-sm"
-                        href="{% url 'block_entry' vhost=log.vhost x_forwarded_for=log.x_forwarded_for path=log.path %}"
-                    >
-                        Block
-                    </a>
-                    {% endif %}
+                  {% if log.vhost and log.x_forwarded_for and log.path %}
+                  <a
+                    class="btn btn-sm btn-outline-danger"
+                    href="{% url 'block_entry' vhost=log.vhost x_forwarded_for=log.x_forwarded_for path=log.path %}">
+                    Block
+                  </a>
+                  {% endif %}
                 </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <script>
-        function filterTable(columnIndex) {
-            const input = event.target;
-            const filter = input.value.toLowerCase();
-            const isNegativeFilter = filter.startsWith("!"); // Check for negative filter
-            const table = document.getElementById("logsTable");
-            const rows = table.getElementsByTagName("tr");
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <p class="text-muted">No traffic logs to display.</p>
+        {% endif %}
 
-            // Remove '!' for actual filtering value in negative filtering
-            const actualFilter = isNegativeFilter ? filter.slice(1) : filter;
+      </div>
+    </div>
+  </div>
+</main>
 
-            for (let i = 1; i < rows.length; i++) { // Skip header row
-                const cell = rows[i].getElementsByTagName("td")[columnIndex];
-                if (cell) {
-                    const textValue = cell.textContent || cell.innerText;
-                    if (isNegativeFilter) {
-                        // Negative filter: Hide rows that match the filter
-                        rows[i].style.display = textValue.toLowerCase().includes(actualFilter) ? "none" : "";
-                    } else {
-                        // Regular filter: Show rows that match the filter
-                        rows[i].style.display = textValue.toLowerCase().includes(actualFilter) ? "" : "none";
-                    }
-                }
-            }
+<style>
+  .collapsed {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    cursor: pointer;
+  }
+  .expanded {
+    white-space: normal;
+    cursor: pointer;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const table = document.getElementById('logsTable');
+  const inputs = table.querySelectorAll('thead .table-filter input');
+
+  function filterTable() {
+    const filters = Array.from(inputs).map(input => {
+      const raw = input.value.trim().toLowerCase();
+      if (!raw) return null;
+      return raw.startsWith('!') 
+        ? { term: raw.slice(1), invert: true } 
+        : { term: raw, invert: false };
+    });
+
+    table.querySelectorAll('tbody tr').forEach(row => {
+      let show = true;
+      filters.forEach((flt, idx) => {
+        if (!flt) return;  // no filter on this column
+        const cell = row.children[idx];
+        const text = cell.textContent.toLowerCase();
+        const match = text.includes(flt.term);
+
+        if (flt.invert ? match : !match) {
+          show = false;
         }
+      });
+      row.style.display = show ? '' : 'none';
+    });
+  }
 
-        function toggleBody(cell) {
-            if (cell.classList.contains("collapsed")) {
-                cell.classList.remove("collapsed");
-                cell.classList.add("expanded");
-            } else {
-                cell.classList.remove("expanded");
-                cell.classList.add("collapsed");
-            }
-        }
-    </script>
+  inputs.forEach(i => i.addEventListener('input', filterTable));
+});
 
-                                                                </div>
-                                                        </div>
-                                                </div>
-                                        </div>
-
-                                </div>
-                        </main>
+// toggle request-body cell expand/collapse
+function toggleBody(cell) {
+  cell.classList.toggle('collapsed');
+  cell.classList.toggle('expanded');
+}
+</script>
 {% endblock %}
+

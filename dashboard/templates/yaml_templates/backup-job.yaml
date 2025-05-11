@@ -36,11 +36,11 @@ spec:
               - -c
               - |
                 # Random sleep between 0 and 3600 seconds (1 hour)
-                SLEEP_TIME=$(( $RANDOM % 360 ))
+                SLEEP_TIME=$(( $RANDOM % 3600 ))
                 echo "Sleeping for ${SLEEP_TIME}s before snapshot..."
                 sleep $SLEEP_TIME
                 DATE=$(date +'%Y%m%d%H%M%S')
-
+                echo $DATE
                 # Now create the snapshot
                 kubectl apply -f - <<EOF
                 apiVersion: snapshot.storage.k8s.io/v1
@@ -55,6 +55,22 @@ spec:
                 EOF
                 python3 /kubepanel/manage.py add_snapshot -sn {{ domain_name_dash }}-snapshot-$DATE -d {{ domain_name }}
                 mysqldump -h mariadb.kubepanel.svc.cluster.local -uroot -p$MARIADB_ROOT_PASSWORD $DBNAME > /backup/{{ domain_name_dash }}-snapshot-$DATE.sql
+                ls -alh /backup/
+                set -euo pipefail
+                echo "Cleaning VolumeSnapshots older than 6 days..."
+                cutoff=$(date -d '6 days ago' +%s)
+                # Fetch each snapshot’s name|timestamp
+                kubectl get volumesnapshot -n justawood-hu -o=jsonpath='{range .items[*]}{.metadata.name}{"|"}{.metadata.creationTimestamp}{"\n"}{end}' | while IFS='|' read name ts;
+                  do
+                    ts_s=$(date -d "$ts" +%s)
+                    if [ "$ts_s" -lt "$cutoff" ]; then
+                      echo "Deleting snapshot: $name (created $ts)"
+                      kubectl delete volumesnapshot "$name" -n justawood-hu
+                    fi
+                  done
+                echo "Removing SQL dumps older than 6 days..."
+                find /backup -maxdepth 1 -name 'justawood-hu-snapshot-*.sql' -mtime +6 -print -delete
+                ls -alh /backup/
             volumeMounts:
             - name: kubepanel
               mountPath: /kubepanel
