@@ -8,6 +8,7 @@ Since it's kubernetes native, the infrastructure is modular, you can add own con
 
 - You need a preferably fresh installation of Ubuntu 24.04 LTS with internet access 
 - A public IP address and a DNS entry with an A record pointing to your public IP address. This is required to reach the Kubepanel UI after the installation. i.e.: if you have a domain name 'example.com' you can create an A record 'kubepanel.example.com' which resolves to your servers public IP address.
+- For proper certificate management you can create a wildcard A record pointing to your public IP address(es). If wildcard is not an option, please make sure the following A records are pointing to at least one of your servers IP address: 'kubepanel.yourdomain.tld', 'webmail.kubepanel.yourdomain.tld'.
 - Open port 443 on your firewall
 - An empty disk attached under /dev/sdb
   
