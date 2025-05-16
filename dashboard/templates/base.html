@@ -43,7 +43,7 @@
               <span class="align-middle">E-mail accounts</span>
             </a>
           </li>
-
+  {% if request.user.is_superuser %}
           <li class="sidebar-item {% if request.resolver_match.url_name == 'livetraffic' %}active{% endif %}">
             <a class="sidebar-link" href="{% url 'livetraffic' %}">
               <i class="align-middle" data-feather="activity"></i>
@@ -71,7 +71,7 @@
               <span class="align-middle">Node management</span>
             </a>
           </li>
-
+{% endif %}
 
           <li class="sidebar-item {% if request.resolver_match.url_name == 'list_api_tokens' %}active{% endif %}">
             <a class="sidebar-link" href="{% url 'list_api_tokens' %}">
