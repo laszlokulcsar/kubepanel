@@ -6,9 +6,10 @@ Since it's kubernetes native, the infrastructure is modular, you can add own con
 
 # Prerequisites
 
-- You need a preferably fresh installation of Ubuntu 20.04 LTS or 22.04 LTS with internet access 
+- You need a preferably fresh installation of Ubuntu 24.04 LTS with internet access 
 - A public IP address and a DNS entry with an A record pointing to your public IP address. This is required to reach the Kubepanel UI after the installation. i.e.: if you have a domain name 'example.com' you can create an A record 'kubepanel.example.com' which resolves to your servers public IP address.
 - Open port 443 on your firewall
+- An empty disk attached under /dev/sdb
   
 # INSTALL on the 1st node:
 
