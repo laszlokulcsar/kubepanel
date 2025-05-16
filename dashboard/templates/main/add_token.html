@@ -1,27 +1,77 @@
 {% extends "base.html" %}
 {% load static %}
+
 {% block content %}
 <main class="content">
   <div class="container-fluid p-0">
-    <div class="row">
+    <!-- Page title -->
+    <div class="row mb-4">
       <div class="col-12">
-        <h1 class="h3 mb-3"><strong>Add a Cloudflare API Token</strong></h1>
+        <h1 class="h3 mb-0">
+          <i data-feather="key" class="me-2"></i>
+          Add a Cloudflare API Token
+        </h1>
       </div>
     </div>
 
+    <!-- Form card -->
     <div class="row">
-      <div class="col-12 col-lg-12 col-xxl-12">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="card-title mb-0">Token Details</h5>
+      <div class="col-12 col-lg-8 offset-lg-2">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+              <i data-feather="plus" class="me-2"></i>
+              Token Details
+            </h5>
           </div>
           <div class="card-body">
-            <form method="post">
+            <form action="{% url 'add_api_token' %}" method="post" novalidate>
               {% csrf_token %}
-              {{ form.as_p }}
-              <button class="btn btn-primary" type="submit">
-                <i data-feather="plus"></i> Add Token
-              </button>
+
+              <!-- Name field -->
+              <div class="mb-3">
+                <label for="id_name" class="form-label">Name</label>
+                <input
+                  type="text"
+                  name="{{ form.name.html_name }}"
+                  id="id_name"
+                  value="{{ form.name.value|default_if_none:'' }}"
+                  class="form-control{% if form.name.errors %} is-invalid{% endif %}"
+                  placeholder="Friendly name for this token"
+                >
+                {% for err in form.name.errors %}
+                  <div class="invalid-feedback">{{ err }}</div>
+                {% endfor %}
+              </div>
+
+              <!-- API Token field -->
+              <div class="mb-3">
+                <label for="id_api_token" class="form-label">API Token</label>
+                <input
+                  type="text"
+                  name="{{ form.api_token.html_name }}"
+                  id="id_api_token"
+                  value="{{ form.api_token.value|default_if_none:'' }}"
+                  class="form-control{% if form.api_token.errors %} is-invalid{% endif %}"
+                  placeholder="Enter your Cloudflare API token"
+                >
+                {% for err in form.api_token.errors %}
+                  <div class="invalid-feedback">{{ err }}</div>
+                {% endfor %}
+              </div>
+
+              <!-- Actions -->
+              <div class="mt-4 d-flex justify-content-end">
+                <a
+                  href="{% url 'list_api_tokens' %}"
+                  class="btn btn-outline-secondary me-2"
+                >
+                  <i data-feather="x-circle" class="me-1"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-success">
+                  <i data-feather="check-circle" class="me-1"></i>Add Token
+                </button>
+              </div>
             </form>
           </div>
         </div>

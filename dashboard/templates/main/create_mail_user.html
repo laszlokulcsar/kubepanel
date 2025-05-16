@@ -4,16 +4,9 @@
 {% block content %}
 <main class="content">
   <div class="container-fluid p-0">
-    <!-- Page Header with Breadcrumb -->
+    <!-- Page Header -->
     <div class="row mb-4">
       <div class="col-12">
-        <nav aria-label="breadcrumb">
-          <ol class="breadcrumb bg-transparent p-0 mb-2">
-            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'mail_user_list' %}">Mail Users</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Add New</li>
-          </ol>
-        </nav>
         <h1 class="h3 mb-0"><i data-feather="mail"></i> Add New Mail User</h1>
       </div>
     </div>
@@ -28,58 +21,56 @@
             <form action="{% url 'create_mail_user' %}" method="post" novalidate>
               {% csrf_token %}
 
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <div class="form-floating">
-                    {{ form.domain.as_widget(attrs={'class': 'form-control', 'placeholder': 'Domain'}) }}
-                    <label for="id_domain"><i data-feather="globe" class="me-1"></i>Domain</label>
-                    {% if form.domain.errors %}
-                      <div class="invalid-feedback d-block">
-                        {{ form.domain.errors.as_text }}
-                      </div>
-                    {% endif %}
-                  </div>
-                </div>
-
-                <div class="col-md-6">
-                  <div class="form-floating">
-                    {{ form.local_part.as_widget(attrs={'class': 'form-control', 'placeholder': 'Username'}) }}
-                    <label for="id_local_part"><i data-feather="at-sign" class="me-1"></i>Username</label>
-                    {% if form.local_part.errors %}
-                      <div class="invalid-feedback d-block">
-                        {{ form.local_part.errors.as_text }}
-                      </div>
-                    {% endif %}
-                  </div>
-                </div>
-
-                <div class="col-12">
-                  <div class="form-floating">
-                    {{ form.plain_password.as_widget(attrs={'class': 'form-control', 'placeholder': 'Password'}) }}
-                    <label for="id_plain_password"><i data-feather="lock" class="me-1"></i>Password</label>
-                    {% if form.plain_password.errors %}
-                      <div class="invalid-feedback d-block">
-                        {{ form.plain_password.errors.as_text }}
-                      </div>
-                    {% endif %}
-                  </div>
-                </div>
-
-                <div class="col-12">
-                  <div class="form-check form-switch">
-                    {{ form.active.as_widget(attrs={'class': 'form-check-input'}) }}
-                    <label class="form-check-label ms-2" for="id_active">Active</label>
-                    {% if form.active.errors %}
-                      <div class="invalid-feedback d-block">
-                        {{ form.active.errors.as_text }}
-                      </div>
-                    {% endif %}
-                  </div>
-                </div>
+              <!-- Domain Dropdown -->
+              <div class="mb-3">
+                <label for="id_domain" class="form-label"><i data-feather="globe" class="me-1"></i>Domain</label>
+                <select id="id_domain" name="{{ form.domain.html_name }}" class="form-select{% if form.domain.errors %} is-invalid{% endif %}">
+                  <option value="">---------</option>
+                  {% for value, label in form.domain.field.choices %}
+                    <option value="{{ value }}"{% if form.domain.value|stringformat:"s" == value|stringformat:"s" %} selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                {% for error in form.domain.errors %}
+                  <div class="invalid-feedback">{{ error }}</div>
+                {% endfor %}
               </div>
 
+              <!-- Username -->
+              <div class="mb-3">
+                <label for="id_local_part" class="form-label"><i data-feather="at-sign" class="me-1"></i>Username</label>
+                <input type="text" name="{{ form.local_part.html_name }}" id="id_local_part"
+                       value="{{ form.local_part.value|default_if_none:'' }}"
+                       class="form-control{% if form.local_part.errors %} is-invalid{% endif %}" placeholder="Username">
+                {% for error in form.local_part.errors %}
+                  <div class="invalid-feedback">{{ error }}</div>
+                {% endfor %}
+              </div>
+
+              <!-- Password -->
+              <div class="mb-3">
+                <label for="id_plain_password" class="form-label"><i data-feather="lock" class="me-1"></i>Password</label>
+                <input type="password" name="{{ form.plain_password.html_name }}" id="id_plain_password"
+                       value="{{ form.plain_password.value|default_if_none:'' }}"
+                       class="form-control{% if form.plain_password.errors %} is-invalid{% endif %}" placeholder="Password">
+                {% for error in form.plain_password.errors %}
+                  <div class="invalid-feedback">{{ error }}</div>
+                {% endfor %}
+              </div>
+
+              <!-- Active Switch -->
+              <div class="form-check form-switch mb-3">
+                <input type="checkbox" name="{{ form.active.html_name }}" id="id_active"
+                       {% if form.active.value %}checked{% endif %}
+                       class="form-check-input{% if form.active.errors %} is-invalid{% endif %}">
+                <label class="form-check-label ms-2" for="id_active">Active</label>
+                {% for error in form.active.errors %}
+                  <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+              </div>
+
+              <!-- Form Actions -->
               <div class="mt-4 d-flex justify-content-end">
-                <a href="{% url 'mail_user_list' %}" class="btn btn-outline-secondary me-2">
+                <a href="{% url 'list_mail_users' %}" class="btn btn-outline-secondary me-2">
                   <i data-feather="x-circle" class="me-1"></i>Cancel
                 </a>
                 <button class="btn btn-success" type="submit">

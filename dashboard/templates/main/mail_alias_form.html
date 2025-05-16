@@ -1,10 +1,130 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block content %}
-  <h1>{% if alias %}Edit{% else %}Add{% endif %} Alias</h1>
-  <form method="post">{% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-success">{% if alias %}Save{% else %}Create{% endif %}</button>
-    <a href="{% url 'mail_alias_add' %}" class="btn btn-secondary">Cancel</a>
-  </form>
+<main class="content">
+  <div class="container-fluid p-0">
+    <!-- Page title -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <h1 class="h3 mb-0">
+          <i data-feather="link-2" class="me-2"></i>
+          {% if alias %}Edit{% else %}Add{% endif %} Alias
+        </h1>
+      </div>
+    </div>
+
+    <!-- Form card -->
+    <div class="row">
+      <div class="col-12 col-lg-8 offset-lg-2">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+              <i data-feather="link-2" class="me-2"></i>
+              Alias Details
+            </h5>
+          </div>
+          <div class="card-body">
+            <form
+              action="{% if alias %}{% url 'mail_alias_edit' alias.id %}{% else %}{% url 'mail_alias_add' %}{% endif %}"
+              method="post"
+              novalidate
+            >
+              {% csrf_token %}
+
+              <!-- Domain dropdown -->
+              <div class="mb-3">
+                <label for="id_domain" class="form-label">
+                  <i data-feather="globe" class="me-1"></i>Domain
+                </label>
+                <select
+                  id="id_domain"
+                  name="{{ form.domain.html_name }}"
+                  class="form-select{% if form.domain.errors %} is-invalid{% endif %}"
+                >
+                  <option value="">---------</option>
+                  {% for value, label in form.domain.field.choices %}
+                    <option
+                      value="{{ value }}"
+                      {% if form.domain.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}
+                    >{{ label }}</option>
+                  {% endfor %}
+                </select>
+                {% for err in form.domain.errors %}
+                  <div class="invalid-feedback">{{ err }}</div>
+                {% endfor %}
+              </div>
+
+              <!-- Source -->
+              <div class="mb-3">
+                <label for="id_source" class="form-label">
+                  <i data-feather="at-sign" class="me-1"></i>Source
+                </label>
+                <input
+                  type="text"
+                  name="{{ form.source.html_name }}"
+                  id="id_source"
+                  value="{{ form.source.value|default_if_none:'' }}"
+                  class="form-control{% if form.source.errors %} is-invalid{% endif %}"
+                  placeholder="alias@example.com"
+                >
+                {% for err in form.source.errors %}
+                  <div class="invalid-feedback">{{ err }}</div>
+                {% endfor %}
+              </div>
+
+              <!-- Destination -->
+              <div class="mb-3">
+                <label for="id_destination" class="form-label">
+                  <i data-feather="arrow-right" class="me-1"></i>Destination
+                </label>
+                <input
+                  type="text"
+                  name="{{ form.destination.html_name }}"
+                  id="id_destination"
+                  value="{{ form.destination.value|default_if_none:'' }}"
+                  class="form-control{% if form.destination.errors %} is-invalid{% endif %}"
+                  placeholder="user@domain.com"
+                >
+                {% for err in form.destination.errors %}
+                  <div class="invalid-feedback">{{ err }}</div>
+                {% endfor %}
+              </div>
+
+              <!-- Active switch -->
+              <div class="form-check form-switch mb-3">
+                <input
+                  type="checkbox"
+                  name="{{ form.active.html_name }}"
+                  id="id_active"
+                  {% if form.active.value %}checked{% endif %}
+                  class="form-check-input{% if form.active.errors %} is-invalid{% endif %}"
+                >
+                <label class="form-check-label ms-2" for="id_active">Active</label>
+                {% for err in form.active.errors %}
+                  <div class="invalid-feedback d-block">{{ err }}</div>
+                {% endfor %}
+              </div>
+
+              <!-- Actions -->
+              <div class="mt-4 d-flex justify-content-end">
+                <a
+                  href="{% url 'mail_alias_list' %}"
+                  class="btn btn-outline-secondary me-2"
+                >
+                  <i data-feather="x-circle" class="me-1"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-success">
+                  <i data-feather="check-circle" class="me-1"></i>
+                  {% if alias %}Save{% else %}Create{% endif %}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
 {% endblock %}
 
