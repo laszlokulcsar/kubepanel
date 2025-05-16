@@ -31,29 +31,49 @@
               <div class="row g-3">
                 <div class="col-md-6">
                   <div class="form-floating">
-                    {{ form.domain|add_class:"form-control" }}
+                    {{ form.domain.as_widget(attrs={'class': 'form-control', 'placeholder': 'Domain'}) }}
                     <label for="id_domain"><i data-feather="globe" class="me-1"></i>Domain</label>
+                    {% if form.domain.errors %}
+                      <div class="invalid-feedback d-block">
+                        {{ form.domain.errors.as_text }}
+                      </div>
+                    {% endif %}
                   </div>
                 </div>
 
                 <div class="col-md-6">
                   <div class="form-floating">
-                    {{ form.local_part|add_class:"form-control" }}
+                    {{ form.local_part.as_widget(attrs={'class': 'form-control', 'placeholder': 'Username'}) }}
                     <label for="id_local_part"><i data-feather="at-sign" class="me-1"></i>Username</label>
+                    {% if form.local_part.errors %}
+                      <div class="invalid-feedback d-block">
+                        {{ form.local_part.errors.as_text }}
+                      </div>
+                    {% endif %}
                   </div>
                 </div>
 
                 <div class="col-12">
                   <div class="form-floating">
-                    {{ form.plain_password|add_class:"form-control" }}
+                    {{ form.plain_password.as_widget(attrs={'class': 'form-control', 'placeholder': 'Password'}) }}
                     <label for="id_plain_password"><i data-feather="lock" class="me-1"></i>Password</label>
+                    {% if form.plain_password.errors %}
+                      <div class="invalid-feedback d-block">
+                        {{ form.plain_password.errors.as_text }}
+                      </div>
+                    {% endif %}
                   </div>
                 </div>
 
                 <div class="col-12">
                   <div class="form-check form-switch">
-                    {{ form.active|add_class:"form-check-input" }}
+                    {{ form.active.as_widget(attrs={'class': 'form-check-input'}) }}
                     <label class="form-check-label ms-2" for="id_active">Active</label>
+                    {% if form.active.errors %}
+                      <div class="invalid-feedback d-block">
+                        {{ form.active.errors.as_text }}
+                      </div>
+                    {% endif %}
                   </div>
                 </div>
               </div>
