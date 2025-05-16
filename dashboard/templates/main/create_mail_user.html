@@ -1,46 +1,71 @@
 {% extends "base.html" %}
 {% load static %}
+
 {% block content %}
 <main class="content">
   <div class="container-fluid p-0">
-    <div class="row">
+    <!-- Page Header with Breadcrumb -->
+    <div class="row mb-4">
       <div class="col-12">
-        <h1 class="h3 mb-3"><strong>Add New Mail User</strong></h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb bg-transparent p-0 mb-2">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'mail_user_list' %}">Mail Users</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Add New</li>
+          </ol>
+        </nav>
+        <h1 class="h3 mb-0"><i data-feather="mail"></i> Add New Mail User</h1>
       </div>
     </div>
 
     <div class="row">
-      <div class="col-12 col-lg-12 col-xxl-12">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="card-title mb-0">Mail User Information</h5>
+      <div class="col-12 col-lg-8 offset-lg-2">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0"><i data-feather="user-plus" class="me-2"></i>Mail User Information</h5>
           </div>
           <div class="card-body">
-            <form action="{% url 'create_mail_user' %}" method="post">
+            <form action="{% url 'create_mail_user' %}" method="post" novalidate>
               {% csrf_token %}
-              <div class="mb-3">
-                <label for="id_domain" class="form-label">Domain</label>
-                {{ form.domain }}
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="form-floating">
+                    {{ form.domain|add_class:"form-control" }}
+                    <label for="id_domain"><i data-feather="globe" class="me-1"></i>Domain</label>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-floating">
+                    {{ form.local_part|add_class:"form-control" }}
+                    <label for="id_local_part"><i data-feather="at-sign" class="me-1"></i>Username</label>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <div class="form-floating">
+                    {{ form.plain_password|add_class:"form-control" }}
+                    <label for="id_plain_password"><i data-feather="lock" class="me-1"></i>Password</label>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <div class="form-check form-switch">
+                    {{ form.active|add_class:"form-check-input" }}
+                    <label class="form-check-label ms-2" for="id_active">Active</label>
+                  </div>
+                </div>
               </div>
 
-              <div class="mb-3">
-                <label for="id_local_part" class="form-label">Username (Local Part)</label>
-                {{ form.local_part }}
+              <div class="mt-4 d-flex justify-content-end">
+                <a href="{% url 'mail_user_list' %}" class="btn btn-outline-secondary me-2">
+                  <i data-feather="x-circle" class="me-1"></i>Cancel
+                </a>
+                <button class="btn btn-success" type="submit">
+                  <i data-feather="check-circle" class="me-1"></i>Save User
+                </button>
               </div>
-
-              <div class="mb-3">
-                <label for="id_plain_password" class="form-label">Password</label>
-                {{ form.plain_password }}
-              </div>
-
-              <div class="form-check mb-3">
-                {{ form.active }}
-                <label class="form-check-label" for="id_active">Active</label>
-              </div>
-
-              <button class="btn btn-primary" type="submit">
-                <i data-feather="plus"></i> Add Mail User
-              </button>
             </form>
           </div>
         </div>
