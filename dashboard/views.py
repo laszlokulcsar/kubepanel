@@ -1170,15 +1170,6 @@ def node_uncordon(request, name):
 
     return redirect('node_list')
 
-# views.py
-
-import requests
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
-from .models import Domain
-from .utils import _load_k8s_auth   # wherever you keep that helper
-
 @login_required
 def pod_logs(request, namespace, name):
     is_super = request.user.is_superuser
