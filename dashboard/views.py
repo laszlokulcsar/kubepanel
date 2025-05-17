@@ -362,69 +362,62 @@ def settings(request):
 
 @login_required
 def get_pods_status(request):
-    # only superusers see *all* namespaces
     is_super = request.user.is_superuser
 
-    # if not superuser, build a list of namespaces they own
+    # 1️⃣ build a label-selector string for non-superusers
+    selector = None
     if not is_super:
-        # assume Domain model has 'namespace' (string) and 'owner' FK to User
-        user_namespaces = set(
-            Domain.objects.filter(owner=request.user)
-                  .values_list('namespace', flat=True)
+        # assume your Domain.name == the 'domain' label on your pods
+        user_domains = (
+            Domain.objects
+                  .filter(owner=request.user)
+                  .values_list("name", flat=True)
         )
-        if not user_namespaces:
-            # they own no domains yet
+        if not user_domains:
             return render(request, "main/pods_status.html", {"pods": []})
 
-    # Kubernetes API set-up (same for all)
+        # e.g. "domain=foo,domain=bar"
+        selector = ",".join(f"domain={d}" for d in user_domains)
+
+    # common K8s API setup
     host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
     port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
-    token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    token_path   = "/var/run/secrets/kubernetes.io/serviceaccount/token"
     ca_cert_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-
     try:
         token = open(token_path).read().strip()
     except FileNotFoundError:
         return JsonResponse({"error": "Kubernetes token file not found."}, status=500)
 
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+
     url = f"https://{host}:{port}/api/v1/pods"
+    if selector:
+        url += f"?labelSelector={selector}"
 
     try:
         resp = requests.get(url, headers=headers, verify=ca_cert_path)
         resp.raise_for_status()
-        raw = resp.json()
+        items = resp.json().get("items", [])
     except requests.exceptions.RequestException as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-    items = raw.get("items", [])
-    # if regular user, filter out pods not in their namespaces
-    if not is_super:
-        items = [
-            pod for pod in items
-            if pod.get("metadata", {}).get("namespace") in user_namespaces
-        ]
-
+    # build pods_info exactly as before…
     pods_info = []
     for pod in items:
-        md = pod.get("metadata", {})
-        spec = pod.get("spec", {})
-        st = pod.get("status", {})
-
-        phase = (
-            "Terminating"
-            if md.get("deletionTimestamp")
-            else st.get("phase", "Unknown")
-        )
-
+        md, spec, st = pod["metadata"], pod["spec"], pod["status"]
+        phase = "Terminating" if md.get("deletionTimestamp") else st.get("phase","Unknown")
         pods_info.append({
             "name":       md.get("name"),
             "namespace":  md.get("namespace"),
             "node":       spec.get("nodeName", "Unknown"),
             "status":     phase,
-            "ip":         st.get("podIP", "N/A"),
-            "host_ip":    st.get("hostIP", "N/A"),
-            "containers": len(spec.get("containers", [])),
+            "ip":         st.get("podIP","N/A"),
+            "host_ip":    st.get("hostIP","N/A"),
+            "containers": len(spec.get("containers",[])),
         })
 
     return render(request, "main/pods_status.html", {"pods": pods_info})
