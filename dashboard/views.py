@@ -364,26 +364,35 @@ def settings(request):
 def get_pods_status(request):
     is_super = request.user.is_superuser
 
-    # 1️⃣ build a label-selector string for non-superusers
-    selector = None
+    label_selector = None
     if not is_super:
-        # assume your Domain.name == the 'domain' label on your pods
-        user_domains = (
+        # grab every domain_name this user owns
+        user_domains = list(
             Domain.objects
                   .filter(owner=request.user)
-                  .values_list("name", flat=True)
+                  .values_list("domain_name", flat=True)
         )
+
+        # if they have none, just render empty list
         if not user_domains:
             return render(request, "main/pods_status.html", {"pods": []})
 
-        # e.g. "domain=foo,domain=bar"
-        selector = ",".join(f"domain={d}" for d in user_domains)
+        # convert each foo.bar → foo-bar (to match your `group=` label)
+        slugs = [d.replace(".", "-") for d in user_domains]
 
-    # common K8s API setup
-    host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
-    port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
+        # build an OR-based selector: group in (a,b,c)
+        if len(slugs) == 1:
+            label_selector = f"group={slugs[0]}"
+        else:
+            # note: no spaces inside the parens
+            label_selector = f"group in ({','.join(slugs)})"
+
+    # ——— Kubernetes API setup ———
+    host         = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
+    port         = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
     token_path   = "/var/run/secrets/kubernetes.io/serviceaccount/token"
     ca_cert_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+
     try:
         token = open(token_path).read().strip()
     except FileNotFoundError:
@@ -391,12 +400,13 @@ def get_pods_status(request):
 
     headers = {
         "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
+        "Content-Type":  "application/json",
     }
 
+    # apply labelSelector if this is a regular user
     url = f"https://{host}:{port}/api/v1/pods"
-    if selector:
-        url += f"?labelSelector={selector}"
+    if label_selector:
+        url += f"?labelSelector={label_selector}"
 
     try:
         resp = requests.get(url, headers=headers, verify=ca_cert_path)
@@ -405,19 +415,23 @@ def get_pods_status(request):
     except requests.exceptions.RequestException as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-    # build pods_info exactly as before…
+    # ——— build the same pods_info list as before ———
     pods_info = []
     for pod in items:
-        md, spec, st = pod["metadata"], pod["spec"], pod["status"]
-        phase = "Terminating" if md.get("deletionTimestamp") else st.get("phase","Unknown")
+        md   = pod.get("metadata", {})
+        spec = pod.get("spec", {})
+        st   = pod.get("status", {})
+
+        phase = "Terminating" if md.get("deletionTimestamp") else st.get("phase", "Unknown")
+
         pods_info.append({
             "name":       md.get("name"),
             "namespace":  md.get("namespace"),
             "node":       spec.get("nodeName", "Unknown"),
             "status":     phase,
-            "ip":         st.get("podIP","N/A"),
-            "host_ip":    st.get("hostIP","N/A"),
-            "containers": len(spec.get("containers",[])),
+            "ip":         st.get("podIP", "N/A"),
+            "host_ip":    st.get("hostIP", "N/A"),
+            "containers": len(spec.get("containers", [])),
         })
 
     return render(request, "main/pods_status.html", {"pods": pods_info})
