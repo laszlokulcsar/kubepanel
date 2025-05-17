@@ -360,55 +360,74 @@ def volumesnapshots(request,domain):
 def settings(request):
     return render(request, "main/settings.html")
 
+@login_required
 def get_pods_status(request):
-    if request.user.is_superuser:
-      host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
-      port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
-      token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-      ca_cert_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-      
-      try:
-          with open(token_path, 'r') as f:
-              token = f.read().strip()
-      except FileNotFoundError:
-          return JsonResponse({"error": "Kubernetes token file not found."}, status=500)
-  
-      headers = {
-          "Authorization": f"Bearer {token}",
-          "Content-Type": "application/json"
-      }
-  
-      # Get pods information across all namespaces
-      url = f"https://{host}:{port}/api/v1/pods"
-      try:
-          response = requests.get(url, headers=headers, verify=ca_cert_path)
-          response.raise_for_status()
-          data = response.json()
-      except requests.exceptions.RequestException as e:
-          return JsonResponse({"error": str(e)}, status=500)
-  
-      pods_info = []
-      for pod in data.get("items", []):
-          metadata = pod.get("metadata", {})
-          spec = pod.get("spec", {})
-          status = pod.get("status", {})
-  
-          # Check if deletionTimestamp is set -> Pod is Terminating
-          if metadata.get("deletionTimestamp"):
-              pod_phase = "Terminating"
-          else:
-              pod_phase = status.get("phase", "Unknown")
-  
-          pods_info.append({
-              "name": metadata.get("name"),
-              "namespace": metadata.get("namespace"),
-              "node": spec.get("nodeName", "Unknown"),
-              "status": pod_phase,
-              "ip": status.get("podIP", "N/A"),
-              "host_ip": status.get("hostIP", "N/A"),
-              "containers": len(spec.get("containers", [])),
-          }) 
-      return render(request, "main/pods_status.html", {"pods": pods_info})
+    # only superusers see *all* namespaces
+    is_super = request.user.is_superuser
+
+    # if not superuser, build a list of namespaces they own
+    if not is_super:
+        # assume Domain model has 'namespace' (string) and 'owner' FK to User
+        user_namespaces = set(
+            Domain.objects.filter(owner=request.user)
+                  .values_list('namespace', flat=True)
+        )
+        if not user_namespaces:
+            # they own no domains yet
+            return render(request, "main/pods_status.html", {"pods": []})
+
+    # Kubernetes API set-up (same for all)
+    host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
+    port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
+    token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    ca_cert_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+
+    try:
+        token = open(token_path).read().strip()
+    except FileNotFoundError:
+        return JsonResponse({"error": "Kubernetes token file not found."}, status=500)
+
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    url = f"https://{host}:{port}/api/v1/pods"
+
+    try:
+        resp = requests.get(url, headers=headers, verify=ca_cert_path)
+        resp.raise_for_status()
+        raw = resp.json()
+    except requests.exceptions.RequestException as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+    items = raw.get("items", [])
+    # if regular user, filter out pods not in their namespaces
+    if not is_super:
+        items = [
+            pod for pod in items
+            if pod.get("metadata", {}).get("namespace") in user_namespaces
+        ]
+
+    pods_info = []
+    for pod in items:
+        md = pod.get("metadata", {})
+        spec = pod.get("spec", {})
+        st = pod.get("status", {})
+
+        phase = (
+            "Terminating"
+            if md.get("deletionTimestamp")
+            else st.get("phase", "Unknown")
+        )
+
+        pods_info.append({
+            "name":       md.get("name"),
+            "namespace":  md.get("namespace"),
+            "node":       spec.get("nodeName", "Unknown"),
+            "status":     phase,
+            "ip":         st.get("podIP", "N/A"),
+            "host_ip":    st.get("hostIP", "N/A"),
+            "containers": len(spec.get("containers", [])),
+        })
+
+    return render(request, "main/pods_status.html", {"pods": pods_info})
 
 @login_required(login_url="/dashboard/")
 def livetraffic(request):
