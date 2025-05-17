@@ -1170,63 +1170,64 @@ def node_uncordon(request, name):
 
     return redirect('node_list')
 
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from django.contrib import messages
+# views.py
+
 import requests
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect, render
+from .models import Domain
+from .utils import _load_k8s_auth   # wherever you keep that helper
 
 @login_required
 def pod_logs(request, namespace, name):
-    if not request.user.is_superuser:
-        return redirect('pod_list')
-
-    logs_by_container = {}
+    is_super = request.user.is_superuser
     try:
         base, headers, verify = _load_k8s_auth()
+    except Exception as e:
+        messages.error(request, f"Error loading Kubernetes credentials: {e}")
+        return redirect('pods_status')
 
-        # 1) Fetch the Pod object to discover its containers
-        pod_resp = requests.get(
-            f"{base}/api/v1/namespaces/{namespace}/pods/{name}",
-            headers=headers,
-            verify=verify,
-            timeout=10
-        )
-        if not pod_resp.ok:
-            messages.error(
-                request,
-                f"Could not fetch pod details (status={pod_resp.status_code}): {pod_resp.text}"
-            )
-            container_names = []
-        else:
-            pod_json = pod_resp.json()
-            container_specs = pod_json.get("spec", {}).get("containers", [])
-            container_names = [c.get("name") for c in container_specs]
+    # 1) Fetch the Pod object
+    try:
+        pod_resp = requests.get(f"{base}/api/v1/namespaces/{namespace}/pods/{name}", headers=headers, verify=verify, timeout=10)
+    except Exception as e:
+        messages.error(request, f"Error fetching pod details: {e}")
+        return redirect('pods_status')
 
-        # 2) For each container, fetch its logs
-        for c in container_names:
-            params = {"container": c}
-            log_resp = requests.get(
-                f"{base}/api/v1/namespaces/{namespace}/pods/{name}/log",
-                headers=headers,
-                verify=verify,
-                params=params,
-                timeout=10
-            )
+    if not pod_resp.ok:
+        messages.error(request, f"Could not fetch pod details (status={pod_resp.status_code}): {pod_resp.text}")
+        return redirect('pods_status')
+
+    pod_json = pod_resp.json()
+    labels = pod_json.get('metadata', {}).get('labels', {})
+    group_label = labels.get('group')
+
+    # 2) Permission check for regular users
+    if not is_super:
+        user_slugs = [d.replace('.', '-') for d in Domain.objects.filter(owner=request.user).values_list('domain_name', flat=True)]
+        if not group_label or group_label not in user_slugs:
+            messages.error(request, "You are not authorized to view logs for this pod.")
+            return redirect('pods_status')
+
+    # 3) Discover containers
+    container_specs = pod_json.get('spec', {}).get('containers', [])
+    container_names = [c.get('name') for c in container_specs]
+
+    # 4) Fetch logs per container
+    logs_by_container = {}
+    for c in container_names:
+        try:
+            log_resp = requests.get(f"{base}/api/v1/namespaces/{namespace}/pods/{name}/log", headers=headers, verify=verify, params={'container': c}, timeout=10)
             if log_resp.ok:
                 logs_by_container[c] = log_resp.text.splitlines()
             else:
-                messages.error(
-                    request,
-                    f"Failed to fetch logs for container «{c}» (status={log_resp.status_code}): {log_resp.text}"
-                )
+                messages.error(request, f"Failed to fetch logs for container “{c}” (status={log_resp.status_code}): {log_resp.text}")
                 logs_by_container[c] = []
+        except Exception as e:
+            messages.error(request, f"Error fetching logs for container “{c}”: {e}")
+            logs_by_container[c] = []
 
-    except Exception as e:
-        messages.error(request, f"Error fetching pod logs: {e}")
+    return render(request, 'main/pod_logs.html', {'namespace': namespace, 'pod_name': name, 'logs_by_container': logs_by_container})
 
-    return render(request, 'main/pod_logs.html', {
-        'namespace': namespace,
-        'pod_name': name,
-        'logs_by_container': logs_by_container,
-    })
 
