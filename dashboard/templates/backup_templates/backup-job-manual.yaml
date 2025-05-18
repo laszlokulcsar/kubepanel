@@ -45,8 +45,15 @@ spec:
               source:
                 persistentVolumeClaimName: {{ domain_name_dash }}-pvc
             EOF
+            echo $DATE
+            echo "Start Volumesnapshot creation"
             python3 /kubepanel/manage.py add_snapshot -sn {{ domain_name_dash }}-snapshot-$DATE -d {{ domain_name }}
+            echo $DATE
+            echo "Start MariaDB dump"
             mysqldump -h mariadb.kubepanel.svc.cluster.local -uroot -p$MARIADB_ROOT_PASSWORD $DBNAME > /backup/{{ domain_name_dash }}-snapshot-$DATE.sql
+            echo $DATE
+            echo "Backup finished"
+            ls -alh /backup/
         volumeMounts:
         - name: kubepanel
           mountPath: /kubepanel
