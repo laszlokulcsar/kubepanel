@@ -1244,7 +1244,7 @@ def backup_logs(request, domain, jobid):
     except Exception as e:
         pod_name = None
         logs_by_container = { job_name: [f"Error fetching logs: {e}"] }
-    return render(request, "backup_logs.html", {
+    return render(request, "main/backup_logs.html", {
         "domain": domain,
         "namespace": namespace,
         "pod_name": pod_name,
