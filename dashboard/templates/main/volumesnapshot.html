@@ -1,42 +1,66 @@
 {% extends "base.html" %}
 {% block content %}
-                        <main class="content">
-                                <div class="container-fluid p-0">
+<main class="content">
+  <div class="container-fluid p-0">
+    <h1 class="h3 mb-3"><strong>Filesystem backups</strong> list</h1>
 
-                                        <h1 class="h3 mb-3"><strong>Filesystem backups</strong> list</h1>
-                                        <div class="row">
-                                                <div class="col-12 col-lg-12 col-xxl-12 d-flex">
-                                                        <div class="card flex-fill">
-                                                                <div class="card-header">
+    <div class="row">
+      <div class="col-12 d-flex">
+        <div class="card flex-fill">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Domain List</h5>
+          </div>
 
-                                                                        <h5 class="card-title mb-0">Domain List</h5>
-                                                                </div>
-                                                                <table class="table table-hover my-0">
-                                                                        <thead>
-                                                                                <tr>
-                                                                                        <th>Name</th>
-                                                                                        <th class="d-none d-xl-table-cell">SFTP port</th>
-                                                                                        <th>Status</th>
-                                                                                        <th class="d-none d-md-table-cell">Actions</th>
-                                                                                </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                                {% for volumesnapshot in volumesnapshots.all %}
-                                                                                <tr>
-                                                                                        <td>{{ volumesnapshot.snapshotname }}</td>
-                                                                                        <td class="d-none d-xl-table-cell">{{ volumesnapshot.created_at  }}</td>
-                                                                                        <td class="d-none d-md-table-cell"><a href="{% url 'restore_volumesnapshot' domain volumesnapshot.snapshotname %}"><button class="btn btn-danger">Restore backup</button></a></td>
-                                                                                        <td></td>
-                                                                                </tr>
-                                                                                {% endfor %}
-                                                                        </tbody>
-                                                                </table>
-                                                                        <div class="d-grid">
-                                                                        </div>
-                                                        </div>
-                                                </div>
-                                        </div>
+          <table class="table table-hover my-0">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th class="d-none d-xl-table-cell">Created at</th>
+                <th>Status</th>
+                <th class="d-none d-md-table-cell">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for vs in volumesnapshots.all %}
+              <tr>
+                <td>{{ vs.snapshotname }}</td>
+                <td class="d-none d-xl-table-cell">{{ vs.created_at }}</td>
+                <td class="d-none d-md-table-cell">
+                  <a href="{% url 'restore_volumesnapshot' domain vs.snapshotname %}">
+                    <button class="btn btn-danger">Restore backup</button>
+                  </a>
+                </td>
+                <td>
+                  <button class="btn btn-secondary"
+                          onclick="toggleLogs({{ forloop.counter }})">
+                    Show logs
+                  </button>
+                </td>
+              </tr>
+              <tr id="logs-{{ forloop.counter }}" style="display:none;">
+                <td colspan="4">
+                  <pre class="border rounded p-2"
+                       style="max-height:50vh; overflow:auto;
+                              background:#1e1e1e; color:#ddd;">
+{{ vs.log|default:"No logs available."|escape }}
+                  </pre>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
 
-                                </div>
-                        </main>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  function toggleLogs(id) {
+    var row = document.getElementById('logs-' + id);
+    row.style.display = (row.style.display === 'none') ? 'table-row' : 'none';
+  }
+</script>
 {% endblock %}
+
