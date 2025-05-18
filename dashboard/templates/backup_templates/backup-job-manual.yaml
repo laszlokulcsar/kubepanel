@@ -56,22 +56,18 @@ spec:
                 persistentVolumeClaimName: ${NAMESPACE}-pvc
             EOF
             
-            kubectl wait --for=condition=Ready snapshot.storage.k8s.io/${SNAP_NAME} \
-              -n ${NAMESPACE} --timeout=120s
-            
             mysqldump -h mariadb.kubepanel.svc.cluster.local \
               -u root -p"${MARIADB_ROOT_PASSWORD}" "${DBNAME}" \
               > /backup/${SNAP_NAME}.sql
             
             echo ">>> Backup finished at $(date)"
             
+            echo ">>> Django record created; files in /backup:"
+            ls -alh /backup/
             python3 /kubepanel/manage.py add_snapshot \
               --snapshotname "${SNAP_NAME}" \
               --domain       "${DOMAIN}" \
               --logfile      "$LOGFILE"
-            
-            echo ">>> Django record created; files in /backup:"
-            ls -alh /backup/
         volumeMounts:
         - name: kubepanel
           mountPath: /kubepanel
