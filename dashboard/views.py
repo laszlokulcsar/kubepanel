@@ -1225,8 +1225,8 @@ def pod_logs(request, namespace, name):
 def backup_logs(request, domain, jobid):
     base, headers, ca_cert = _load_k8s_auth()
     namespace = domain.replace(".", "-")
-    job_name  = f"{namespace}-snapshot-{jobid}"
-    pods_url  = f"{base}/api/v1/namespaces/{namespace}/pods"
+    job_name  = f"backup-{namespace}-{jobid}"
+    pods_url  = f"{base}/api/v1/namespaces/kubepanel/pods"
     params    = {"labelSelector": f"job-name={job_name}"}
 
     try:
@@ -1237,7 +1237,7 @@ def backup_logs(request, domain, jobid):
             logs = f"No pods found for job {job_name}"
         else:
             pod_name = items[0]["metadata"]["name"]
-            log_url  = f"{base}/api/v1/namespaces/{namespace}/pods/{pod_name}/log"
+            log_url  = f"{base}/api/v1/namespaces/kubepanel/pods/{pod_name}/log"
             r2 = requests.get(log_url, headers=headers, verify=ca_cert, timeout=10)
             logs = r2.text if r2.status_code == 200 else f"Error {r2.status_code}: {r2.text}"
     except Exception as e:
