@@ -8,7 +8,7 @@
 <main class="content">
   <div class="container-fluid p-0">
     <h1 class="h3 mb-3">
-      Logs for backup job <strong>{{ pod_name }}</strong>
+      Logs for <strong>{{ pod_name }}</strong>
       <small class="text-muted">({{ namespace }})</small>
     </h1>
 
@@ -22,13 +22,9 @@
             <pre class="border rounded p-2"
                  style="max-height: 50vh; overflow:auto;
                         background:#1e1e1e; color:#ddd;">
-{% for line in lines %}
-{{ line }}
-{% endfor %}
+{% for line in lines %}{{ line }}{% endfor %}
             </pre>
-            {% if not forloop.last %}
-              <hr>
-            {% endif %}
+            {% if not forloop.last %}<hr>{% endif %}
           {% endfor %}
         {% else %}
           <p class="text-muted">

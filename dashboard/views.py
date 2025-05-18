@@ -1224,27 +1224,29 @@ def pod_logs(request, namespace, name):
 @login_required(login_url="/dashboard/")
 def backup_logs(request, domain, jobid):
     base, headers, ca_cert = _load_k8s_auth()
-    namespace = domain.replace(".", "-")
-    job_name  = f"backup-{namespace}-{jobid}"
-    pods_url  = f"{base}/api/v1/namespaces/kubepanel/pods"
+    namespace = 'kubepanel'
+    job_name  = f"{domain.replace('.', '-')}-snapshot-{jobid}"
+    pods_url  = f"{base}/api/v1/namespaces/{namespace}/pods"
     params    = {"labelSelector": f"job-name={job_name}"}
-
     try:
         r = requests.get(pods_url, headers=headers, params=params, verify=ca_cert, timeout=5)
         r.raise_for_status()
         items = r.json().get("items", [])
-        if not items:
-            logs = f"No pods found for job {job_name}"
-        else:
+        if items:
             pod_name = items[0]["metadata"]["name"]
-            log_url  = f"{base}/api/v1/namespaces/kubepanel/pods/{pod_name}/log"
+            log_url  = f"{base}/api/v1/namespaces/{namespace}/pods/{pod_name}/log"
             r2 = requests.get(log_url, headers=headers, verify=ca_cert, timeout=10)
-            logs = r2.text if r2.status_code == 200 else f"Error {r2.status_code}: {r2.text}"
+            lines = r2.text.splitlines()
+            logs_by_container = { job_name: lines }
+        else:
+            pod_name = None
+            logs_by_container = {}
     except Exception as e:
-        logs = f"Exception while fetching logs: {e}"
-
-    return render(request, "main/backup_logs.html", {
+        pod_name = None
+        logs_by_container = { job_name: [f"Error fetching logs: {e}"] }
+    return render(request, "backup_logs.html", {
         "domain": domain,
-        "jobid":  jobid,
-        "logs":   logs,
+        "namespace": namespace,
+        "pod_name": pod_name,
+        "logs_by_container": logs_by_container,
     })
