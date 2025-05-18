@@ -32,27 +32,43 @@ spec:
           - /bin/bash
           - -c
           - |
+            set -euo pipefail
+  
             DATE=$(date +'%Y%m%d%H%M%S')
-            # Now create the snapshot
+            SNAP_NAME="${NAMESPACE}-snapshot-${DATE}"
+            LOGFILE=/backup/${NAMESPACE}-snapshot-${DATE}.log
+            
+            # redirect EVERYTHING (stdout+stderr) into $LOGFILE *and* still echo to console
+            exec > >(tee -a "$LOGFILE") 2>&1
+            
+            echo ">>> Starting backup job at $(date)"
             kubectl apply -f - <<EOF
             apiVersion: snapshot.storage.k8s.io/v1
             kind: VolumeSnapshot
             metadata:
-              name: {{ domain_name_dash }}-snapshot-$DATE
-              namespace: {{ domain_name_dash }}
+              name: ${SNAP_NAME}
+              namespace: ${NAMESPACE}
             spec:
               volumeSnapshotClassName: piraeus-snapshots
               source:
-                persistentVolumeClaimName: {{ domain_name_dash }}-pvc
+                persistentVolumeClaimName: ${NAMESPACE}-pvc
             EOF
-            echo $DATE
-            echo "Start Volumesnapshot creation"
-            python3 /kubepanel/manage.py add_snapshot -sn {{ domain_name_dash }}-snapshot-$DATE -d {{ domain_name }}
-            echo $DATE
-            echo "Start MariaDB dump"
-            mysqldump -h mariadb.kubepanel.svc.cluster.local -uroot -p$MARIADB_ROOT_PASSWORD $DBNAME > /backup/{{ domain_name_dash }}-snapshot-$DATE.sql
-            echo $DATE
-            echo "Backup finished"
+            
+            kubectl wait --for=condition=Ready snapshot.storage.k8s.io/${SNAP_NAME} \
+              -n ${NAMESPACE} --timeout=120s
+            
+            mysqldump -h mariadb.kubepanel.svc.cluster.local \
+              -u root -p"${MARIADB_ROOT_PASSWORD}" "${DBNAME}" \
+              > /backup/${SNAP_NAME}.sql
+            
+            echo ">>> Backup finished at $(date)"
+            
+            python3 /kubepanel/manage.py add_snapshot \
+              --snapshotname "${SNAP_NAME}" \
+              --domain       "${DOMAIN}" \
+              --logfile      "$LOGFILE"
+            
+            echo ">>> Django record created; files in /backup:"
             ls -alh /backup/
         volumeMounts:
         - name: kubepanel

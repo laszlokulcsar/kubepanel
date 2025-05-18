@@ -74,6 +74,7 @@ class Volumesnapshot(models.Model):
     domain = models.ForeignKey(Domain, on_delete=models.CASCADE)
     snapshotname = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    log = models.TextField(db_default="")
 
 class BlockRule(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
