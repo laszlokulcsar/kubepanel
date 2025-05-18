@@ -724,12 +724,12 @@ def start_backup(request,domain):
           jobid = random_string(5)
           context = { "domain_name" : domain, "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-") }
           iterate_input_templates(template_dir,domain_dirname,context)
+          return redirect('backup_logs', domain=domain, jobid=jobid)
       else:
         error = "Domain name didn't match"
         return render(request, "main/start_backup.html", { "domain" : domain, "error" : error})
     else:
       return render(request, "main/start_backup.html", { "domain" : domain})
-    return redirect(kpmain)
 
 @login_required(login_url="/dashboard/")
 def delete_domain(request,domain):
@@ -1221,4 +1221,30 @@ def pod_logs(request, namespace, name):
 
     return render(request, 'main/pod_logs.html', {'namespace': namespace, 'pod_name': name, 'logs_by_container': logs_by_container})
 
+@login_required(login_url="/dashboard/")
+def backup_logs(request, domain, jobid):
+    base, headers, ca_cert = _load_k8s_auth()
+    namespace = domain.replace(".", "-")
+    job_name  = f"{namespace}-snapshot-{jobid}"
+    pods_url  = f"{base}/api/v1/namespaces/{namespace}/pods"
+    params    = {"labelSelector": f"job-name={job_name}"}
 
+    try:
+        r = requests.get(pods_url, headers=headers, params=params, verify=ca_cert, timeout=5)
+        r.raise_for_status()
+        items = r.json().get("items", [])
+        if not items:
+            logs = f"No pods found for job {job_name}"
+        else:
+            pod_name = items[0]["metadata"]["name"]
+            log_url  = f"{base}/api/v1/namespaces/{namespace}/pods/{pod_name}/log"
+            r2 = requests.get(log_url, headers=headers, verify=ca_cert, timeout=10)
+            logs = r2.text if r2.status_code == 200 else f"Error {r2.status_code}: {r2.text}"
+    except Exception as e:
+        logs = f"Exception while fetching logs: {e}"
+
+    return render(request, "main/backup_logs.html", {
+        "domain": domain,
+        "jobid":  jobid,
+        "logs":   logs,
+    })

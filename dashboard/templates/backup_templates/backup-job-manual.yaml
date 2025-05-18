@@ -57,7 +57,7 @@ spec:
               source:
                 persistentVolumeClaimName: ${NAMESPACE}-pvc
             EOF
-            
+            echo ">>> Starting MariaDB dump at $(date)"
             mysqldump -h mariadb.kubepanel.svc.cluster.local \
               -u root -p"${MARIADB_ROOT_PASSWORD}" "${DBNAME}" \
               > /backup/${SNAP_NAME}.sql
