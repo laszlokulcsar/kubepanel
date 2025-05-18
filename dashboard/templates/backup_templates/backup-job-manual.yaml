@@ -26,6 +26,8 @@ spec:
           value: "{{ domain_name_underscore }}"
         - name: DBNAME
           value: "{{ domain_name_underscore }}"
+        - name: NAMESPACE
+          value: "{{ domain_name_dash }}"
         image: laszlokulcsar/db-client:v0.1
         imagePullPolicy: Always
         command:
