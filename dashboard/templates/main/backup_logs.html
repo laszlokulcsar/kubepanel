@@ -20,9 +20,11 @@
               Container: <code>{{ container }}</code>
             </h5>
             <pre class="border rounded p-2"
-                 style="max-height: 50vh; overflow:auto;
-                        background:#1e1e1e; color:#ddd;">
-{% for line in lines %}{{ line }}{% endfor %}
+                 style="max-height:50vh;overflow:auto;
+                        background:#1e1e1e;color:#ddd;">
+{% for line in lines %}
+{{ line }}
+{% endfor %}
             </pre>
             {% if not forloop.last %}<hr>{% endif %}
           {% endfor %}

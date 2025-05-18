@@ -1221,32 +1221,53 @@ def pod_logs(request, namespace, name):
 
     return render(request, 'main/pod_logs.html', {'namespace': namespace, 'pod_name': name, 'logs_by_container': logs_by_container})
 
+# dashboard/views.py
+
+import requests
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from .k8s import _load_k8s_auth
+
 @login_required(login_url="/dashboard/")
 def backup_logs(request, domain, jobid):
     base, headers, ca_cert = _load_k8s_auth()
-    namespace = 'kubepanel'
-    job_name  = f"{domain.replace('.', '-')}-snapshot-{jobid}"
+    namespace = "kubepanel"
+    ns_domain = domain.replace(".", "-")
+    job_name  = f"backup-{ns_domain}-{jobid}"
     pods_url  = f"{base}/api/v1/namespaces/{namespace}/pods"
     params    = {"labelSelector": f"job-name={job_name}"}
+
     try:
-        r = requests.get(pods_url, headers=headers, params=params, verify=ca_cert, timeout=5)
+        r = requests.get(pods_url, headers=headers, params=params,
+                         verify=ca_cert, timeout=5)
         r.raise_for_status()
         items = r.json().get("items", [])
         if items:
-            pod_name = items[0]["metadata"]["name"]
-            log_url  = f"{base}/api/v1/namespaces/{namespace}/pods/{pod_name}/log"
-            r2 = requests.get(log_url, headers=headers, verify=ca_cert, timeout=10)
-            lines = r2.text.splitlines()
-            logs_by_container = { job_name: lines }
+            pod = items[0]
+            pod_name = pod["metadata"]["name"]
+            log_url  = (f"{base}/api/v1/namespaces/{namespace}"
+                        f"/pods/{pod_name}/log")
+            r2 = requests.get(log_url, headers=headers,
+                              verify=ca_cert, timeout=10)
+            if r2.status_code == 200:
+                lines = r2.text.splitlines()
+            else:
+                lines = [f"Error {r2.status_code}: {r2.text}"]
+            logs_by_container = {pod_name: lines}
+            display_name = pod_name
         else:
-            pod_name = None
+            display_name = job_name
             logs_by_container = {}
     except Exception as e:
-        pod_name = None
-        logs_by_container = { job_name: [f"Error fetching logs: {e}"] }
+        display_name = job_name
+        logs_by_container = {
+            display_name: [f"Exception fetching logs: {e}"]
+        }
+
     return render(request, "main/backup_logs.html", {
         "domain": domain,
         "namespace": namespace,
-        "pod_name": pod_name,
+        "pod_name": display_name,
         "logs_by_container": logs_by_container,
     })
+
