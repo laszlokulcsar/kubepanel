@@ -30,7 +30,7 @@
           {% endfor %}
         {% else %}
           <p class="text-muted">
-            No logs available for this backup job.
+            Backup job will start soon, this page will be refreshed in every 5 seconds.
           </p>
         {% endif %}
 
@@ -42,5 +42,11 @@
     </div>
   </div>
 </main>
+<script>
+// reload the page every 5 seconds
+setTimeout(function(){
+  window.location.reload();
+}, 5000);
+</script>
 {% endblock %}
 
