@@ -1221,13 +1221,6 @@ def pod_logs(request, namespace, name):
 
     return render(request, 'main/pod_logs.html', {'namespace': namespace, 'pod_name': name, 'logs_by_container': logs_by_container})
 
-# dashboard/views.py
-
-import requests
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from .k8s import _load_k8s_auth
-
 @login_required(login_url="/dashboard/")
 def backup_logs(request, domain, jobid):
     base, headers, ca_cert = _load_k8s_auth()
