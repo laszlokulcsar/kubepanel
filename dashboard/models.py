@@ -163,3 +163,47 @@ class MailAlias(models.Model):
     source = models.CharField(max_length=255)      # e.g. "alias@example.com"
     destination = models.CharField(max_length=255) # e.g. "real@example.com"
     active = models.BooleanField(default=True)
+
+from django.db import models
+from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
+
+class LogEntry(models.Model):
+    LEVEL_CHOICES = [
+        ('DEBUG', 'Debug'),
+        ('INFO', 'Info'),
+        ('WARNING', 'Warning'),
+        ('ERROR', 'Error'),
+        ('CRITICAL', 'Critical'),
+    ]
+
+    timestamp      = models.DateTimeField(auto_now_add=True)
+    content_type   = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id      = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+
+    actor = models.CharField(
+        max_length=100,
+        help_text="Identifier of the actor (e.g. 'user:alice', 'backup_cron')"
+    )
+    user = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        help_text="Optional link to the authenticated user"
+    )
+
+    level   = models.CharField(max_length=10, choices=LEVEL_CHOICES, default='INFO')
+    message = models.TextField()
+    data    = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return (
+            f"[{self.level}] {self.timestamp:%Y-%m-%d %H:%M:%S} "
+            f"— {self.actor} → {self.content_object}: {self.message}"
+        )
