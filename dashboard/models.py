@@ -166,11 +166,6 @@ class MailAlias(models.Model):
     destination = models.CharField(max_length=255) # e.g. "real@example.com"
     active = models.BooleanField(default=True)
 
-from django.db import models
-from django.contrib.auth.models import User
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.fields import GenericForeignKey
-
 class LogEntry(models.Model):
     LEVEL_CHOICES = [
         ('DEBUG', 'Debug'),
@@ -181,7 +176,11 @@ class LogEntry(models.Model):
     ]
 
     timestamp      = models.DateTimeField(auto_now_add=True)
-    content_type   = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    content_type   = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+        related_name='dashboard_log_entries'
+    )
     object_id      = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
 
@@ -194,6 +193,7 @@ class LogEntry(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
+        related_name='dashboard_user_log_entries',
         help_text="Optional link to the authenticated user"
     )
 
@@ -209,3 +209,4 @@ class LogEntry(models.Model):
             f"[{self.level}] {self.timestamp:%Y-%m-%d %H:%M:%S} "
             f"— {self.actor} → {self.content_object}: {self.message}"
         )
+
