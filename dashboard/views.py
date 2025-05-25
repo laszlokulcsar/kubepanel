@@ -621,7 +621,7 @@ def add_domain(request):
         static_file.write(dkim_privkey)
         static_file.close()
         #END
-        return redirect(domain_logs, {'domain': new_domain.domain_name})
+        return redirect(domain_logs, domain=new_domain.domain_name)
     else:
         tokens = CloudflareAPIToken.objects.filter(user=request.user)
         form = DomainAddForm()
