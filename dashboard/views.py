@@ -566,7 +566,7 @@ def add_domain(request):
         try:
           new_domain.full_clean()
           new_domain.save()
-          LogEntry.objects.create(content_object=domain,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Created domain {new_domain.domain_name}",data={"domain_id": new_domain.pk})
+          LogEntry.objects.create(content_object=new_domain,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Created domain {new_domain.domain_name}",data={"domain_id": new_domain.pk})
         except:
           print("Ooops, can't save domain, please check debug logs.")
           return render(request, "main/domain_error.html",{ "domain" : new_domain_name,})
@@ -621,11 +621,9 @@ def add_domain(request):
         static_file.write(dkim_privkey)
         static_file.close()
         #END
-
-        return render(request, 'main/domain_logs.html', {
-        'domain': domain_obj.domain_name,
-        'logs': logs,
-    })
+        ct = ContentType.objects.get_for_model(Domain)
+        logs = (LogEntry.objects.filter(content_type=ct, object_id=new_domain.pk).order_by('-timestamp')
+        return render(request, 'main/domain_logs.html', {'domain': new_domain.domain_name,'logs': logs,})
     else:
         tokens = CloudflareAPIToken.objects.filter(user=request.user)
         form = DomainAddForm()
