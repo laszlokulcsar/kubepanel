@@ -38,6 +38,7 @@ spec:
           - |
             set -euo pipefail
   
+            python3 /kubepanel/manage.py add_log --model dashboard.domain --lookup domain_name="${DOMAIN}" --actor system --message "Backup process started for "${DOMAIN}"" --level INFO
             DATE=$(date +'%Y%m%d%H%M%S')
             SNAP_NAME="${NAMESPACE}-snapshot-${DATE}"
             LOGFILE=/backup/${NAMESPACE}-snapshot-${DATE}.log
@@ -70,6 +71,7 @@ spec:
               --snapshotname "${SNAP_NAME}" \
               --domain       "${DOMAIN}" \
               --logfile      "$LOGFILE"
+            python3 /kubepanel/manage.py add_log --model dashboard.domain --lookup domain_name="${DOMAIN}" --actor system --message "Backup process finished for "${DOMAIN}"" --level INFO
         volumeMounts:
         - name: kubepanel
           mountPath: /kubepanel

@@ -32,6 +32,7 @@ spec:
               - /bin/sh
               - -c
               - |
+                python3 /kubepanel/manage.py add_log --model dashboard.domain --lookup domain_name={{ domain }} --actor system --message "Restore process started for {{ domain }}" --level INFO
                 kubectl annotate pods --all --overwrite kubepanel.status='Restore in progress' -n {{ domain_name_dash }}
                 kubectl scale deployment/php --replicas=0 -n {{ domain_name_dash }}
                 kubectl scale deployment/nginx --replicas=0 -n {{ domain_name_dash }}
@@ -57,4 +58,5 @@ spec:
                 mysql -h mariadb.kubepanel.svc.cluster.local -uroot -p$MARIADB_ROOT_PASSWORD $DBNAME < /backup/{{ volumesnapshot }}.sql
                 kubectl scale deployment/nginx --replicas=1 -n {{ domain_name_dash }}
                 kubectl scale deployment/php --replicas=1 -n {{ domain_name_dash }}
+                python3 /kubepanel/manage.py add_log --model dashboard.domain --lookup domain_name={{ domain }} --actor system --message "Restore process finished for {{ domain }}. Containers are starting now" --level INFO
   backoffLimit: 4

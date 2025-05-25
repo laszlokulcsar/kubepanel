@@ -701,7 +701,7 @@ def restore_volumesnapshot(request,volumesnapshot,domain):
           except:
             print("Can't create directories. Please check debug logs if you think this is an error.")
           jobid = random_string(5)
-          context = { "storage_size" : storage_size, "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-"), "volumesnapshot" : volumesnapshot }
+          context = { "storage_size" : storage_size, "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-"), "volumesnapshot" : volumesnapshot, "domain" : domain }
           iterate_input_templates(template_dir,domain_dirname,context)
           LogEntry.objects.create(content_object=domain_obj,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Restore started for {domain_obj.domain_name}",data={"domain_id": domain_obj.pk})
       else:
