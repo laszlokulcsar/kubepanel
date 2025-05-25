@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block head %}
+  <meta http-equiv="refresh" content="5">
+{% endblock %}
+
+{% block content %}
+<main class="content">
+  <div class="container-fluid p-0">
+    <h1 class="h3 mb-3">
+      Logs for <strong>{{ domain }}</strong>
+    </h1>
+
+    <div class="card">
+      <div class="card-body">
+        {% if logs %}
+          <pre class="border rounded p-2"
+               style="max-height:50vh;overflow:auto;
+                      background:#1e1e1e;color:#ddd;">
+{% for entry in logs %}
+{{ entry.timestamp }} [{{ entry.level }}] {{ entry.actor }} — {{ entry.message }}
+{% endfor %}
+          </pre>
+        {% else %}
+          <p class="text-muted">
+            No log entries yet. Refreshing every 5 seconds…
+          </p>
+        {% endif %}
+
+        <a href="{% url 'view_domain' domain=domain %}"
+           class="btn btn-sm btn-primary mt-3">
+          ← Back to Domain
+        </a>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+setTimeout(function(){
+  window.location.reload();
+}, 5000);
+</script>
+{% endblock %}
+
