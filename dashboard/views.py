@@ -622,7 +622,10 @@ def add_domain(request):
         static_file.close()
         #END
 
-        return redirect(kpmain)
+        return render(request, 'main/domain_logs.html', {
+        'domain': domain_obj.domain_name,
+        'logs': logs,
+    })
     else:
         tokens = CloudflareAPIToken.objects.filter(user=request.user)
         form = DomainAddForm()
