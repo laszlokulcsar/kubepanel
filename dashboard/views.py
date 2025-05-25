@@ -662,15 +662,15 @@ def startstop_domain(request,domain,action):
           urls = []
           urls.append(f"https://{host}:{port}/apis/apps/v1/namespaces/{namespace}/deployments/nginx")
           urls.append(f"https://{host}:{port}/apis/apps/v1/namespaces/{namespace}/deployments/php")
+          if action == "start":
+              LogEntry.objects.create(content_object=domain_obj,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Started domain {domain_obj.domain_name}",data={"domain_id": domain_obj.pk})
+          if action == "stop":
+              LogEntry.objects.create(content_object=domain_obj,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Paused domain {domain_obj.domain_name}",data={"domain_id": domain_obj.pk})
           for url in urls:
             try:
                 response = requests.patch(url, headers=headers, data=json.dumps(payload), verify=False)  # Disable SSL verification for simplicity
                 if response.status_code == 200:
                     print(f"Deployment nginx successfully scaled to {replicas} replicas.")
-                    if action == "start":
-                        LogEntry.objects.create(content_object=domain_obj,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Started domain {domain_obj.domain_name}",data={"domain_id": domain_obj.pk})
-                    if action == "stop":
-                        LogEntry.objects.create(content_object=domain_obj,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Paused domain {domain_obj.domain_name}",data={"domain_id": domain_obj.pk})
                 else:
                     print(f"Failed to scale deployment. Status Code: {response.status_code}")
                     print(f"Response: {response.text}")
