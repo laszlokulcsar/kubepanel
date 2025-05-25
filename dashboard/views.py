@@ -633,6 +633,7 @@ def startstop_domain(request,domain,action):
       if request.POST["imsure"] == domain:
         try:
           permission_valid = Domain.objects.get(owner=request.user, domain_name = domain)
+          domain_obj = permission_valid
           if request.user.is_superuser:
             permission_valid = True
         except:
@@ -666,6 +667,10 @@ def startstop_domain(request,domain,action):
                 response = requests.patch(url, headers=headers, data=json.dumps(payload), verify=False)  # Disable SSL verification for simplicity
                 if response.status_code == 200:
                     print(f"Deployment nginx successfully scaled to {replicas} replicas.")
+                    if action == "start":
+                        LogEntry.objects.create(content_object=domain_obj,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Started domain {domain_obj.domain_name}",data={"domain_id": domain_obj.pk})
+                    if action == "stop":
+                        LogEntry.objects.create(content_object=domain_obj,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Paused domain {domain_obj.domain_name}",data={"domain_id": domain_obj.pk})
                 else:
                     print(f"Failed to scale deployment. Status Code: {response.status_code}")
                     print(f"Response: {response.text}")
@@ -698,12 +703,13 @@ def restore_volumesnapshot(request,volumesnapshot,domain):
           jobid = random_string(5)
           context = { "storage_size" : storage_size, "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-"), "volumesnapshot" : volumesnapshot }
           iterate_input_templates(template_dir,domain_dirname,context)
+          LogEntry.objects.create(content_object=domain_obj,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Restore started for {domain_obi.domain_name}",data={"domain_id": domain_obj.pk})
       else:
         error = "Domain name didn't match"
         return render(request, "main/restore_snapshot.html", { "volumesnapshot" : volumesnapshot, "domain" : domain, "error" : error})
     else:
       return render(request, "main/restore_snapshot.html", { "volumesnapshot" : volumesnapshot, "domain" : domain})
-    return redirect(kpmain)
+    return redirect(domain_logs, domain=domain_obj.domain_name)
 
 @login_required(login_url="/dashboard/")
 def start_backup(request,domain):
