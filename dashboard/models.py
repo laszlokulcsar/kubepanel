@@ -4,6 +4,8 @@ from django.contrib.auth.hashers import make_password
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from .defaultconfigs import NGINX_DEFAULT_CONFIG
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
 
 class Domain(models.Model):
     title = models.CharField(max_length=255)
