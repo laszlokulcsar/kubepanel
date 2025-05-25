@@ -51,4 +51,5 @@ urlpatterns = [
     path('nodes/<str:name>/uncordon/',views.node_uncordon, name='node_uncordon'),
     path('pods/<str:namespace>/<str:name>/logs/',views.pod_logs,name='pod_logs'),
     path('domains/<str:domain>/backup/<str:jobid>/logs/',views.backup_logs,name='backup_logs'),
+    path('domains/<str:domain>/logs/', views.domain_logs, name='domain_logs'),
 ]

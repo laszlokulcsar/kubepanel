@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from .models import MailUser, MailAlias, ClusterIP, DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
+from .models import LogEntry, MailUser, MailAlias, ClusterIP, DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
 from dashboard.forms import MailUserForm, MailAliasForm, DomainForm, DomainAddForm, DomainAliasForm, APITokenForm, ZoneCreationForm, DNSRecordForm
 from django.urls import reverse
 from cryptography.hazmat.primitives import serialization as crypto_serialization
@@ -13,7 +13,7 @@ from cryptography.hazmat.backends import default_backend as crypto_default_backe
 from datetime import datetime
 from cloudflare import Cloudflare
 from django.contrib import messages
-
+from django.contrib.contenttypes.models import ContentType
 import cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
 
 GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
@@ -566,6 +566,7 @@ def add_domain(request):
         try:
           new_domain.full_clean()
           new_domain.save()
+          LogEntry.objects.create(content_object=domain,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Created domain {domain.domain_name}",data={"domain_id": domain.pk})
         except:
           print("Ooops, can't save domain, please check debug logs.")
           return render(request, "main/domain_error.html",{ "domain" : new_domain_name,})
@@ -1264,3 +1265,17 @@ def backup_logs(request, domain, jobid):
         "logs_by_container": logs_by_container,
     })
 
+
+@login_required(login_url="/dashboard/")
+def domain_logs(request, domain):
+    domain_obj = get_object_or_404(Domain, domain_name=domain)
+    ct = ContentType.objects.get_for_model(Domain)
+    logs = (
+        LogEntry.objects
+        .filter(content_type=ct, object_id=domain_obj.pk)
+        .order_by('-timestamp')
+    )
+    return render(request, 'main/domain_logs.html', {
+        'domain': domain_obj.domain_name,
+        'logs': logs,
+    })

@@ -55,6 +55,9 @@
                     <a href="{% url 'startstop_domain' domain=domain.domain_name action='stop' %}" class="btn btn-warning btn-sm ms-1">
                       Pause
                     </a>
+                    <a href="{% url 'domain_logs' domain=domain.domain_name %}" class="btn btn-secondary btn-sm ms-1">
+                      Logs
+                    </a>
                     <a href="{% url 'delete_domain' domain=domain.domain_name %}" class="btn btn-danger btn-sm ms-1">
                       Delete
                     </a>
