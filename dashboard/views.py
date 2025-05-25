@@ -622,7 +622,7 @@ def add_domain(request):
         static_file.close()
         #END
         ct = ContentType.objects.get_for_model(Domain)
-        logs = (LogEntry.objects.filter(content_type=ct, object_id=new_domain.pk).order_by('-timestamp')
+        logs = (LogEntry.objects.filter(content_type=ct, object_id=new_domain.pk).order_by('-timestamp'))
         return render(request, 'main/domain_logs.html', {'domain': new_domain.domain_name,'logs': logs,})
     else:
         tokens = CloudflareAPIToken.objects.filter(user=request.user)
