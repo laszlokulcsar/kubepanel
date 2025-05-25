@@ -566,7 +566,7 @@ def add_domain(request):
         try:
           new_domain.full_clean()
           new_domain.save()
-          LogEntry.objects.create(content_object=domain,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Created domain {domain.domain_name}",data={"domain_id": domain.pk})
+          LogEntry.objects.create(content_object=domain,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Created domain {new_domain.domain_name}",data={"domain_id": new_domain.pk})
         except:
           print("Ooops, can't save domain, please check debug logs.")
           return render(request, "main/domain_error.html",{ "domain" : new_domain_name,})
