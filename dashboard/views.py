@@ -703,7 +703,7 @@ def restore_volumesnapshot(request,volumesnapshot,domain):
           jobid = random_string(5)
           context = { "storage_size" : storage_size, "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-"), "volumesnapshot" : volumesnapshot }
           iterate_input_templates(template_dir,domain_dirname,context)
-          LogEntry.objects.create(content_object=domain_obj,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Restore started for {domain_obi.domain_name}",data={"domain_id": domain_obj.pk})
+          LogEntry.objects.create(content_object=domain_obj,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Restore started for {domain_obj.domain_name}",data={"domain_id": domain_obj.pk})
       else:
         error = "Domain name didn't match"
         return render(request, "main/restore_snapshot.html", { "volumesnapshot" : volumesnapshot, "domain" : domain, "error" : error})
