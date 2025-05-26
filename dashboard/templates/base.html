@@ -51,6 +51,13 @@
             </a>
           </li>
 
+          <li class="sidebar-item {% if request.resolver_match.url_name == 'list_packages' %}active{% endif %}">
+            <a class="sidebar-link" href="{% url 'list_packages' %}">
+              <i class="align-middle" data-feather="package"></i>
+              <span class="align-middle">Packages</span>
+            </a>
+          </li>
+
           <li class="sidebar-item {% if request.resolver_match.url_name == 'livetraffic' %}active{% endif %}">
             <a class="sidebar-link" href="{% url 'livetraffic' %}">
               <i class="align-middle" data-feather="activity"></i>
