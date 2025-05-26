@@ -2,4 +2,3 @@ __pycache__
 *.py[cod]
 migrations
 db.sqlite3
-settings.py
