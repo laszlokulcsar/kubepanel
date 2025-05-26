@@ -60,6 +60,8 @@ class Domain(models.Model):
     def clean(self):
         super().clean()
         pkg = self.owner.profile.package
+        if pkg is None:
+            return
         domains = Domain.objects.filter(owner=self.owner)
         if self.pk:
             domains = domains.exclude(pk=self.pk)
