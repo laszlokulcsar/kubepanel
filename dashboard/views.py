@@ -1324,7 +1324,7 @@ class UserProfileUpdateView(UpdateView):
     success_url = reverse_lazy('list_userprofiles')
 
 class UserCreateView(FormView):
-    template_name = 'dashboard/user_create.html'
+    template_name = 'main/user_create.html'
     form_class = UserForm
     success_url = reverse_lazy('list_userprofiles')
 
