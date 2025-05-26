@@ -1,9 +1,11 @@
 from django.urls import path, re_path
 import re
 from .views import (
-    PackageListView, PackageCreateView,
-    UserProfileListView, UserProfileCreateView
+    PackageListView, PackageCreateView, PackageUpdateView,
+    UserProfileListView, UserProfileCreateView, UserProfileUpdateView,
+    UserCreateView
 )
+
 from . import views
 
 urlpatterns = [
@@ -57,6 +59,10 @@ urlpatterns = [
     path('domains/<str:domain>/logs/', views.domain_logs, name='domain_logs'),
     path('packages/', PackageListView.as_view(), name='list_packages'),
     path('packages/add/', PackageCreateView.as_view(), name='create_package'),
+    path('packages/<int:pk>/edit/', PackageUpdateView.as_view(), name='edit_package'),
     path('profiles/', UserProfileListView.as_view(), name='list_userprofiles'),
     path('profiles/add/', UserProfileCreateView.as_view(), name='create_userprofile'),
+    path('profiles/<int:pk>/edit/', UserProfileUpdateView.as_view(), name='edit_userprofile'),
+    path('users/add/', UserCreateView.as_view(), name='create_user_with_profile'),
+
 ]

@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from .models import Package, UserProfile, LogEntry, MailUser, MailAlias, ClusterIP, DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
-from dashboard.forms import PackageForm, UserProfileForm, MailUserForm, MailAliasForm, DomainForm, DomainAddForm, DomainAliasForm, APITokenForm, ZoneCreationForm, DNSRecordForm
+from dashboard.forms import UserForm, PackageForm, UserProfileForm, MailUserForm, MailAliasForm, DomainForm, DomainAddForm, DomainAliasForm, APITokenForm, ZoneCreationForm, DNSRecordForm
 from django.urls import reverse, reverse_lazy
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -14,7 +14,9 @@ from datetime import datetime
 from cloudflare import Cloudflare
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
-from django.views.generic import ListView, CreateView
+from django.views.generic import ListView, CreateView, UpdateView, FormView
+from django.contrib.auth.models import User
+
 
 import cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
 
@@ -1298,6 +1300,12 @@ class PackageCreateView(CreateView):
     template_name = 'main/package_form.html'
     success_url = reverse_lazy('list_packages')
 
+class PackageUpdateView(UpdateView):
+    model = Package
+    form_class = PackageForm
+    template_name = 'main/package_form.html'
+    success_url = reverse_lazy('list_packages')
+
 class UserProfileListView(ListView):
     model = UserProfile
     template_name = 'main/userprofile_list.html'
@@ -1308,3 +1316,23 @@ class UserProfileCreateView(CreateView):
     form_class = UserProfileForm
     template_name = 'main/userprofile_form.html'
     success_url = reverse_lazy('list_userprofiles')
+
+class UserProfileUpdateView(UpdateView):
+    model = UserProfile
+    form_class = UserProfileForm
+    template_name = 'main/userprofile_form.html'
+    success_url = reverse_lazy('list_userprofiles')
+
+class UserCreateView(FormView):
+    template_name = 'main/user_create.html'
+    form_class = UserForm
+    success_url = reverse_lazy('list_userprofiles')
+
+    def form_valid(self, form):
+        user = form.save()
+        package_id = self.request.POST.get('package')
+        if package_id:
+            UserProfile.objects.create(user=user, package_id=package_id)
+        messages.success(self.request, 'User created successfully.')
+        return super().form_valid(form)
+

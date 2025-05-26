@@ -1,6 +1,8 @@
 from django import forms  
 from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 from dashboard.models import Package, UserProfile, Domain, DomainAlias, CloudflareAPIToken, DNSRecord, DNSZone, MailUser, MailAlias
 from passlib.hash import sha512_crypt
 
@@ -163,17 +165,37 @@ class PackageForm(forms.ModelForm):
     class Meta:
         model = Package
         fields = [
-            'name',
-            'max_storage_size',
-            'max_cpu',
-            'max_memory',
-            'max_mail_users',
-            'max_mail_aliases',
-            'max_domain_aliases',
+            'name', 'max_storage_size', 'max_cpu', 'max_memory',
+            'max_mail_users', 'max_mail_aliases', 'max_domain_aliases'
         ]
+        widgets = {
+            'max_storage_size': forms.NumberInput(attrs={'class': 'form-control'}),
+            'max_cpu': forms.NumberInput(attrs={'class': 'form-control'}),
+            'max_memory': forms.NumberInput(attrs={'class': 'form-control'}),
+            'max_mail_users': forms.NumberInput(attrs={'class': 'form-control'}),
+            'max_mail_aliases': forms.NumberInput(attrs={'class': 'form-control'}),
+            'max_domain_aliases': forms.NumberInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+        }
 
 class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         fields = ['user', 'package']
+        widgets = {
+            'user': forms.Select(attrs={'class': 'form-select'}),
+            'package': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+class UserForm(UserCreationForm):
+    email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={'class': 'form-control'}))
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password1', 'password2']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'password1': forms.PasswordInput(attrs={'class': 'form-control'}),
+            'password2': forms.PasswordInput(attrs={'class': 'form-control'}),
+        }
 

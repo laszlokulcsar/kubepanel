@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<main class="content"><div class="container-fluid p-0">
+  <div class="row mb-4"><div class="col-12">
+    <h1 class="h3 mb-0"><i data-feather="user-plus"></i> Create User</h1>
+  </div></div>
+  <div class="row"><div class="col-12 col-lg-6 offset-lg-3">
+    <div class="card shadow-sm border-0"><div class="card-header bg-primary text-white">
+      <h5 class="card-title mb-0"><i data-feather="user-plus" class="me-2"></i>New User & Package</h5>
+    </div><div class="card-body">
+      <form method="post" novalidate>{% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Username</label>{{ user_form.username }}<div class="invalid-feedback d-block">{{ user_form.username.errors }}</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Email</label>{{ user_form.email }}<div class="invalid-feedback d-block">{{ user_form.email.errors }}</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>{{ user_form.password1 }}<div class="invalid-feedback d-block">{{ user_form.password1.errors }}</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Confirm Password</label>{{ user_form.password2 }}<div class="invalid-feedback d-block">{{ user_form.password2.errors }}</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Assign Package (optional)</label>
+          <select name="package" class="form-select">
+            <option value="">---------</option>
+            {% for pkg in packages %}
+              <option value="{{ pkg.pk }}">{{ pkg.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mt-4 text-end">
+          <a href="{% url 'list_userprofiles' %}" class="btn btn-outline-secondary me-2">
+            <i data-feather="x-circle" class="me-1"></i>Cancel
+          </a>
+          <button type="submit" class="btn btn-success">
+            <i data-feather="check-circle" class="me-1"></i>Create
+          </button>
+        </div>
+      </form>
+    </div></div>
+  </div></div>
+</div></main>
+{% endblock %}
