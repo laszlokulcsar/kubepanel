@@ -58,7 +58,9 @@ class Domain(models.Model):
     def clean(self):
         super().clean()
         pkg = self.owner.profile.package
-        domains = Domain.objects.filter(owner=self.owner).exclude(pk=self.pk)
+        domains = Domain.objects.filter(owner=self.owner)
+        if self.pk:
+            domains = domains.exclude(pk=self.pk)
         total_storage = sum(d.storage_size for d in domains) + self.storage_size
         if total_storage > pkg.max_storage_size:
             raise ValidationError({'storage_size': f"Total storage ({total_storage}) exceeds package limit ({pkg.max_storage_size})."})
@@ -69,9 +71,17 @@ class Domain(models.Model):
         if total_mem > pkg.max_memory:
             raise ValidationError({'mem_limit': f"Total memory ({total_mem}) exceeds package limit ({pkg.max_memory})."})
         if pkg.max_domain_aliases is not None:
-            total_aliases = sum(d.aliases.count() for d in domains) + self.aliases.count()
+            existing_aliases = sum(d.aliases.count() for d in domains)
+            # only count self.aliases on updates
+            new_aliases = self.aliases.count() if self.pk else 0
+            total_aliases = existing_aliases + new_aliases
             if total_aliases > pkg.max_domain_aliases:
-                raise ValidationError({'aliases': f"Total domain aliases ({total_aliases}) exceed package limit ({pkg.max_domain_aliases})."})
+                raise ValidationError({
+                    'aliases': (
+                        f"Total domain aliases ({total_aliases}) exceed "
+                        f"package limit ({pkg.max_domain_aliases})."
+                    )
+                })
         if pkg.max_mail_users is not None:
             from .models import MailUser
             total_mail_users = MailUser.objects.filter(domain__owner=self.owner).count()

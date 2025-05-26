@@ -571,9 +571,9 @@ def add_domain(request):
           new_domain.full_clean()
           new_domain.save()
           LogEntry.objects.create(content_object=new_domain,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"Created domain {new_domain.domain_name}",data={"domain_id": new_domain.pk})
-        except:
-          print("Ooops, can't save domain, please check debug logs.")
-          return render(request, "main/domain_error.html",{ "domain" : new_domain_name,})
+        except Exception as e:
+          logger.error("Error adding domain: %s", e)
+          return render(request, "main/domain_error.html",{ "domain" : new_domain_name, "error" : e,})
         if auto_dns == True:
           try:
             ips = ClusterIP.objects.all().values_list("ip_address", flat=True)
