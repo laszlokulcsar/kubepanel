@@ -1,58 +1,66 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
-<main class="content"><div class="container-fluid p-0">
-  <div class="row mb-4"><div class="col-12">
-    <h1 class="h3 mb-0"><i data-feather="user-plus"></i> Create User</h1>
-  </div></div>
-  <div class="row"><div class="col-12 col-lg-6 offset-lg-3">
-    <div class="card shadow-sm border-0"><div class="card-header bg-primary text-white">
-      <h5 class="card-title mb-0"><i data-feather="user-plus" class="me-2"></i>New User & Package</h5>
-    </div><div class="card-body">
-      <form method="post" novalidate>{% csrf_token %}
-        <!-- Username -->
-        <div class="mb-3">
-          <label class="form-label" for="id_username">Username</label>
-          {{ form.username }}
-          {% for error in form.username.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+<main class="content">
+  <div class="container-fluid p-0">
+    <div class="row mb-4">
+      <div class="col-12">
+        <h1 class="h3 mb-0"><i data-feather="user-plus"></i> Create User</h1>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-12 col-lg-8 offset-lg-2">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0"><i data-feather="user-plus" class="me-2"></i>New User & Package</h5>
+          </div>
+          <div class="card-body">
+            <form method="post" novalidate>
+              {% csrf_token %}
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="id_username" class="form-label">Username</label>
+                  {{ form.username }}
+                  {% for e in form.username.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                  <label for="id_email" class="form-label">Email</label>
+                  {{ form.email }}
+                  {% for e in form.email.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                  <label for="id_password1" class="form-label">Password</label>
+                  {{ form.password1 }}
+                  {% for e in form.password1.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                  <label for="id_password2" class="form-label">Confirm Password</label>
+                  {{ form.password2 }}
+                  {% for e in form.password2.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="col-md-12">
+                  <label for="id_package" class="form-label">Assign Package (optional)</label>
+                  <select id="id_package" name="package" class="form-select">
+                    <option value="">---------</option>
+                    {% for pkg in packages %}
+                      <option value="{{ pkg.pk }}">{{ pkg.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+              <div class="mt-4 d-flex justify-content-end">
+                <a href="{% url 'list_userprofiles' %}" class="btn btn-outline-secondary me-2">
+                  <i data-feather="x-circle" class="me-1"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-success">
+                  <i data-feather="check-circle" class="me-1"></i>Create
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-        <!-- Email -->
-        <div class="mb-3">
-          <label class="form-label" for="id_email">Email</label>
-          {{ form.email }}
-          {% for error in form.email.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-        </div>
-        <!-- Password -->
-        <div class="mb-3">
-          <label class="form-label" for="id_password1">Password</label>
-          {{ form.password1 }}
-          {% for error in form.password1.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-        </div>
-        <div class="mb-3">
-          <label class="form-label" for="id_password2">Confirm Password</label>
-          {{ form.password2 }}
-          {% for error in form.password2.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-        </div>
-        <!-- Package selection -->
-        <div class="mb-3">
-          <label class="form-label" for="id_package">Assign Package (optional)</label>
-          <select name="package" id="id_package" class="form-select">
-            <option value="">---------</option>
-            {% for pkg in packages %}
-              <option value="{{ pkg.pk }}">{{ pkg.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="mt-4 text-end">
-          <a href="{% url 'list_userprofiles' %}" class="btn btn-outline-secondary me-2">
-            <i data-feather="x-circle" class="me-1"></i>Cancel
-          </a>
-          <button type="submit" class="btn btn-success">
-            <i data-feather="check-circle" class="me-1"></i>Create
-          </button>
-        </div>
-      </form>
-    </div></div>
-  </div></div>
-</div></main>
+      </div>
+    </div>
+  </div>
+</main>
 {% endblock %}

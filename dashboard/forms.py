@@ -168,15 +168,10 @@ class PackageForm(forms.ModelForm):
             'name', 'max_storage_size', 'max_cpu', 'max_memory',
             'max_mail_users', 'max_mail_aliases', 'max_domain_aliases'
         ]
-        widgets = {
-            'max_storage_size': forms.NumberInput(attrs={'class': 'form-control'}),
-            'max_cpu': forms.NumberInput(attrs={'class': 'form-control'}),
-            'max_memory': forms.NumberInput(attrs={'class': 'form-control'}),
-            'max_mail_users': forms.NumberInput(attrs={'class': 'form-control'}),
-            'max_mail_aliases': forms.NumberInput(attrs={'class': 'form-control'}),
-            'max_domain_aliases': forms.NumberInput(attrs={'class': 'form-control'}),
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-        }
+        widgets = {field: forms.NumberInput(attrs={'class': 'form-control'})
+                   for field in ['max_storage_size', 'max_cpu', 'max_memory',
+                                  'max_mail_users', 'max_mail_aliases', 'max_domain_aliases']}
+        widgets['name'] = forms.TextInput(attrs={'class': 'form-control'})
 
 class UserProfileForm(forms.ModelForm):
     class Meta:
