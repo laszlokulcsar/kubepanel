@@ -6,17 +6,37 @@ from django.core.exceptions import ValidationError
 from .defaultconfigs import NGINX_DEFAULT_CONFIG
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+class Package(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    max_storage_size = models.IntegerField(default=1, validators=[MinValueValidator(1), MaxValueValidator(10000)])
+    max_cpu = models.IntegerField(default=500, validators=[MinValueValidator(100), MaxValueValidator(4000)])
+    max_memory = models.IntegerField(default=256, validators=[MinValueValidator(32), MaxValueValidator(4096)])
+    max_mail_users = models.IntegerField(null=True, blank=True)
+    max_mail_aliases = models.IntegerField(null=True, blank=True)
+    max_domain_aliases = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    package = models.ForeignKey(Package, on_delete=models.PROTECT)
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance, package=Package.objects.first())
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
 
 class Domain(models.Model):
     title = models.CharField(max_length=255)
-    def __str__(self):
-        return self.title
-
-    def validate_not_empty(value):
-      if value.strip() == "":
-        raise ValidationError('This field cannot be an empty string.')
-
-    domain_name = models.CharField(max_length=255, unique=True, blank=False, validators=[validate_not_empty])
+    domain_name = models.CharField(max_length=255, unique=True)
     owner = models.ForeignKey(User, on_delete=models.PROTECT)
     scp_privkey = models.TextField(db_default="")
     scp_pubkey = models.TextField(db_default="")
@@ -25,27 +45,43 @@ class Domain(models.Model):
     dkim_pubkey = models.TextField(db_default="")
     mariadb_user = models.CharField(max_length=255, unique=True)
     mariadb_pass = models.CharField(max_length=255)
-    status =  models.CharField(max_length=255)
+    status = models.CharField(max_length=255)
     storage_size = models.IntegerField(db_default=1, validators=[MinValueValidator(1), MaxValueValidator(10000)])
     cpu_limit = models.IntegerField(db_default=500, validators=[MinValueValidator(100), MaxValueValidator(4000)])
     mem_limit = models.IntegerField(db_default=256, validators=[MinValueValidator(32), MaxValueValidator(4096)])
     nginx_config = models.TextField(default=NGINX_DEFAULT_CONFIG)
 
+    def clean(self):
+        super().clean()
+        pkg = self.owner.profile.package
+        domains = Domain.objects.filter(owner=self.owner).exclude(pk=self.pk)
+        total_storage = sum(d.storage_size for d in domains) + self.storage_size
+        if total_storage > pkg.max_storage_size:
+            raise ValidationError({'storage_size': f"Total storage ({total_storage}) exceeds package limit ({pkg.max_storage_size})."})
+        total_cpu = sum(d.cpu_limit for d in domains) + self.cpu_limit
+        if total_cpu > pkg.max_cpu:
+            raise ValidationError({'cpu_limit': f"Total CPU ({total_cpu}) exceeds package limit ({pkg.max_cpu})."})
+        total_mem = sum(d.mem_limit for d in domains) + self.mem_limit
+        if total_mem > pkg.max_memory:
+            raise ValidationError({'mem_limit': f"Total memory ({total_mem}) exceeds package limit ({pkg.max_memory})."})
+        if pkg.max_domain_aliases is not None:
+            total_aliases = sum(d.aliases.count() for d in domains) + self.aliases.count()
+            if total_aliases > pkg.max_domain_aliases:
+                raise ValidationError({'aliases': f"Total domain aliases ({total_aliases}) exceed package limit ({pkg.max_domain_aliases})."})
+        if pkg.max_mail_users is not None:
+            from .models import MailUser
+            total_mail_users = MailUser.objects.filter(domain__owner=self.owner).count()
+            if total_mail_users > pkg.max_mail_users:
+                raise ValidationError({'mail_users': f"Total mail users ({total_mail_users}) exceed package limit ({pkg.max_mail_users})."})
+
     @property
     def all_hostnames(self):
-        """
-        Returns a list of the primary domain plus any aliases
-        """
         names = [self.domain_name]
         names += [alias.alias_name for alias in self.aliases.all()]
         return names
 
     @property
     def server_name_directive(self):
-        """
-        Returns a string for NGINX's `server_name` directive,
-        e.g. "example.com sample.com www.sample.com"
-        """
         return " ".join(self.all_hostnames)
 
 class DomainAlias(models.Model):
