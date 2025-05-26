@@ -39,8 +39,6 @@ def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
 
 class Domain(models.Model):
-    validate_not_empty = staticmethod(validate_not_empty)
-
     title = models.CharField(max_length=255)
     domain_name = models.CharField(max_length=255, unique=True, validators=[validate_not_empty])
     owner = models.ForeignKey(User, on_delete=models.PROTECT)
@@ -90,6 +88,9 @@ class Domain(models.Model):
     def server_name_directive(self):
         return " ".join(self.all_hostnames)
 
+# alias for migrations compatibility
+Domain.validate_not_empty = validate_not_empty
+
 class DomainAlias(models.Model):
     domain = models.ForeignKey(Domain, on_delete=models.CASCADE, related_name='aliases')
     alias_name = models.CharField(max_length=255, unique=True, validators=[validate_not_empty])
@@ -102,15 +103,6 @@ class DomainAlias(models.Model):
 
     def __str__(self):
         return f"{self.alias_name} → {self.domain.domain_name}"
-
-class Volumesnapshot(models.Model):
-    def __str__(self):
-        return self.snapshotname
-
-    domain = models.ForeignKey(Domain, on_delete=models.CASCADE)
-    snapshotname = models.CharField(max_length=255, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    log = models.TextField(db_default="")
 
 class BlockRule(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
