@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<main class="content">
+  <div class="container-fluid p-0">
+    <div class="row mb-4">
+      <div class="col-12">
+        <h1 class="h3 mb-0"><i data-feather="user"></i> Change Package for {{ user.username }}</h1>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-12 col-lg-6 offset-lg-3">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0"><i data-feather="settings" class="me-2"></i>Package Assignment</h5>
+          </div>
+          <div class="card-body">
+            <form method="post">{% csrf_token %}
+              <div class="mb-3">
+                <label for="id_package" class="form-label">Package</label>
+                {{ form.package }}
+                {% for e in form.package.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+              </div>
+              <div class="mt-4 d-flex justify-content-end">
+                <a href="{% url 'list_userprofiles' %}" class="btn btn-outline-secondary me-2">
+                  <i data-feather="x-circle" class="me-1"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-success">
+                  <i data-feather="check-circle" class="me-1"></i>Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}

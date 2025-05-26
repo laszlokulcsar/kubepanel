@@ -180,6 +180,14 @@ class UserProfileForm(forms.ModelForm):
             'package': forms.Select(attrs={'class':'form-select'}),
         }
 
+class UserProfilePackageForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = ['package']
+        widgets = {
+            'package': forms.Select(attrs={'class': 'form-select'})
+        }
+
 class UserForm(UserCreationForm):
     email = forms.EmailField(
         required=False,

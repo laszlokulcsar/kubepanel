@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from .models import Package, UserProfile, LogEntry, MailUser, MailAlias, ClusterIP, DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
-from dashboard.forms import UserForm, PackageForm, UserProfileForm, MailUserForm, MailAliasForm, DomainForm, DomainAddForm, DomainAliasForm, APITokenForm, ZoneCreationForm, DNSRecordForm
+from dashboard.forms import UserProfilePackageForm, UserForm, PackageForm, UserProfileForm, MailUserForm, MailAliasForm, DomainForm, DomainAddForm, DomainAliasForm, APITokenForm, ZoneCreationForm, DNSRecordForm
 from django.urls import reverse, reverse_lazy
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -1343,3 +1343,15 @@ class UserCreateView(FormView):
             profile.save()
         messages.success(self.request, 'User created successfully.')
         return super().form_valid(form)
+
+class UserProfilePackageUpdateView(UpdateView):
+    model = UserProfile
+    form_class = UserProfilePackageForm
+    template_name = 'main/userprofile_edit.html'
+    pk_url_kwarg = 'pk'
+    success_url = reverse_lazy('list_userprofiles')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['user'] = self.object.user
+        return ctx
