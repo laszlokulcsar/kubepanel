@@ -1337,9 +1337,10 @@ class UserCreateView(FormView):
     def form_valid(self, form):
         user = form.save()
         package_id = self.request.POST.get('package')
+        # Ensure only one profile per user
+        profile, created = UserProfile.objects.get_or_create(user=user)
         if package_id:
-            UserProfile.objects.create(user=user, package_id=package_id)
-        else:
-            UserProfile.objects.create(user=user)
+            profile.package_id = package_id
+            profile.save()
         messages.success(self.request, 'User created successfully.')
         return super().form_valid(form)
