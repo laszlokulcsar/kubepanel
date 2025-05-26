@@ -1,7 +1,8 @@
-from django.shortcuts import render, redirect, get_object_or_404
+f#rom django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from .models import Package, UserProfile, LogEntry, MailUser, MailAlias, ClusterIP, DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
@@ -23,6 +24,10 @@ import cloudflare, logging, os, random, base64, string, requests, json, geoip2.d
 GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
 EXCLUDED_EXTENSIONS = [".js", ".css", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".map"]
+
+class SuperuserRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_superuser
 
 def manage_ips(request):
     ip_list = ClusterIP.objects.all()
@@ -1290,42 +1295,43 @@ def domain_logs(request, domain):
         'logs': logs,
     })
 
-class PackageListView(ListView):
+
+class PackageListView(SuperuserRequiredMixin, ListView):
     model = Package
     template_name = 'main/package_list.html'
     context_object_name = 'packages'
 
-class PackageCreateView(CreateView):
+class PackageCreateView(SuperuserRequiredMixin, CreateView):
     model = Package
     form_class = PackageForm
     template_name = 'main/package_form.html'
     success_url = reverse_lazy('list_packages')
 
-class PackageUpdateView(UpdateView):
+class PackageUpdateView(SuperuserRequiredMixin, UpdateView):
     model = Package
     form_class = PackageForm
     template_name = 'main/package_form.html'
     success_url = reverse_lazy('list_packages')
 
-class UserProfileListView(ListView):
+class UserProfileListView(SuperuserRequiredMixin, ListView):
     model = UserProfile
     template_name = 'main/userprofile_list.html'
     context_object_name = 'profiles'
 
-class UserProfileCreateView(CreateView):
+class UserProfileCreateView(SuperuserRequiredMixin, CreateView):
     model = UserProfile
     form_class = UserProfileForm
     template_name = 'main/userprofile_form.html'
     success_url = reverse_lazy('list_userprofiles')
 
-class UserProfileUpdateView(UpdateView):
+class UserProfileUpdateView(SuperuserRequiredMixin, UpdateView):
     model = UserProfile
     form_class = UserProfileForm
     template_name = 'main/userprofile_form.html'
     success_url = reverse_lazy('list_userprofiles')
 
 
-class UserCreateView(FormView):
+class UserCreateView(SuperuserRequiredMixin, FormView):
     template_name = 'main/user_create.html'
     form_class = UserForm
     success_url = reverse_lazy('list_userprofiles')
@@ -1345,7 +1351,7 @@ class UserCreateView(FormView):
         messages.success(self.request, 'User created successfully.')
         return super().form_valid(form)
 
-class UserProfilePackageUpdateView(UpdateView):
+class UserProfilePackageUpdateView(SuperuserRequiredMixin, UpdateView):
     model = UserProfile
     form_class = UserProfilePackageForm
     template_name = 'main/userprofile_edit.html'
