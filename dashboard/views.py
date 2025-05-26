@@ -567,6 +567,7 @@ def add_domain(request):
         new_domain = Domain(owner=request.user, mem_limit = mem_limit, cpu_limit = cpu_limit, storage_size = storage_size, domain_name = new_domain_name, title = new_domain_name, scp_privkey = private_key, scp_pubkey = public_key, scp_port = scp_port, dkim_privkey = dkim_privkey, dkim_pubkey = dkim_txt_record, mariadb_pass = mariadb_pass, mariadb_user = mariadb_user, status = status)
         domain_dirname = '/kubepanel/yaml_templates/'+new_domain_name
         context = { "domain_instance" : new_domain, "domains" : Domain.objects.all(), "jobid" : jobid, "domain_name_dash" : new_domain.domain_name.replace(".","-"), "domain_name_underscore" : new_domain.domain_name.replace(".","_"), "domain_name" : new_domain.domain_name, "public_key" : public_key, "scp_port" : scp_port, "dkim_privkey" : dkim_privkey, "wp_preinstall" : wp_preinstall}
+        logger = logging.getLogger(__name__)
         try:
           new_domain.full_clean()
           new_domain.save()
