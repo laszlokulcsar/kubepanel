@@ -9,6 +9,10 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+def validate_not_empty(value):
+    if isinstance(value, str) and value.strip() == "":
+        raise ValidationError('This field cannot be an empty string.')
+
 class Package(models.Model):
     name = models.CharField(max_length=255, unique=True)
     max_storage_size = models.IntegerField(default=1, validators=[MinValueValidator(1), MaxValueValidator(10000)])
@@ -36,7 +40,7 @@ def save_user_profile(sender, instance, **kwargs):
 
 class Domain(models.Model):
     title = models.CharField(max_length=255)
-    domain_name = models.CharField(max_length=255, unique=True)
+    domain_name = models.CharField(max_length=255, unique=True, validators=[validate_not_empty])
     owner = models.ForeignKey(User, on_delete=models.PROTECT)
     scp_privkey = models.TextField(db_default="")
     scp_pubkey = models.TextField(db_default="")
@@ -85,16 +89,8 @@ class Domain(models.Model):
         return " ".join(self.all_hostnames)
 
 class DomainAlias(models.Model):
-    domain = models.ForeignKey(
-        Domain,
-        on_delete=models.CASCADE,
-        related_name='aliases'
-    )
-    alias_name = models.CharField(
-        max_length=255,
-        unique=True,
-        validators=[Domain.validate_not_empty]
-    )
+    domain = models.ForeignKey(Domain, on_delete=models.CASCADE, related_name='aliases')
+    alias_name = models.CharField(max_length=255, unique=True, validators=[validate_not_empty])
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
