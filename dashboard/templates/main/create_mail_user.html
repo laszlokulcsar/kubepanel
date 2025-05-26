@@ -25,7 +25,6 @@
               <div class="mb-3">
                 <label for="id_domain" class="form-label"><i data-feather="globe" class="me-1"></i>Domain</label>
                 <select id="id_domain" name="{{ form.domain.html_name }}" class="form-select{% if form.domain.errors %} is-invalid{% endif %}">
-                  <option value="">---------</option>
                   {% for value, label in form.domain.field.choices %}
                     <option value="{{ value }}"{% if form.domain.value|stringformat:"s" == value|stringformat:"s" %} selected{% endif %}>{{ label }}</option>
                   {% endfor %}
