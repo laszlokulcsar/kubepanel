@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<main class="content">
+  <div class="container-fluid p-0">
+    <div class="row mb-4">
+      <div class="col-12">
+        <h1 class="h3 mb-0"><i data-feather="package"></i> Add New Package</h1>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-12 col-lg-8 offset-lg-2">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0"><i data-feather="settings" class="me-2"></i>Package Details</h5>
+          </div>
+          <div class="card-body">
+            <form action="{% url 'create_package' %}" method="post" novalidate>
+              {% csrf_token %}
+              {% for field in form %}
+              <div class="mb-3">
+                <label for="id_{{ field.name }}" class="form-label">
+                  {{ field.label_tag }}
+                </label>
+                {{ field }}
+                {% for error in field.errors %}
+                  <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+              </div>
+              {% endfor %}
+              <div class="mt-4 d-flex justify-content-end">
+                <a href="{% url 'list_packages' %}" class="btn btn-outline-secondary me-2">
+                  <i data-feather="x-circle" class="me-1"></i>Cancel
+                </a>
+                <button class="btn btn-success" type="submit">
+                  <i data-feather="check-circle" class="me-1"></i>Save Package
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}

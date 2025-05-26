@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<main class="content">
+  <div class="container-fluid p-0">
+    <div class="row mb-4">
+      <div class="col-12">
+        <h1 class="h3 mb-0"><i data-feather="package"></i> Packages</h1>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-12">
+        <a href="{% url 'create_package' %}" class="btn btn-primary mb-3">
+          <i data-feather="plus" class="me-1"></i> New Package
+        </a>
+        <div class="card shadow-sm border-0">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Storage</th>
+                  <th>CPU</th>
+                  <th>Memory</th>
+                  <th>Mail Users</th>
+                  <th>Mail Aliases</th>
+                  <th>Domain Aliases</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for pkg in packages %}
+                <tr>
+                  <td>{{ pkg.name }}</td>
+                  <td>{{ pkg.max_storage_size }}</td>
+                  <td>{{ pkg.max_cpu }}</td>
+                  <td>{{ pkg.max_memory }}</td>
+                  <td>{{ pkg.max_mail_users|default:"—" }}</td>
+                  <td>{{ pkg.max_mail_aliases|default:"—" }}</td>
+                  <td>{{ pkg.max_domain_aliases|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}

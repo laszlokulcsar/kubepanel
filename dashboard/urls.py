@@ -1,6 +1,9 @@
 from django.urls import path, re_path
 import re
-
+from .views import (
+    PackageListView, PackageCreateView,
+    UserProfileListView, UserProfileCreateView
+)
 from . import views
 
 urlpatterns = [
@@ -52,4 +55,8 @@ urlpatterns = [
     path('pods/<str:namespace>/<str:name>/logs/',views.pod_logs,name='pod_logs'),
     path('domains/<str:domain>/backup/<str:jobid>/logs/',views.backup_logs,name='backup_logs'),
     path('domains/<str:domain>/logs/', views.domain_logs, name='domain_logs'),
+    path('packages/', PackageListView.as_view(), name='list_packages'),
+    path('packages/add/', PackageCreateView.as_view(), name='create_package'),
+    path('profiles/', UserProfileListView.as_view(), name='list_userprofiles'),
+    path('profiles/add/', UserProfileCreateView.as_view(), name='create_userprofile'),
 ]

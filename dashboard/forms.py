@@ -1,7 +1,7 @@
 from django import forms  
 from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password
-from dashboard.models import Domain, DomainAlias, CloudflareAPIToken, DNSRecord, DNSZone, MailUser, MailAlias
+from dashboard.models import Package, UserProfile, Domain, DomainAlias, CloudflareAPIToken, DNSRecord, DNSZone, MailUser, MailAlias
 from passlib.hash import sha512_crypt
 
 class DomainForm(forms.ModelForm):
@@ -158,3 +158,22 @@ class DomainAliasForm(forms.ModelForm):
         widgets = {
             'alias_name': forms.TextInput(attrs={'placeholder': 'e.g. sample.com'}),
         }
+
+class PackageForm(forms.ModelForm):
+    class Meta:
+        model = Package
+        fields = [
+            'name',
+            'max_storage_size',
+            'max_cpu',
+            'max_memory',
+            'max_mail_users',
+            'max_mail_aliases',
+            'max_domain_aliases',
+        ]
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = ['user', 'package']
+

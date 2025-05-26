@@ -4,9 +4,9 @@ from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from .models import LogEntry, MailUser, MailAlias, ClusterIP, DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
-from dashboard.forms import MailUserForm, MailAliasForm, DomainForm, DomainAddForm, DomainAliasForm, APITokenForm, ZoneCreationForm, DNSRecordForm
-from django.urls import reverse
+from .models import Package, UserProfile, LogEntry, MailUser, MailAlias, ClusterIP, DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
+from dashboard.forms import PackageForm, UserProfileForm, MailUserForm, MailAliasForm, DomainForm, DomainAddForm, DomainAliasForm, APITokenForm, ZoneCreationForm, DNSRecordForm
+from django.urls import reverse, reverse_lazy
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
@@ -14,6 +14,8 @@ from datetime import datetime
 from cloudflare import Cloudflare
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
+from django.views.generic import ListView, CreateView
+
 import cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
 
 GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
@@ -1284,3 +1286,25 @@ def domain_logs(request, domain):
         'domain': domain_obj.domain_name,
         'logs': logs,
     })
+
+class PackageListView(ListView):
+    model = Package
+    template_name = 'main/package_list.html'
+    context_object_name = 'packages'
+
+class PackageCreateView(CreateView):
+    model = Package
+    form_class = PackageForm
+    template_name = 'main/package_form.html'
+    success_url = reverse_lazy('list_packages')
+
+class UserProfileListView(ListView):
+    model = UserProfile
+    template_name = 'main/userprofile_list.html'
+    context_object_name = 'profiles'
+
+class UserProfileCreateView(CreateView):
+    model = UserProfile
+    form_class = UserProfileForm
+    template_name = 'main/userprofile_form.html'
+    success_url = reverse_lazy('list_userprofiles')
