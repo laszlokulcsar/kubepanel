@@ -10,21 +10,33 @@
       <h5 class="card-title mb-0"><i data-feather="user-plus" class="me-2"></i>New User & Package</h5>
     </div><div class="card-body">
       <form method="post" novalidate>{% csrf_token %}
+        <!-- Username -->
         <div class="mb-3">
-          <label class="form-label">Username</label>{{ user_form.username }}<div class="invalid-feedback d-block">{{ user_form.username.errors }}</div>
+          <label class="form-label" for="id_username">Username</label>
+          {{ form.username }}
+          {% for error in form.username.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <!-- Email -->
+        <div class="mb-3">
+          <label class="form-label" for="id_email">Email</label>
+          {{ form.email }}
+          {% for error in form.email.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <!-- Password -->
+        <div class="mb-3">
+          <label class="form-label" for="id_password1">Password</label>
+          {{ form.password1 }}
+          {% for error in form.password1.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </div>
         <div class="mb-3">
-          <label class="form-label">Email</label>{{ user_form.email }}<div class="invalid-feedback d-block">{{ user_form.email.errors }}</div>
+          <label class="form-label" for="id_password2">Confirm Password</label>
+          {{ form.password2 }}
+          {% for error in form.password2.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </div>
+        <!-- Package selection -->
         <div class="mb-3">
-          <label class="form-label">Password</label>{{ user_form.password1 }}<div class="invalid-feedback d-block">{{ user_form.password1.errors }}</div>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Confirm Password</label>{{ user_form.password2 }}<div class="invalid-feedback d-block">{{ user_form.password2.errors }}</div>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Assign Package (optional)</label>
-          <select name="package" class="form-select">
+          <label class="form-label" for="id_package">Assign Package (optional)</label>
+          <select name="package" id="id_package" class="form-select">
             <option value="">---------</option>
             {% for pkg in packages %}
               <option value="{{ pkg.pk }}">{{ pkg.name }}</option>

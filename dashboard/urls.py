@@ -64,5 +64,4 @@ urlpatterns = [
     path('profiles/add/', UserProfileCreateView.as_view(), name='create_userprofile'),
     path('profiles/<int:pk>/edit/', UserProfileUpdateView.as_view(), name='edit_userprofile'),
     path('users/add/', UserCreateView.as_view(), name='create_user_with_profile'),
-
 ]

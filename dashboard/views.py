@@ -1324,15 +1324,22 @@ class UserProfileUpdateView(UpdateView):
     success_url = reverse_lazy('list_userprofiles')
 
 class UserCreateView(FormView):
-    template_name = 'main/user_create.html'
+    template_name = 'dashboard/user_create.html'
     form_class = UserForm
     success_url = reverse_lazy('list_userprofiles')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = context.get('form')  # form instance
+        context['packages'] = Package.objects.all()
+        return context
 
     def form_valid(self, form):
         user = form.save()
         package_id = self.request.POST.get('package')
         if package_id:
             UserProfile.objects.create(user=user, package_id=package_id)
+        else:
+            UserProfile.objects.create(user=user)
         messages.success(self.request, 'User created successfully.')
         return super().form_valid(form)
-
