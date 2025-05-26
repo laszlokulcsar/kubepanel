@@ -164,33 +164,39 @@ class DomainAliasForm(forms.ModelForm):
 class PackageForm(forms.ModelForm):
     class Meta:
         model = Package
-        fields = [
-            'name', 'max_storage_size', 'max_cpu', 'max_memory',
-            'max_mail_users', 'max_mail_aliases', 'max_domain_aliases'
-        ]
-        widgets = {field: forms.NumberInput(attrs={'class': 'form-control'})
-                   for field in ['max_storage_size', 'max_cpu', 'max_memory',
-                                  'max_mail_users', 'max_mail_aliases', 'max_domain_aliases']}
-        widgets['name'] = forms.TextInput(attrs={'class': 'form-control'})
+        fields = ['name', 'max_storage_size', 'max_cpu', 'max_memory',
+                  'max_mail_users', 'max_mail_aliases', 'max_domain_aliases']
+        widgets = {field: forms.NumberInput(attrs={'class':'form-control'})
+                   for field in ['max_storage_size','max_cpu','max_memory',
+                                 'max_mail_users','max_mail_aliases','max_domain_aliases']}
+        widgets['name'] = forms.TextInput(attrs={'class':'form-control'})
 
 class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         fields = ['user', 'package']
         widgets = {
-            'user': forms.Select(attrs={'class': 'form-select'}),
-            'package': forms.Select(attrs={'class': 'form-select'}),
+            'user': forms.Select(attrs={'class':'form-select'}),
+            'package': forms.Select(attrs={'class':'form-select'}),
         }
 
 class UserForm(UserCreationForm):
-    email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={'class': 'form-control'}))
+    email = forms.EmailField(
+        required=False,
+        widget=forms.EmailInput(attrs={'class':'form-control'})
+    )
+    password1 = forms.CharField(
+        label="Password",
+        widget=forms.PasswordInput(attrs={'class':'form-control'})
+    )
+    password2 = forms.CharField(
+        label="Confirm Password",
+        widget=forms.PasswordInput(attrs={'class':'form-control'})
+    )
 
     class Meta:
         model = User
         fields = ['username', 'email', 'password1', 'password2']
         widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-control'}),
-            'password1': forms.PasswordInput(attrs={'class': 'form-control'}),
-            'password2': forms.PasswordInput(attrs={'class': 'form-control'}),
+            'username': forms.TextInput(attrs={'class':'form-control'}),
         }
-
