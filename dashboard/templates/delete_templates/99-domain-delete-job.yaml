@@ -7,9 +7,12 @@ spec:
   template:
     spec:
       containers:
-      - name: delete-domain
+      - name: delete-domain-namespace
         image: laszlokulcsar/watchdog:v0.1
         command: ["kubectl",  "delete", "ns", "{{ domain_name_dash }}"]
+      - name: delete-cronjob
+        image: laszlokulcsar/watchdog:v0.1
+        command: ["kubectl",  "delete", "cronjob", "backup-{{ domain_name_dash }}", "-n", "kubepanel"]
       - name: db-client
         env:
         - name: MARIADB_ROOT_PASSWORD

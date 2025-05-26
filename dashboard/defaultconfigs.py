@@ -22,7 +22,7 @@ NGINX_DEFAULT_CONFIG = r"""
 
         access_log  /var/log/nginx/access.log  main;
         error_log /var/log/nginx/error.log debug;
-
+        port_in_redirect off;
         sendfile        on;
         keepalive_timeout  65;
         include /etc/nginx/conf.d/*.conf;
