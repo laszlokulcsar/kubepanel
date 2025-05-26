@@ -40,6 +40,8 @@ def save_user_profile(sender, instance, **kwargs):
 
 class Domain(models.Model):
     title = models.CharField(max_length=255)
+    def __str__(self):
+        return self.title
     domain_name = models.CharField(max_length=255, unique=True, validators=[validate_not_empty])
     owner = models.ForeignKey(User, on_delete=models.PROTECT)
     scp_privkey = models.TextField(db_default="")
