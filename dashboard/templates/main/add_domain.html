@@ -45,25 +45,10 @@
                 </div>
               </div>
 
-            <div class="mb-3">
-              <label for="php_image" class="form-label">PHP Version</label>
-              <select
-                id="php_image"
-                name="php_image"
-                class="form-select"
-                {% if form.fields.php_image.widget.allow_multiple_selected %}multiple{% endif %}
-                required
-              >
-                {% for img in php_images %}
-                  <option value="{{ img.pk }}"
-                    {% if img.pk in form.initial.php_image %}selected{% endif %}
-                  >
-                    {{ img.version }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-
+<div class="mb-3">
+  <label for="{{ form.php_image.id_for_label }}" class="form-label">PHP Version</label>
+  {{ form.php_image }}
+</div>
 
               <div class="form-check mb-3">
                 <input

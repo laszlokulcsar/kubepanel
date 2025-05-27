@@ -63,7 +63,7 @@ class Domain(models.Model):
     cpu_limit = models.IntegerField(db_default=500, validators=[MinValueValidator(100), MaxValueValidator(4000)])
     mem_limit = models.IntegerField(db_default=256, validators=[MinValueValidator(32), MaxValueValidator(4096)])
     nginx_config = models.TextField(default=NGINX_DEFAULT_CONFIG)
-    php_image = models.ManyToManyField(PhpImage, blank=False)
+    php_image = models.ForeignKey(PhpImage,on_delete=models.PROTECT,related_name='domains')
 
     def clean(self):
         super().clean()
@@ -83,7 +83,7 @@ class Domain(models.Model):
         if total_mem > pkg.max_memory:
             raise ValidationError({'mem_limit': f"Total memory ({total_mem}) exceeds package limit ({pkg.max_memory})."})
         if not self.php_image.exists():
-            raise ValidationError({'php_images': 'At least one PHP image must be selected.'})
+            raise ValidationError({'php_image': 'At least one PHP image must be selected.'})
         if pkg.max_domain_aliases is not None:
             existing_aliases = sum(d.aliases.count() for d in domains)
             # only count self.aliases on updates

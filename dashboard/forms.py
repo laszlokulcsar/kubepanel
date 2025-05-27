@@ -8,9 +8,9 @@ from passlib.hash import sha512_crypt
 
 class DomainForm(forms.ModelForm):
 
-  php_image = forms.ModelMultipleChoiceField(
+  php_image = forms.ModelChoiceField(
       queryset=PhpImage.objects.all(),
-      widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+      widget=forms.Select(attrs={'class': 'form-select'}),
       label='PHP Version',
       required=True,
   )
@@ -38,9 +38,9 @@ class DomainForm(forms.ModelForm):
 
 class DomainAddForm(forms.ModelForm):
 
-  php_image = forms.ModelMultipleChoiceField(
+  php_image = forms.ModelChoiceField(
       queryset=PhpImage.objects.all(),
-      widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+      widget=forms.Select(attrs={'class': 'form-select'}),
       label='PHP Version',
       required=True,
   )
