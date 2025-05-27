@@ -4,6 +4,7 @@ metadata:
   name: backup-{{ domain_name_dash }}-{{ jobid }} 
   namespace: kubepanel
 spec:
+  ttlSecondsAfterFinished: 3600
   template:
     spec:
       restartPolicy: Never

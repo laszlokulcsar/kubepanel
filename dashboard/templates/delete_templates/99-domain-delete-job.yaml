@@ -5,6 +5,7 @@ metadata:
   namespace: kubepanel
 spec:
   template:
+  ttlSecondsAfterFinished: 3600
     spec:
       containers:
       - name: delete-domain-namespace
