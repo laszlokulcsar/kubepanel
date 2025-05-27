@@ -1,44 +1,40 @@
 {% extends "base.html" %}
-
-{% block head %}
-  <meta http-equiv="refresh" content="5">
-{% endblock %}
+{% load tz %}
 
 {% block content %}
 <main class="content">
   <div class="container-fluid p-0">
-    <h1 class="h3 mb-3">
-      Logs for <strong>{{ domain }}</strong>
-    </h1>
+    <h1 class="h3 mb-3">Logs for <strong>{{ domain }}</strong></h1>
 
-    <div class="card">
-      <div class="card-body">
-        {% if logs %}
-          <pre class="border rounded p-2"
-               style="max-height:50vh;overflow:auto;
-                      background:#1e1e1e;color:#ddd;">
-{% for entry in logs %}
-{{ entry.timestamp }} [{{ entry.level }}] {{ entry.actor }} — {{ entry.message }}
-{% endfor %}
-          </pre>
-        {% else %}
-          <p class="text-muted">
-            No log entries yet. Refreshing every 5 seconds…
-          </p>
-        {% endif %}
+    {% if logs %}
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Level</th>
+            <th>Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% localtime on %}
+          {% for entry in logs %}
+            <tr>
+              <td>{{ entry.timestamp|date:"Y-m-d H:i:s" }}</td>
+              <td>{{ entry.level }}</td>
+              <td>{{ entry.message }}</td>
+            </tr>
+          {% endfor %}
+          {% endlocaltime %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="text-muted">No logs available for this domain.</p>
+    {% endif %}
 
-        <a href="{% url 'view_domain' domain=domain %}"
-           class="btn btn-sm btn-primary mt-3">
-          ← Back to Domain
-        </a>
-      </div>
-    </div>
+    <a href="{% url 'domain_list' %}" class="btn btn-sm btn-primary mt-3">
+      ← Back to Domains
+    </a>
   </div>
 </main>
-<script>
-setTimeout(function(){
-  window.location.reload();
-}, 5000);
-</script>
 {% endblock %}
 
