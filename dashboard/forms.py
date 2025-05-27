@@ -6,9 +6,14 @@ from django.contrib.auth.models import User
 from dashboard.models import PhpImage, Package, UserProfile, Domain, DomainAlias, CloudflareAPIToken, DNSRecord, DNSZone, MailUser, MailAlias
 from passlib.hash import sha512_crypt
 
+class PhpImageChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        # return whatever you like here; for example:
+        return f"{obj.version}"
+
 class DomainForm(forms.ModelForm):
 
-  php_image = forms.ModelChoiceField(
+  php_image = forms.PhpImageChoiceField(
       queryset=PhpImage.objects.all(),
       widget=forms.Select(attrs={'class': 'form-select'}),
       label='PHP Version',
