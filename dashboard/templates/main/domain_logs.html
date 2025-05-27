@@ -4,7 +4,7 @@
 {% block content %}
 <main class="content">
   <div class="container-fluid p-0">
-    <h1 class="h3 mb-3">Logs for <strong>{{ domain }}</strong></h1>
+    <h1 class="h3 mb-3">Logs for <strong>{{ domain }}</strong> refreshing in every 5 seconds</h1>
 
     {% if logs %}
       <table class="table table-striped">
@@ -36,5 +36,10 @@
     </a>
   </div>
 </main>
+<script>
+setTimeout(function(){
+  window.location.reload();
+}, 5000);
+</script>
 {% endblock %}
 
