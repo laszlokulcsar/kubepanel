@@ -692,7 +692,7 @@ def startstop_domain(request,domain,action):
         return render(request, "main/pause_domain.html", { "action" : action, "domain" : domain, "error" : error})
     else:
       return render(request, "main/pause_domain.html", { "action" : action, "domain" : domain})  
-    return redirect(kpmain)
+    return redirect(domain_logs, domain=domain_obj.domain_name)
 
 @login_required(login_url="/dashboard/")
 def restore_volumesnapshot(request,volumesnapshot,domain):
@@ -807,7 +807,7 @@ def save_domain(request,domain):
           iterate_input_templates(template_dir,domain_dirname,context)
       else:
         return render(request, "main/view_domain.html", { "domain" : domain_instance, "form" : form})
-  return redirect(kpmain)
+  return redirect(domain_logs, domain=domain_instance.domain_name)
 
 @login_required
 def list_mail_users(request):
