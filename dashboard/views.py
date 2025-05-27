@@ -794,6 +794,7 @@ def save_domain(request,domain):
       form = DomainForm(request.POST, instance=domain_instance)
       if form.is_valid():
           form.save()
+          LogEntry.objects.create(content_object=domain_instance,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"New settings saved for {domain_instance.domain_name}",data={"domain_id": domain_instance.pk})
           template_dir = "yaml_templates/"
           domain_dirname = '/kubepanel/yaml_templates/'+domain_instance.domain_name
           try:
