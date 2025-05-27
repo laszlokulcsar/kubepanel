@@ -1,0 +1,19 @@
+[
+  {
+    "model": "dashboard.phpimage",
+    "pk": 1,
+    "fields": {
+      "version": "PHP 7.4",
+      "repository_url": "docker.io/laszlokulcsar/php:v0.2"
+    }
+  },
+  {
+    "model": "dashboard.phpimage",
+    "pk": 2,
+    "fields": {
+      "version": "PHP 8.3",
+      "repository_url": "docker.io/laszlokulcsar/php8:v0.2"
+    }
+  }
+]
+

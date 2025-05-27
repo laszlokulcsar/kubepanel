@@ -38,6 +38,13 @@ def create_user_profile(sender, instance, created, **kwargs):
 def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
 
+class PhpImage(models.Model):
+    version = models.CharField(max_length=50, unique=True)
+    repository_url = models.URLField(max_length=255)
+
+    def __str__(self):
+        return self.version
+
 class Domain(models.Model):
     title = models.CharField(max_length=255)
     def __str__(self):
@@ -56,6 +63,7 @@ class Domain(models.Model):
     cpu_limit = models.IntegerField(db_default=500, validators=[MinValueValidator(100), MaxValueValidator(4000)])
     mem_limit = models.IntegerField(db_default=256, validators=[MinValueValidator(32), MaxValueValidator(4096)])
     nginx_config = models.TextField(default=NGINX_DEFAULT_CONFIG)
+    php_image = models.ManyToManyField(PhpImage, blank=False)
 
     def clean(self):
         super().clean()
@@ -74,6 +82,8 @@ class Domain(models.Model):
         total_mem = sum(d.mem_limit for d in domains) + self.mem_limit
         if total_mem > pkg.max_memory:
             raise ValidationError({'mem_limit': f"Total memory ({total_mem}) exceeds package limit ({pkg.max_memory})."})
+        if not self.php_image.exists():
+            raise ValidationError({'php_images': 'At least one PHP image must be selected.'})
         if pkg.max_domain_aliases is not None:
             existing_aliases = sum(d.aliases.count() for d in domains)
             # only count self.aliases on updates

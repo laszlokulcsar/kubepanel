@@ -3,13 +3,21 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from dashboard.models import Package, UserProfile, Domain, DomainAlias, CloudflareAPIToken, DNSRecord, DNSZone, MailUser, MailAlias
+from dashboard.models import PhpImage, Package, UserProfile, Domain, DomainAlias, CloudflareAPIToken, DNSRecord, DNSZone, MailUser, MailAlias
 from passlib.hash import sha512_crypt
 
 class DomainForm(forms.ModelForm):
+
+  php_image = forms.ModelMultipleChoiceField(
+      queryset=PhpImage.objects.all(),
+      widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+      label='PHP Version',
+      required=True,
+  )
+
   class Meta:
     model = Domain
-    fields = ["cpu_limit","mem_limit","nginx_config"]
+    fields = ["cpu_limit","mem_limit","nginx_config", "php-image"]
     widgets = {
                 'cpu_limit': forms.NumberInput(attrs={
                     'class': 'form-control',
@@ -29,9 +37,17 @@ class DomainForm(forms.ModelForm):
     }
 
 class DomainAddForm(forms.ModelForm):
+
+  php_image = forms.ModelMultipleChoiceField(
+      queryset=PhpImage.objects.all(),
+      widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+      label='PHP Version',
+      required=True,
+  )
+
   class Meta:
     model = Domain
-    fields = ["cpu_limit","mem_limit","storage_size"]
+    fields = ["cpu_limit","mem_limit","storage_size", "php-image"]
     widgets = {
                 'cpu_limit': forms.NumberInput(attrs={
                     'class': 'form-control',
