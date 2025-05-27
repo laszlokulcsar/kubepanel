@@ -31,7 +31,7 @@ spec:
         env:
         - name: WP_PREINSTALL
           value: "{{ wp_preinstall }}"
-        image: docker.io/laszlokulcsar/init_php:v0.1
+        image: docker.io/laszlokulcsar/init_php:v0.2
         imagePullPolicy: Always
         securityContext:
           capabilities:
@@ -42,7 +42,7 @@ spec:
           mountPath: /usr/share/nginx/html
       containers:
       - name: php
-        image: docker.io/laszlokulcsar/php:v0.1
+        image: "{{ domain_instance.php_image }}"
         resources:
           limits:
             cpu: "{{ domain_instance.cpu_limit }}m"
