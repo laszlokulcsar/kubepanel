@@ -13,7 +13,7 @@ class PhpImageChoiceField(forms.ModelChoiceField):
 
 class DomainForm(forms.ModelForm):
 
-  php_image = forms.PhpImageChoiceField(
+  php_image = PhpImageChoiceField(
       queryset=PhpImage.objects.all(),
       widget=forms.Select(attrs={'class': 'form-select'}),
       label='PHP Version',
@@ -43,7 +43,7 @@ class DomainForm(forms.ModelForm):
 
 class DomainAddForm(forms.ModelForm):
 
-  php_image = forms.ModelChoiceField(
+  php_image = PhpImageChoiceField(
       queryset=PhpImage.objects.all(),
       widget=forms.Select(attrs={'class': 'form-select'}),
       label='PHP Version',
