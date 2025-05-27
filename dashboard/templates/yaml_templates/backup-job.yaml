@@ -60,7 +60,7 @@ spec:
                 echo "Cleaning VolumeSnapshots older than 6 days..."
                 cutoff=$(date -d '6 days ago' +%s)
                 # Fetch each snapshot’s name|timestamp
-                kubectl get volumesnapshot -n justawood-hu -o=jsonpath='{range .items[*]}{.metadata.name}{"|"}{.metadata.creationTimestamp}{"\n"}{end}' | while IFS='|' read name ts;
+                kubectl get volumesnapshot -n {{ domain_name_dash }} -o=jsonpath='{range .items[*]}{.metadata.name}{"|"}{.metadata.creationTimestamp}{"\n"}{end}' | while IFS='|' read name ts;
                   do
                     ts_s=$(date -d "$ts" +%s)
                     if [ "$ts_s" -lt "$cutoff" ]; then
@@ -69,7 +69,7 @@ spec:
                     fi
                   done
                 echo "Removing SQL dumps older than 6 days..."
-                find /backup -maxdepth 1 -name 'justawood-hu-snapshot-*.sql' -mtime +6 -print -delete
+                find /backup -maxdepth 1 -name '{{ domain_name_dash }}-snapshot-*.sql' -mtime +6 -print -delete
                 ls -alh /backup/
             volumeMounts:
             - name: kubepanel
