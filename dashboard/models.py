@@ -82,7 +82,7 @@ class Domain(models.Model):
         total_mem = sum(d.mem_limit for d in domains) + self.mem_limit
         if total_mem > pkg.max_memory:
             raise ValidationError({'mem_limit': f"Total memory ({total_mem}) exceeds package limit ({pkg.max_memory})."})
-        if not self.php_image.exists():
+        if self.php_image_id is None:
             raise ValidationError({'php_image': 'At least one PHP image must be selected.'})
         if pkg.max_domain_aliases is not None:
             existing_aliases = sum(d.aliases.count() for d in domains)

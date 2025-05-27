@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from .models import Package, UserProfile, LogEntry, MailUser, MailAlias, ClusterIP, DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
+from .models import PhpImage, Package, UserProfile, LogEntry, MailUser, MailAlias, ClusterIP, DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
 from dashboard.forms import UserProfilePackageForm, UserForm, PackageForm, UserProfileForm, MailUserForm, MailAliasForm, DomainForm, DomainAddForm, DomainAliasForm, APITokenForm, ZoneCreationForm, DNSRecordForm
 from django.urls import reverse, reverse_lazy
 from cryptography.hazmat.primitives import serialization as crypto_serialization
@@ -534,7 +534,7 @@ def add_domain(request):
           mem_limit = request.POST["mem_limit"][:8]
           cpu_limit = request.POST["cpu_limit"][:5]
           storage_size = request.POST["storage_size"][:5]
-          php_image = request.POST["php_image"][:2]
+          php_image = PhpImage.objects.get(pk=request.POST["php_image"][:2])
         except:
           return render(request, "main/add_domain.html")
         try:
