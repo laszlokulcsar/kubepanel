@@ -43,7 +43,7 @@ class PhpImage(models.Model):
     repository_url = models.URLField(max_length=255)
 
     def __str__(self):
-        return self.version
+        return self.repository_url
 
 class Domain(models.Model):
     title = models.CharField(max_length=255)
