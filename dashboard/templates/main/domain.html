@@ -4,11 +4,62 @@
 <main class="content">
   <div class="container-fluid p-0">
 
-    <div class="row">
+    <div class="row mb-4">
       <div class="col-12">
         <h1 class="h3 mb-3"><strong>Domain</strong> List</h1>
       </div>
     </div>
+
+    {% if pkg %}
+    <div class="row mb-4">
+      <div class="col-md-2">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="card-title">Storage</h6>
+            <p class="card-text">{{ total_storage }} / {{ pkg.max_storage_size }} MB</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="card-title">CPU</h6>
+            <p class="card-text">{{ total_cpu }} / {{ pkg.max_cpu }} mCPU</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="card-title">Memory</h6>
+            <p class="card-text">{{ total_mem }} / {{ pkg.max_memory }} MB</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="card-title">Mail Users</h6>
+            <p class="card-text">
+              {{ total_mail_users }}
+              {% if pkg.max_mail_users is not None %}/ {{ pkg.max_mail_users }}{% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="card-title">Domain Aliases</h6>
+            <p class="card-text">
+              {{ total_domain_aliases }}
+              {% if pkg.max_domain_aliases is not None %}/ {{ pkg.max_domain_aliases }}{% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
 
     <div class="row">
       <div class="col-12">
@@ -32,46 +83,31 @@
                 </tr>
               </thead>
               <tbody>
-                {% for domain in domains.all %}
+                {% for domain in domains %}
                 <tr>
                   <td>{{ domain.domain_name }}</td>
                   <td class="d-none d-xl-table-cell">{{ domain.scp_port }}</td>
                   <td>
-                    <a href="{% url 'volumesnapshots' domain=domain.domain_name %}" class="btn btn-success btn-sm">
-                      Show Backups
-                    </a>
-                    <a href="{% url 'start_backup' domain=domain.domain_name %}" class="btn btn-info btn-sm ms-1">
-                      Create Backup
-                    </a>
+                    <a href="{% url 'volumesnapshots' domain=domain.domain_name %}" class="btn btn-success btn-sm">Show Backups</a>
+                    <a href="{% url 'start_backup' domain=domain.domain_name %}" class="btn btn-info btn-sm ms-1">Create Backup</a>
                   </td>
                   <td>{{ domain.status|safe }}</td>
                   <td class="d-none d-md-table-cell">
-                    <a href="{% url 'view_domain' domain=domain.domain_name %}" class="btn btn-success btn-sm">
-                      View
-                    </a>
-                    <a href="{% url 'startstop_domain' domain=domain.domain_name action='start' %}" class="btn btn-success btn-sm ms-1">
-                      Start
-                    </a>
-                    <a href="{% url 'startstop_domain' domain=domain.domain_name action='stop' %}" class="btn btn-warning btn-sm ms-1">
-                      Pause
-                    </a>
-                    <a href="{% url 'domain_logs' domain=domain.domain_name %}" class="btn btn-secondary btn-sm ms-1">
-                      Logs
-                    </a>
-                    <a href="{% url 'delete_domain' domain=domain.domain_name %}" class="btn btn-danger btn-sm ms-1">
-                      Delete
-                    </a>
+                    <a href="{% url 'view_domain' domain=domain.domain_name %}" class="btn btn-success btn-sm">View</a>
+                    <a href="{% url 'startstop_domain' domain=domain.domain_name action='start' %}" class="btn btn-success btn-sm ms-1">Start</a>
+                    <a href="{% url 'startstop_domain' domain=domain.domain_name action='stop' %}" class="btn btn-warning btn-sm ms-1">Pause</a>
+                    <a href="{% url 'domain_logs' domain=domain.domain_name %}" class="btn btn-secondary btn-sm ms-1">Logs</a>
+                    <a href="{% url 'delete_domain' domain=domain.domain_name %}" class="btn btn-danger btn-sm ms-1">Delete</a>
                   </td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
-          </div> <!-- /.table-responsive -->
-        </div> <!-- /.card -->
-      </div> <!-- /.col-12 -->
-    </div> <!-- /.row -->
+          </div>
+        </div>
+      </div>
+    </div>
 
-  </div> <!-- /.container-fluid -->
+  </div>
 </main>
 {% endblock %}
-

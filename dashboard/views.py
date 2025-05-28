@@ -17,7 +17,7 @@ from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.views.generic import ListView, CreateView, UpdateView, FormView
 from django.contrib.auth.models import User
-
+from django.db.models import Sum
 
 import cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
 
@@ -349,10 +349,40 @@ def kplogin(request):
 @login_required(login_url="/dashboard/")
 def kpmain(request):
     if request.user.is_superuser:
-      domains = { "domains" : Domain.objects.all() }
+      domains = Domain.objects.all()
+      pkg = getattr(request.user.profile, 'package', None)
+      totals = domains.aggregate(
+          total_storage=Sum('storage_size'),
+          total_cpu=Sum('cpu_limit'),
+          total_mem=Sum('mem_limit'),
+      )
+      total_storage = totals['total_storage'] or 0
+      total_cpu     = totals['total_cpu']     or 0
+      total_mem     = totals['total_mem']     or 0
+      total_mail_users    = MailUser.objects.filter(domain__owner=request.user).count()
+      total_domain_aliases = sum(d.aliases.count() for d in domains)
     else:
-      domains = { "domains" : Domain.objects.filter(owner=request.user) }
-    return render(request, "main/domain.html", domains)
+      domains = Domain.objects.filter(owner=request.user)
+      pkg = getattr(request.user.profile, 'package', None)
+      totals = domains.aggregate(
+          total_storage=Sum('storage_size'),
+          total_cpu=Sum('cpu_limit'),
+          total_mem=Sum('mem_limit'),
+      )
+      total_storage = totals['total_storage'] or 0
+      total_cpu     = totals['total_cpu']     or 0
+      total_mem     = totals['total_mem']     or 0
+      total_mail_users    = MailUser.objects.filter(domain__owner=request.user).count()
+      total_domain_aliases = sum(d.aliases.count() for d in domains)
+    return render(request, 'main/domain.html', {
+        'domains': domains,
+        'pkg': pkg,
+        'total_storage': total_storage,
+        'total_cpu': total_cpu,
+        'total_mem': total_mem,
+        'total_mail_users': total_mail_users,
+        'total_domain_aliases': total_domain_aliases,
+    })
 
 @login_required(login_url="/dashboard/")
 def volumesnapshots(request,domain):
@@ -593,6 +623,10 @@ def add_domain(request):
             response = create_dns_record_in_cloudflare(dkim_record_obj)
             dkim_record_obj.cf_record_id = response.id
             dkim_record_obj.save()
+            dmarc_record_obj = DNSRecord(zone=zone_obj,record_type="TXT",name="_dmarc",content="v=DMARC1; p=none;"
+            response = create_dns_record_in_cloudflare(dkim_record_obj)
+            dmarc_record_obj.cf_record_id = response.id
+            dmarc_record_obj.save()
             spf_record_obj = DNSRecord(zone=zone_obj,record_type="TXT",name="@",content=spf_record)
             response = create_dns_record_in_cloudflare(spf_record_obj)
             spf_record_obj.cf_record_id = response.id
