@@ -4,8 +4,8 @@ metadata:
   name: delete-domain-{{ jobid }}
   namespace: kubepanel
 spec:
-  template:
   ttlSecondsAfterFinished: 3600
+  template:
     spec:
       containers:
       - name: delete-domain-namespace
