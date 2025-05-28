@@ -623,7 +623,7 @@ def add_domain(request):
             response = create_dns_record_in_cloudflare(dkim_record_obj)
             dkim_record_obj.cf_record_id = response.id
             dkim_record_obj.save()
-            dmarc_record_obj = DNSRecord(zone=zone_obj,record_type="TXT",name="_dmarc",content="v=DMARC1; p=none;"
+            dmarc_record_obj = DNSRecord(zone=zone_obj,record_type="TXT",name="_dmarc",content="v=DMARC1; p=none;")
             response = create_dns_record_in_cloudflare(dkim_record_obj)
             dmarc_record_obj.cf_record_id = response.id
             dmarc_record_obj.save()
