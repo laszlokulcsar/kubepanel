@@ -40,7 +40,7 @@ def save_user_profile(sender, instance, **kwargs):
 
 class PhpImage(models.Model):
     version = models.CharField(max_length=50, unique=True)
-    repository_url = models.URLField(max_length=255)
+    repository_url = models.CharField(max_length=255)
 
     def __str__(self):
         return self.repository_url
