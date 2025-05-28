@@ -116,16 +116,19 @@ class MailUserForm(forms.ModelForm):
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
-        # if a user was passed and they're not superuser, limit domains
+        # add bootstrap classes
+        self.fields['domain'].widget.attrs.update({'class': 'form-select'})
+        self.fields['local_part'].widget.attrs.update({'class': 'form-control'})
+        self.fields['plain_password'].widget.attrs.update({'class': 'form-control'})
+        self.fields['active'].widget.attrs.update({'class': 'form-check-input'})
+        # if a non-superuser, limit domains
         if user is not None and not user.is_superuser:
             self.fields['domain'].queryset = Domain.objects.filter(owner=user)
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        # hash the password
         hashed = sha512_crypt.using(rounds=5000).hash(self.cleaned_data['plain_password'])
         instance.password = hashed
-
         if commit:
             instance.save()
         return instance

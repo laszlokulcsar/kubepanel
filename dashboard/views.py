@@ -845,11 +845,15 @@ def edit_mail_user(request, user_id):
     if request.method == 'POST':
         form = MailUserForm(request.POST, instance=mail_user)
         if form.is_valid():
+            if not request.user.is_superuser:
+                domain_obj = form.cleaned_data['domain']
+                if domain_obj.owner != request.user:
+                    return render(request, "main/error.html", {"error": "You do not own this domain."})
             form.save()
             return redirect("list_mail_users")
     else:
         # Initialize form with existing mail user data
-        form = MailUserForm(instance=mail_user)
+        form = MailUserForm(user=request.user, instance=mail_user)
     return render(request, "main/edit_mail_user.html", {"form": form, 'mail_user': mail_user, 'aliases': aliases,})
 
 @login_required
