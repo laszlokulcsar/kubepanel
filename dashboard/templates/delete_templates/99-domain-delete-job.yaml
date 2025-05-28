@@ -14,7 +14,10 @@ spec:
       - name: delete-cronjob
         image: laszlokulcsar/watchdog:v0.1
         command: ["kubectl",  "delete", "cronjob", "backup-{{ domain_name_dash }}", "-n", "kubepanel"]
-      - name: db-client
+      - name: delete-backup-pvc
+        image: laszlokulcsar/watchdog:v0.1
+        command: ["kubectl",  "delete", "pvc", "{{ domain_name_dash }}-backup-pvc", "-n", "kubepanel"]
+     - name: db-client
         env:
         - name: MARIADB_ROOT_PASSWORD
           valueFrom:
