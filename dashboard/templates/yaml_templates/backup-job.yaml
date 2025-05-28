@@ -64,7 +64,6 @@ spec:
                   source:
                     persistentVolumeClaimName: {{ domain_name_dash }}-pvc
                 EOF
-                python3 /kubepanel/manage.py add_snapshot -sn {{ domain_name_dash }}-snapshot-$DATE -d {{ domain_name }}
                 mysqldump -h mariadb.kubepanel.svc.cluster.local -uroot -p$MARIADB_ROOT_PASSWORD $DBNAME > /backup/{{ domain_name_dash }}-snapshot-$DATE.sql
                 echo ">>> Backup finished at $(date)"
                 ls -alh /backup/
