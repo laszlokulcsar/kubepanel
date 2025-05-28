@@ -7,29 +7,29 @@ spec:
   ttlSecondsAfterFinished: 3600
   template:
     spec:
-      containers:
-      - name: delete-domain-namespace
-        image: laszlokulcsar/watchdog:v0.1
-        command: ["kubectl",  "delete", "ns", "{{ domain_name_dash }}"]
-      - name: delete-cronjob
-        image: laszlokulcsar/watchdog:v0.1
-        command: ["kubectl",  "delete", "cronjob", "backup-{{ domain_name_dash }}", "-n", "kubepanel"]
-      - name: delete-backup-pvc
-        image: laszlokulcsar/watchdog:v0.1
-        command: ["kubectl",  "delete", "pvc", "{{ domain_name_dash }}-backup-pvc", "-n", "kubepanel"]
+     containers:
+     - name: delete-domain-namespace
+       image: laszlokulcsar/watchdog:v0.1
+       command: ["kubectl",  "delete", "ns", "{{ domain_name_dash }}"]
+     - name: delete-cronjob
+       image: laszlokulcsar/watchdog:v0.1
+       command: ["kubectl",  "delete", "cronjob", "backup-{{ domain_name_dash }}", "-n", "kubepanel"]
+     - name: delete-backup-pvc
+       image: laszlokulcsar/watchdog:v0.1
+       command: ["kubectl",  "delete", "pvc", "{{ domain_name_dash }}-backup-pvc", "-n", "kubepanel"]
      - name: db-client
-        env:
-        - name: MARIADB_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mariadb-auth
-              key: password
-        - name: DBUSER
-          value: "{{ domain_name_underscore }}"
-        - name: DBNAME
-          value: "{{ domain_name_underscore }}"
-        image: laszlokulcsar/db-client:v0.1
-        command: ["/bin/bash"]
-        args: ["/delete_db.sh"]
-      restartPolicy: Never
+       env:
+       - name: MARIADB_ROOT_PASSWORD
+         valueFrom:
+           secretKeyRef:
+             name: mariadb-auth
+             key: password
+       - name: DBUSER
+         value: "{{ domain_name_underscore }}"
+       - name: DBNAME
+         value: "{{ domain_name_underscore }}"
+       image: laszlokulcsar/db-client:v0.1
+       command: ["/bin/bash"]
+       args: ["/delete_db.sh"]
+     restartPolicy: Never
   backoffLimit: 4
