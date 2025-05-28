@@ -40,6 +40,7 @@ spec:
                 SLEEP_TIME=$(( $RANDOM % 3600 ))
                 echo "Sleeping for ${SLEEP_TIME}s before snapshot..."
                 sleep $SLEEP_TIME
+                python3 /kubepanel/manage.py add_log --model dashboard.domain --lookup domain_name="{{ domain_name }}" --actor system --message "Backup process started for {{ domain_name }}" --level INFO
                 DATE=$(date +'%Y%m%d%H%M%S')
                 echo $DATE
                 # Now create the snapshot
@@ -72,6 +73,7 @@ spec:
                 echo "Removing SQL dumps older than 6 days..."
                 find /backup -maxdepth 1 -name '{{ domain_name_dash }}-snapshot-*.sql' -mtime +6 -print -delete
                 ls -alh /backup/
+                python3 /kubepanel/manage.py add_log --model dashboard.domain --lookup domain_name="{{ domain_name }}" --actor system --message "Backup process finished for {{ domain_name }}" --level INFO
             volumeMounts:
             - name: kubepanel
               mountPath: /kubepanel

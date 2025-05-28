@@ -4,6 +4,7 @@ metadata:
   name: dkim-rollout-{{ jobid }}
   namespace: kubepanel
 spec:
+  ttlSecondsAfterFinished: 3600
   template:
     spec:
       containers:

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Package, UserProfile, LogEntry, MailUser, MailAlias, ClusterIP, Domain, DomainAlias, Volumesnapshot, BlockRule, DNSRecord, DNSZone, CloudflareAPIToken
+from .models import PhpImage, Package, UserProfile, LogEntry, MailUser, MailAlias, ClusterIP, Domain, DomainAlias, Volumesnapshot, BlockRule, DNSRecord, DNSZone, CloudflareAPIToken
 
 admin.site.register(Domain)
 admin.site.register(DomainAlias)
@@ -14,3 +14,4 @@ admin.site.register(MailAlias)
 admin.site.register(LogEntry)
 admin.site.register(Package)
 admin.site.register(UserProfile)
+admin.site.register(PhpImage)
