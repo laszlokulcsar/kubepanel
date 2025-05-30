@@ -81,6 +81,7 @@ spec:
                   done
                 echo "Removing SQL dumps older than 6 days..."
                 find /backup -maxdepth 1 -name '{{ domain_name_dash }}-snapshot-*.sql' -mtime +6 -print -delete
+                python3 /kubepanel/manage.py cleanup_snapshot --days 6 --domain "${DOMAIN}"
                 ls -alh /backup/
                 python3 /kubepanel/manage.py add_snapshot --snapshotname "${SNAP_NAME}" --domain       "${DOMAIN}" --logfile      "$LOGFILE"
                 python3 /kubepanel/manage.py add_log --model dashboard.domain --lookup domain_name="{{ domain_name }}" --actor system --message "Backup process finished for {{ domain_name }}" --level INFO
