@@ -76,6 +76,7 @@
               <thead>
                 <tr>
                   <th>Name</th>
+                  <th>Owner</th>
                   <th class="d-none d-xl-table-cell">SFTP Port</th>
                   <th>Filesystem Backups</th>
                   <th>Status</th>
@@ -86,6 +87,7 @@
                 {% for domain in domains %}
                 <tr>
                   <td>{{ domain.domain_name }}</td>
+                  <td>{{ domain.owner.username }}</td>
                   <td class="d-none d-xl-table-cell">{{ domain.scp_port }}</td>
                   <td>
                     <a href="{% url 'volumesnapshots' domain=domain.domain_name %}" class="btn btn-success btn-sm">Show Backups</a>
