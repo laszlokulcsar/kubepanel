@@ -32,7 +32,7 @@ class Command(BaseCommand):
         cutoff = timezone.now() - timedelta(days=days)
         old_qs = Volumesnapshot.objects.filter(
             domain=domain,
-            created__lt=cutoff
+            created_at__lt=cutoff
         )
 
         count = old_qs.count()

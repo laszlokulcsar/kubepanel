@@ -791,7 +791,6 @@ def delete_domain(request,domain):
         except:
             return HttpResponse("Permission denied.")
         if domain_to_delete:
-            domain_to_delete.delete()
             domain_dirname = '/kubepanel/yaml_templates/'+domain
             try:
               os.mkdir(domain_dirname)
@@ -802,6 +801,7 @@ def delete_domain(request,domain):
             context = { "jobid" : jobid, "domain_name_dash" : domain.replace(".","-"), "domain_name_underscore" : domain.replace(".","_")}
             template_dir = "delete_templates/"
             iterate_input_templates(template_dir,domain_dirname,context)
+            domain_to_delete.delete()
       else:
         error = "Domain name didn't match"
         return render(request, "main/delete_domain.html", { "domain" : domain, "error" : error})
