@@ -219,7 +219,7 @@ def blocked_objects(request):
         except:
           print("Can't create directories. Please check debug logs if you think this is an error.")
         iterate_input_templates(template_dir,domain_dirname,context)
-        return render(request, 'main/blocked_objects.html')
+        return redirect("blocked_objects")
 
     return render(request, 'main/blocked_objects.html', {'page_obj': page_obj})
 
