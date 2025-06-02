@@ -677,10 +677,12 @@ def startstop_domain(request,domain,action):
     if request.method == 'POST':
       if request.POST["imsure"] == domain:
         try:
-          permission_valid = Domain.objects.get(owner=request.user, domain_name = domain)
-          domain_obj = permission_valid
-          if request.user.is_superuser:
+          domain_obj = Domain.objects.get(domain_name = domain)
+          if request.user.is_superuser or domain_obj.owner == request.user:
             permission_valid = True
+          else:
+            permission_valie = False
+            return HttpResponse("Permission denied.")
         except:
           return HttpResponse("Permission denied.")
         if permission_valid:
@@ -787,10 +789,15 @@ def delete_domain(request,domain):
     if request.method == 'POST':
       if request.POST["imsure"] == domain:
         try:
-            domain_to_delete = Domain.objects.get(owner=request.user, domain_name = domain)
+            domain_obj = Domain.objects.get(domain_name = domain)
+            if domain_obj.owner == request.user or request.user.is_superuser: 
+                permission_valid = True
+            else:
+                permission_valid = False
+                return HttpResponse("Permission denied.")
         except:
             return HttpResponse("Permission denied.")
-        if domain_to_delete:
+        if permission_valid:
             domain_dirname = '/kubepanel/yaml_templates/'+domain
             try:
               os.mkdir(domain_dirname)
@@ -801,7 +808,7 @@ def delete_domain(request,domain):
             context = { "jobid" : jobid, "domain_name_dash" : domain.replace(".","-"), "domain_name_underscore" : domain.replace(".","_")}
             template_dir = "delete_templates/"
             iterate_input_templates(template_dir,domain_dirname,context)
-            domain_to_delete.delete()
+            domain_obj.delete()
       else:
         error = "Domain name didn't match"
         return render(request, "main/delete_domain.html", { "domain" : domain, "error" : error})
