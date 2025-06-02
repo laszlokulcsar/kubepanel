@@ -239,7 +239,7 @@ def block_entry(request, vhost, x_forwarded_for, path):
             block_vhost = block_vhost,
             block_path = block_path
         )
-        return render('main/blocked_objects.html')
+        return redirect("blocked_objects")
     else:
         context = {
             'vhost': vhost,
