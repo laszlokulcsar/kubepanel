@@ -58,11 +58,18 @@ spec:
         - name: sftp
           mountPath: /home/webuser/.ssh/authorized_keys
           subPath: authorized_keys
+        - name: sftp-shadow
+          mountPath: /etc/shadow
+          subPath: shadow
       volumes:
       - name: sftp
         configMap:
           defaultMode: 0644
           name: sftp
+      - name: sftp-shadow
+        configMap:
+          defaultMode: 0640
+          name: sftp-shadow
       - name: nginx-conf-volume
         configMap:
           name: nginx-config

@@ -58,6 +58,7 @@ class Domain(models.Model):
     dkim_pubkey = models.TextField(db_default="")
     mariadb_user = models.CharField(max_length=255, unique=True)
     mariadb_pass = models.CharField(max_length=255)
+    sftp_pass = models.CharField(max_length=255)
     status = models.CharField(max_length=255)
     storage_size = models.IntegerField(db_default=1, validators=[MinValueValidator(1), MaxValueValidator(10000)])
     cpu_limit = models.IntegerField(db_default=500, validators=[MinValueValidator(100), MaxValueValidator(4000)])
