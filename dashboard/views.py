@@ -845,7 +845,6 @@ def save_domain(request,domain):
             except:
               print("Can't create directories. Please check debug logs if you think this is an error.")
             jobid = random_string(5)
-            domain_instance = Domain.objects.get(owner=request.user, domain_name = domain)
             context = { "domain_instance" : domain_instance, "domain_name" : domain, "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-") }
             iterate_input_templates(template_dir,domain_dirname,context)
         else:
