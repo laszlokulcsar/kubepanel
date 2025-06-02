@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: sftp-shadow
+  namespace: {{ domain_name_dash }}
 data:
   shadow: |
     root:*:20007:0:99999:7:::
