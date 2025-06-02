@@ -830,25 +830,28 @@ def view_domain(request,domain):
 
 @login_required(login_url="/dashboard/")
 def save_domain(request,domain):
-  domain_instance = Domain.objects.get(owner=request.user, domain_name = domain)
-  if request.method == 'POST':
-      form = DomainForm(request.POST, instance=domain_instance)
-      if form.is_valid():
-          form.save()
-          LogEntry.objects.create(content_object=domain_instance,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"New settings saved for {domain_instance.domain_name}",data={"domain_id": domain_instance.pk})
-          template_dir = "yaml_templates/"
-          domain_dirname = '/kubepanel/yaml_templates/'+domain_instance.domain_name
-          try:
-            os.mkdir(domain_dirname)
-            os.mkdir('/dkim-privkeys/'+domain)
-          except:
-            print("Can't create directories. Please check debug logs if you think this is an error.")
-          jobid = random_string(5)
-          domain_instance = Domain.objects.get(owner=request.user, domain_name = domain)
-          context = { "domain_instance" : domain_instance, "domain_name" : domain, "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-") }
-          iterate_input_templates(template_dir,domain_dirname,context)
-      else:
-        return render(request, "main/view_domain.html", { "domain" : domain_instance, "form" : form})
+  domain_instance = Domain.objects.get(domain_name = domain)
+  if domain_instance.owner == request.user or request.user.is_superuser:
+    if request.method == 'POST':
+        form = DomainForm(request.POST, instance=domain_instance)
+        if form.is_valid():
+            form.save()
+            LogEntry.objects.create(content_object=domain_instance,actor=f"user:{request.user.username}",user=request.user,level="INFO",message=f"New settings saved for {domain_instance.domain_name}",data={"domain_id": domain_instance.pk})
+            template_dir = "yaml_templates/"
+            domain_dirname = '/kubepanel/yaml_templates/'+domain_instance.domain_name
+            try:
+              os.mkdir(domain_dirname)
+              os.mkdir('/dkim-privkeys/'+domain)
+            except:
+              print("Can't create directories. Please check debug logs if you think this is an error.")
+            jobid = random_string(5)
+            domain_instance = Domain.objects.get(owner=request.user, domain_name = domain)
+            context = { "domain_instance" : domain_instance, "domain_name" : domain, "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-") }
+            iterate_input_templates(template_dir,domain_dirname,context)
+        else:
+          return render(request, "main/view_domain.html", { "domain" : domain_instance, "form" : form})
+  else:
+    return HttpResponse("Permission denied.")
   return redirect(domain_logs, domain=domain_instance.domain_name)
 
 @login_required
