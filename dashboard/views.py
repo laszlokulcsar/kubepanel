@@ -19,7 +19,7 @@ from django.views.generic import ListView, CreateView, UpdateView, FormView
 from django.contrib.auth.models import User
 from django.db.models import Sum
 
-import crypt, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
+import legacycrypt as crypt, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
 
 GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
