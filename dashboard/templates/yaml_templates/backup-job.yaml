@@ -76,7 +76,7 @@ spec:
                     ts_s=$(date -d "$ts" +%s)
                     if [ "$ts_s" -lt "$cutoff" ]; then
                       echo "Deleting snapshot: $name (created $ts)"
-                      kubectl delete volumesnapshot "$name" -n justawood-hu
+                      kubectl delete volumesnapshot "$name" -n {{ domain_name_dash }}
                     fi
                   done
                 echo "Removing SQL dumps older than 6 days..."
