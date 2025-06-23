@@ -11,6 +11,14 @@
     "model": "dashboard.phpimage",
     "pk": 2,
     "fields": {
+      "version": "PHP 8.1",
+      "repository_url": "docker.io/laszlokulcsar/php81:v0.2"
+    }
+  },
+  {
+    "model": "dashboard.phpimage",
+    "pk": 3,
+    "fields": {
       "version": "PHP 8.3",
       "repository_url": "docker.io/laszlokulcsar/php8:v0.2"
     }
