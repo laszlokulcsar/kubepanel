@@ -808,7 +808,7 @@ def delete_domain(request,domain):
             except:
               print("Can't create directories. Please check debug logs if you think this is an error.")
             jobid = random_string(5)
-            context = { "jobid" : jobid, "domain_name_dash" : domain.replace(".","-"), "domain_name_underscore" : domain.replace(".","_")}
+            context = { "jobid" : jobid, "domain_name_dash" : domain.replace(".","-"), "domain_name_underscore" : domain.replace(".","_"), "mariadb_user" = domain.replace(".","_").replace("-","_")}
             template_dir = "delete_templates/"
             iterate_input_templates(template_dir,domain_dirname,context)
             domain_obj.delete()

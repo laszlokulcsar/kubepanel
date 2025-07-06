@@ -25,9 +25,9 @@ spec:
              name: mariadb-auth
              key: password
        - name: DBUSER
-         value: "{{ domain_name_underscore }}"
+         value: "{{ mariadb_user }}"
        - name: DBNAME
-         value: "{{ domain_name_underscore }}"
+         value: "{{ mariadb_user }}"
        image: laszlokulcsar/db-client:v0.1
        command: ["/bin/bash"]
        args: ["/delete_db.sh"]
