@@ -601,7 +601,7 @@ def add_domain(request):
         salt = crypt.mksalt(crypt.METHOD_SHA512)
         sftp_pass_hash = crypt.crypt(sftp_pass, salt)
         jobid = random_string(5)
-        mariadb_user = new_domain_name.replace(".","_")
+        mariadb_user = new_domain_name.replace(".","_").replace("-","_")
         status = "Startup in progress"
         new_domain = Domain(owner=request.user, sftp_pass = sftp_pass, php_image = php_image, mem_limit = mem_limit, cpu_limit = cpu_limit, storage_size = storage_size, domain_name = new_domain_name, title = new_domain_name, scp_privkey = private_key, scp_pubkey = public_key, scp_port = scp_port, dkim_privkey = dkim_privkey, dkim_pubkey = dkim_txt_record, mariadb_pass = mariadb_pass, mariadb_user = mariadb_user, status = status)
         domain_dirname = '/kubepanel/yaml_templates/'+new_domain_name
