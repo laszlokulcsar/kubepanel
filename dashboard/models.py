@@ -64,7 +64,7 @@ class Domain(models.Model):
     cpu_limit = models.IntegerField(db_default=500, validators=[MinValueValidator(100), MaxValueValidator(4000)])
     mem_limit = models.IntegerField(db_default=256, validators=[MinValueValidator(32), MaxValueValidator(4096)])
     nginx_config = models.TextField(default=NGINX_DEFAULT_CONFIG)
-    php_image = models.ForeignKey(PhpImage,on_delete=models.PROTECT,related_name='domains')
+    php_image = models.ForeignKey(PhpImage, db_default=1, on_delete=models.PROTECT,related_name='domains')
 
     def clean(self):
         super().clean()
