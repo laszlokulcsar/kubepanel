@@ -5,7 +5,7 @@ metadata:
   namespace: {{ domain_name_dash }}
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   storageClassName: linstor-sc  # This must match the PV's storageClassName
   resources:
     requests:
@@ -18,7 +18,7 @@ metadata:
   namespace: kubepanel
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   storageClassName: linstor-sc  # This must match the PV's storageClassName
   resources:
     requests:
