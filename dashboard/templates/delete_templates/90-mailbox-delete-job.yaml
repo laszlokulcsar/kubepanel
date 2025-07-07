@@ -27,7 +27,7 @@ spec:
           - /bin/sh
           - -c
           - |
-            domain="{{ domain_name_dash }}"
+            domain="{{ domain_name }}"
             : "${domain:?Error: DOMAIN_NAME is empty; refusing to run rm -rf}"
             # ensure domain length > 3
             if [ "${#domain}" -le 3 ]; then
