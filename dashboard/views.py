@@ -848,7 +848,10 @@ def save_domain(request,domain):
             except:
               print("Can't create directories. Please check debug logs if you think this is an error.")
             jobid = random_string(5)
-            context = { "domain_instance" : domain_instance, "domain_name" : domain, "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-") }
+            sftp_pass = domain_instance.sftp_pass
+            salt = crypt.mksalt(crypt.METHOD_SHA512)
+            sftp_pass_hash = crypt.crypt(sftp_pass, salt)
+            context = { "domain_instance" : domain_instance, "sftp_pass_hash" : sftp_pass_hash, "domain_name" : domain, "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-") }
             iterate_input_templates(template_dir,domain_dirname,context)
         else:
           return render(request, "main/view_domain.html", { "domain" : domain_instance, "form" : form})
