@@ -1422,27 +1422,68 @@ class UserProfilePackageUpdateView(SuperuserRequiredMixin, UpdateView):
 
 class DownloadSnapshotView(View):
     def get(self, request, snapshot_name):
-        # load in-cluster config; fallback to kubeconfig for local dev
+        # — Access control —
+        vs = get_object_or_404(Volumesnapshot, snapshotname=snapshot_name)
+        if not request.user.is_superuser and vs.domain.owner != request.user:
+            raise PermissionDenied
+
+        # — Load k8s config —
         try:
             config.load_incluster_config()
         except config.ConfigException:
             config.load_kube_config()
-
         v1 = client.CoreV1Api()
-        pod_name = "linstor-satellite.node31-48hw4"
         namespace = "piraeus-datastore"
-        container = "linstor-satellite"
-        command = [
-            "sh", "-c",
-            f"thin_send linstorvg/{snapshot_name} | zstd -c"
-        ]
+        container = "linstor-satellite-container"  # adjust as needed
 
+        # — 1) list all linstor-satellite pods —
+        pods = v1.list_namespaced_pod(
+            namespace,
+            label_selector="app.kubernetes.io/component=linstor-satellite"
+        ).items
+
+        # — 2) find a pod with the snapshot LV present —
+        candidates = []
+        for pod in pods:
+            name = pod.metadata.name
+        
+            # list all LV names in the VG and grep for our snapshot UUID
+            check_cmd = [
+                "sh", "-c",
+                f"lvs --noheadings -o lv_name linstorvg | grep -w {snapshot_name}"
+            ]
+            chk = stream.stream(
+                v1.connect_get_namespaced_pod_exec,
+                name=name,
+                namespace=namespace,
+                container=container,
+                command=check_cmd,
+                stderr=False, stdin=False, stdout=True, tty=False,
+                _preload_content=False
+            )
+        
+            # grab whatever grep emits
+            chk.update(timeout=1)
+            out = chk.read_stdout().strip()
+            chk.close()
+        
+            if out:
+                # `out` will be something like:
+                #   pvc-81f8e3b8-9fca-4bf9-a04a-ae0219f9fa97_00000_snapshot-b1094359-8cd0-45d7-b2df-a759f3c8eb67
+                candidates.append(name)
+        
+        if not candidates:
+            return HttpResponseNotFound(f"Snapshot {snapshot_name} not found on any node")
+        pod_name = candidates[0]
+        # — 3) stream the snapshot with thin_send |
+        #     here we're piping through zstd in-pod for compression
+        cmd = ["sh", "-c", f"thin_send linstorvg/{snapshot_name} | zstd -c"]
         exec_stream = stream.stream(
             v1.connect_get_namespaced_pod_exec,
             name=pod_name,
             namespace=namespace,
             container=container,
-            command=command,
+            command=cmd,
             stderr=True, stdin=False, stdout=True, tty=False,
             _preload_content=False
         )
@@ -1457,6 +1498,7 @@ class DownloadSnapshotView(View):
             finally:
                 exec_stream.close()
 
-        response = StreamingHttpResponse(generator(), content_type="application/octet-stream")
-        response["Content-Disposition"] = f'attachment; filename="{snapshot_name}.lv"'
-        return response
+        resp = StreamingHttpResponse(generator(), content_type="application/octet-stream")
+        resp["Content-Encoding"] = "zstd"
+        resp["Content-Disposition"] = f'attachment; filename="{snapshot_name}.lv.zst"'
+        return resp
