@@ -1429,7 +1429,7 @@ class DownloadSnapshotView(View):
             config.load_kube_config()
 
         v1 = client.CoreV1Api()
-        pod_name = "linstor-satellite.node31"
+        pod_name = "linstor-satellite.node31-48hw4"
         namespace = "piraeus-datastore"
         command = [
             "sh", "-c",
