@@ -1532,7 +1532,7 @@ class DownloadSqlDumpView(View):
         namespace = "kubepanel"  # assuming PVC in domain namespace
         domain_name_dash = vs.domain.domain_name.replace(".","-")
         pvc_name = f"{domain_name_dash}-backup-pvc"
-        file_path = f"/mnt/{domain_name_dash}-{dump_name}.sql"
+        file_path = f"/mnt/{dump_name}.sql"
 
         # 1) Create ephemeral pod manifest
         pod_body = {
