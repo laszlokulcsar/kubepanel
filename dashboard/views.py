@@ -1434,7 +1434,7 @@ class DownloadSnapshotView(View):
             config.load_kube_config()
         snap_namespace = vs.domain.domain_name.replace(".","-")
         namespace = "piraeus-datastore"
-        container = "linstor-satellite-container"  # adjust as needed
+        container = "linstor-satellite"  # adjust as needed
 
         # 1) Fetch the bound VolumeSnapshotContent for our snapshot
         co_api = client.CustomObjectsApi()
