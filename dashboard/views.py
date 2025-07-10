@@ -1431,6 +1431,7 @@ class DownloadSnapshotView(View):
         v1 = client.CoreV1Api()
         pod_name = "linstor-satellite.node31-48hw4"
         namespace = "piraeus-datastore"
+        container = "linstor-satellite"
         command = [
             "sh", "-c",
             f"thin_send linstorvg/{snapshot_name} | zstd -c"
@@ -1440,6 +1441,7 @@ class DownloadSnapshotView(View):
             v1.connect_get_namespaced_pod_exec,
             name=pod_name,
             namespace=namespace,
+            container=container,
             command=command,
             stderr=True, stdin=False, stdout=True, tty=False,
             _preload_content=False
