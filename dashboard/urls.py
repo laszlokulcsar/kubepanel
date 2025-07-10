@@ -3,7 +3,7 @@ import re
 from .views import (
     UserProfilePackageUpdateView, PackageListView, PackageCreateView, PackageUpdateView,
     UserProfileListView, UserProfileCreateView, UserProfileUpdateView,
-    UserCreateView, DownloadSnapshotView
+    UserCreateView, DownloadSnapshotView, DownloadSqlDumpView
 )
 
 from . import views
