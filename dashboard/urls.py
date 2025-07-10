@@ -65,4 +65,5 @@ urlpatterns = [
     path('profiles/<int:pk>/edit/', UserProfileUpdateView.as_view(), name='edit_userprofile'),
     path('users/add/', UserCreateView.as_view(), name='create_user_with_profile'),
     path('profiles/<int:pk>/edit-package/',UserProfilePackageUpdateView.as_view(),name='edit_userprofile_package'),
+    path("download/<str:snapshot_name>/", DownloadSnapshotView.as_view(), name="download_snapshot"),
 ]

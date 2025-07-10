@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
-from django.http import HttpResponse
+from django.http import HttpResponse StreamingHttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
@@ -18,6 +18,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.views.generic import ListView, CreateView, UpdateView, FormView
 from django.contrib.auth.models import User
 from django.db.models import Sum
+
+from kubernetes import client, config, stream
 
 import legacycrypt as crypt, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
 
@@ -1417,3 +1419,42 @@ class UserProfilePackageUpdateView(SuperuserRequiredMixin, UpdateView):
         ctx = super().get_context_data(**kwargs)
         ctx['user'] = self.object.user
         return ctx
+
+class DownloadSnapshotView(View):
+    def get(self, request, snapshot_name):
+        # load in-cluster config; fallback to kubeconfig for local dev
+        try:
+            config.load_incluster_config()
+        except config.ConfigException:
+            config.load_kube_config()
+
+        v1 = client.CoreV1Api()
+        pod_name = "linstor-satellite.node31"
+        namespace = "piraeus-datastore"
+        command = [
+            "sh", "-c",
+            f"thin_send linstorvg/{snapshot_name} | zstd -c"
+        ]
+
+        exec_stream = stream.stream(
+            v1.connect_get_namespaced_pod_exec,
+            name=pod_name,
+            namespace=namespace,
+            command=command,
+            stderr=True, stdin=False, stdout=True, tty=False,
+            _preload_content=False
+        )
+
+        def generator():
+            try:
+                while exec_stream.is_open():
+                    exec_stream.update(timeout=1)
+                    chunk = exec_stream.read_channel(stream.CHANNEL_STDOUT)
+                    if chunk:
+                        yield chunk
+            finally:
+                exec_stream.close()
+
+        response = StreamingHttpResponse(generator(), content_type="application/octet-stream")
+        response["Content-Disposition"] = f'attachment; filename="{snapshot_name}.lv"'
+        return response
