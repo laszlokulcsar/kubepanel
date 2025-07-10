@@ -30,6 +30,11 @@
                     <button class="btn btn-danger">Restore backup</button>
                   </a>
                 </td>
+                <td class="d-none d-md-table-cell">
+                  <a href="{% url 'download_snapshot' vs.snapshotname %}">
+                    <button class="btn btn-secondary">Download LVM snapshot</button>
+                  </a>
+                </td>
                 <td>
                   <button class="btn btn-secondary"
                           onclick="toggleLogs({{ forloop.counter }})">

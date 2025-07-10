@@ -1510,7 +1510,6 @@ class DownloadSnapshotView(View):
             generator(),
             content_type="application/octet-stream"
         )
-        response["Content-Encoding"] = "zstd"
         response["Content-Disposition"] = (
             f'attachment; filename="{snapshot_name}.lv.zst"'
         )
