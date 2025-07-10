@@ -1538,7 +1538,7 @@ class DownloadSqlDumpView(View):
         pod_body = {
             "apiVersion": "v1",
             "kind": "Pod",
-            "metadata": {"generateName": f"backup-downloader-{domain_name}-"},
+            "metadata": {"generateName": f"backup-downloader-{domain_name_dash}-"},
             "spec": {
                 "restartPolicy": "Never",
                 "volumes": [{
