@@ -1477,14 +1477,15 @@ class DownloadSnapshotView(View):
             out = chk.read_stdout().strip()
             chk.close()
             if out:
-                candidates.append(name)
+                pod_name = name
+                lv_name = out
+                break
 
-        if not candidates:
+        if not pod_name or not lv_name:
             return HttpResponseNotFound(f"Snapshot {snapshot_name} not found on any node")
-        pod_name = candidates[0]
 
         # 4) Stream the snapshot with thin_send | zstd
-        cmd = ["sh", "-c", f"thin_send linstorvg/{snapshot_name} | zstd -c"]
+        cmd = ["sh", "-c", f"thin_send linstorvg/{lv_name} | zstd -c"]
         exec_stream = stream.stream(
             v1.connect_get_namespaced_pod_exec,
             name=pod_name,
