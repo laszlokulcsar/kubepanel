@@ -1432,7 +1432,7 @@ class DownloadSnapshotView(View):
             config.load_incluster_config()
         except config.ConfigException:
             config.load_kube_config()
-
+        snap_namespace = vs.domain.domain_name.replace(".","-")
         namespace = "piraeus-datastore"
         container = "linstor-satellite-container"  # adjust as needed
 
@@ -1441,7 +1441,7 @@ class DownloadSnapshotView(View):
         obj = co_api.get_namespaced_custom_object(
             group="snapshot.storage.k8s.io",
             version="v1",
-            namespace=namespace,
+            namespace=snap_namespace,
             plural="volumesnapshots",
             name=snapshot_name,
         )
