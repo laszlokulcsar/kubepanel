@@ -1503,15 +1503,19 @@ class DownloadSnapshotView(View):
             try:
                 while True:
                     exec_stream.update(timeout=1)
-                    chunk = exec_stream.read_channel(1)   # raw stdout bytes
+                    chunk = exec_stream.read_channel(1)   # channel 1 == stdout
                     if chunk:
+                        # ensure it’s raw bytes, not str
+                        if isinstance(chunk, str):
+                            chunk = chunk.encode("latin-1")
                         total += len(chunk)
                         yield chunk
-                    elif not exec_stream.is_open():
+                        continue
+                    if not exec_stream.is_open():
                         break
             finally:
                 exec_stream.close()
-            # log the total so we know what came over the wire
+            # log how many bytes we actually pulled
             print(f"[DEBUG] pulled {total} bytes from thin_send|zstd")
         resp = StreamingHttpResponse(generator(), content_type="application/octet-stream")
         resp["Content-Disposition"] = f'attachment; filename="{snapshot_name}.lv.zst"'
