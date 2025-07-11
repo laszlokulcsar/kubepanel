@@ -1501,7 +1501,7 @@ class DownloadSnapshotView(View):
             try:
                 while True:
                     exec_stream.update(timeout=1)
-                    chunk = exec_stream.read_stdout()
+                    chunk = exec_stream.read_channel(1)
                     if chunk:
                         yield chunk
                         continue
