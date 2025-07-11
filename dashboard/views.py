@@ -1497,30 +1497,25 @@ class DownloadSnapshotView(View):
             stderr=True, stdin=False, stdout=True, tty=False,
             _preload_content=False
         )
+        total = 0
         def generator():
+            nonlocal total
             try:
                 while True:
                     exec_stream.update(timeout=1)
-                    chunk = exec_stream.read_channel(1)
+                    chunk = exec_stream.read_channel(1)   # raw stdout bytes
                     if chunk:
+                        total += len(chunk)
                         yield chunk
-                        continue
-                    # no data right now
-                    if not exec_stream.is_open():
+                    elif not exec_stream.is_open():
                         break
-                    # still open but no data—loop again
-                # done
             finally:
                 exec_stream.close()
-
-        response = StreamingHttpResponse(
-            generator(),
-            content_type="application/octet-stream"
-        )
-        response["Content-Disposition"] = (
-            f'attachment; filename="{snapshot_name}.lv.zst"'
-        )
-        return response
+            # log the total so we know what came over the wire
+            print(f"[DEBUG] pulled {total} bytes from thin_send|zstd")
+        resp = StreamingHttpResponse(generator(), content_type="application/octet-stream")
+        resp["Content-Disposition"] = f'attachment; filename="{snapshot_name}.lv.zst"'
+        return resp
 
 class DownloadSqlDumpView(View):
     def get(self, request, dump_name):
