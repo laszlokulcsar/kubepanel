@@ -1587,14 +1587,16 @@ class DownloadSqlDumpView(View):
 
         def generator():
             try:
-                while exec_stream.is_open():
+                while True:
                     exec_stream.update(timeout=1)
-                    chunk = exec_stream.read_stdout()
+                    # channel 1 == stdout → returns raw bytes
+                    chunk = exec_stream.read_channel(1)
                     if chunk:
                         yield chunk
+                    elif not exec_stream.is_open():
+                        break
             finally:
                 exec_stream.close()
-                v1.delete_namespaced_pod(name=pod.metadata.name, namespace=namespace)
 
         response = StreamingHttpResponse(generator(), content_type="application/sql")
         response["Content-Disposition"] = (
