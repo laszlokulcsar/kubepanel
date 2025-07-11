@@ -1594,3 +1594,54 @@ class DownloadSqlDumpView(View):
             f'attachment; filename="{dump_name}.sql"'
         )
         return response
+
+class UploadRestoreFilesView(View):
+    """
+    GET: render upload form
+    POST: accept .lv.zst upload and queue for restore
+    """
+    def get(self, request, domain_name):
+        # Access control
+        domain = get_object_or_404(Domain, domain_name=domain_name)
+        if not request.user.is_superuser and domain.owner != request.user:
+            raise PermissionDenied
+        return render(request, 'main/upload.html', {
+            'domain_name': domain_name
+        })
+
+    def post(self, request, domain_name):
+        domain = get_object_or_404(Domain, domain_name=domain_name)
+        if not request.user.is_superuser and domain.owner != request.user:
+            raise PermissionDenied
+
+        # Ensure domain-specific directory exists
+        domain_dir = os.path.join(UPLOAD_BASE_DIR, domain_name)
+        os.makedirs(domain_dir, exist_ok=True)
+
+        # Uploaded file
+        snapshot_file = request.FILES.get('snapshot_file')
+        if not snapshot_file:
+            messages.error(request, 'No snapshot file provided.')
+            return redirect(reverse('upload_restore', args=[domain_name]))
+
+        filename = snapshot_file.name
+        if not filename.endswith('.lv.zst'):
+            messages.error(request, 'Invalid file type; must be .lv.zst')
+            return redirect(reverse('upload_restore', args=[domain_name]))
+
+        # Create job folder
+        job_id = filename.rsplit('.', 2)[0]
+        job_dir = os.path.join(domain_dir, job_id)
+        os.makedirs(job_dir, exist_ok=True)
+
+        # Save file
+        dest_path = os.path.join(job_dir, filename)
+        with open(dest_path, 'wb') as dest:
+            for chunk in snapshot_file.chunks():
+                dest.write(chunk)
+
+        # Create READY semaphore
+        open(os.path.join(job_dir, 'READY'), 'w').close()
+
+        messages.success(request, 'Snapshot uploaded and queued for restore.')
+        return redirect(reverse('upload_restore', args=[domain_name]))

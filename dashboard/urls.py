@@ -67,4 +67,5 @@ urlpatterns = [
     path('profiles/<int:pk>/edit-package/',UserProfilePackageUpdateView.as_view(),name='edit_userprofile_package'),
     path("download/<str:snapshot_name>/", DownloadSnapshotView.as_view(), name="download_snapshot"),
     path("download/sql/<str:dump_name>/", DownloadSqlDumpView.as_view(), name="download_sql_dump"),
+    path('restore/upload/<str:domain_name>/',UploadRestoreFilesView.as_view(),name='upload_restore'),
 ]
