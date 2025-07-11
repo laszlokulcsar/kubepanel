@@ -15,9 +15,9 @@
             <thead>
               <tr>
                 <th>Name</th>
-                <th class="d-none d-xl-table-cell">Created at</th>
-                <th>Status</th>
-                <th class="d-none d-md-table-cell">Actions</th>
+                <th>Created at</th>
+                <th>Actions</th>
+                <th>Logs</th>
               </tr>
             </thead>
             <tbody>
@@ -29,10 +29,11 @@
                   <a href="{% url 'restore_volumesnapshot' domain vs.snapshotname %}">
                     <button class="btn btn-danger">Restore backup</button>
                   </a>
-                </td>
-                <td class="d-none d-md-table-cell">
                   <a href="{% url 'download_snapshot' vs.snapshotname %}">
                     <button class="btn btn-secondary">Download LVM snapshot</button>
+                  </a>
+                  <a href="{% url 'download_sql_dump' vs.snapshotname %}">
+                    <button class="btn btn-secondary">Download SQL dump</button>
                   </a>
                 </td>
                 <td>

@@ -21,7 +21,7 @@ from django.db.models import Sum
 from django.views import View
 from kubernetes import client, config, stream
 
-import legacycrypt as crypt, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
+import legacycrypt as crypt, time, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
 
 GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
