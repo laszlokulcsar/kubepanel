@@ -1487,7 +1487,7 @@ class DownloadSnapshotView(View):
             return HttpResponseNotFound(f"Snapshot {snapshot_name} not found on any node")
 
         # 4) Stream the snapshot with thin_send | zstd
-        cmd = ["sh", "-c", f"thin_send linstorvg/{lv_name} | zstd -c"]
+        cmd = ["sh", "-c", f"thin_send linstorvg/{lv_name} | zstd -3 -c"]
         exec_stream = stream.stream(
             v1.connect_get_namespaced_pod_exec,
             name=pod_name,
@@ -1497,14 +1497,19 @@ class DownloadSnapshotView(View):
             stderr=True, stdin=False, stdout=True, tty=False,
             _preload_content=False
         )
-
         def generator():
             try:
-                while exec_stream.is_open():
+                while True:
                     exec_stream.update(timeout=1)
                     chunk = exec_stream.read_stdout()
                     if chunk:
                         yield chunk
+                        continue
+                    # no data right now
+                    if not exec_stream.is_open():
+                        break
+                    # still open but no data—loop again
+                # done
             finally:
                 exec_stream.close()
 
