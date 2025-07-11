@@ -1424,42 +1424,27 @@ class UserProfilePackageUpdateView(SuperuserRequiredMixin, UpdateView):
 
 class DownloadSnapshotView(View):
     def get(self, request, snapshot_name):
-        # Access control
-        vs = get_object_or_404(Volumesnapshot, snapshotname=snapshot_name)
-        if not request.user.is_superuser and vs.domain.owner != request.user:
-            raise PermissionDenied
-
-        # Load Kubernetes config
+        # 1) load Kubernetes config (in-cluster, falling back to kubeconfig)
         try:
             config.load_incluster_config()
         except config.ConfigException:
             config.load_kube_config()
-        snap_namespace = vs.domain.domain_name.replace(".","-")
-        namespace = "piraeus-datastore"
-        container = "linstor-satellite"  # adjust as needed
-
-        # 1) Fetch the bound VolumeSnapshotContent for our snapshot
-        co_api = client.CustomObjectsApi()
-        obj = co_api.get_namespaced_custom_object(
-            group="snapshot.storage.k8s.io",
-            version="v1",
-            namespace=snap_namespace,
-            plural="volumesnapshots",
-            name=snapshot_name,
-        )
-        content_name = obj["status"]["boundVolumeSnapshotContentName"]
-        # extract the UUID suffix after the first dash
-        snap_id = content_name.split('-', 1)[1]
-
-        # 2) List all linstor-satellite pods
         v1 = client.CoreV1Api()
+
+        namespace = "piraeus-datastore"
+        container = "linstor-satellite"  # adjust if needed
+        snap_id = snapshot_name  # e.g. "snapshot-…-…"
+
+        # 2) list all linstor-satellite pods
         pods = v1.list_namespaced_pod(
             namespace,
             label_selector="app.kubernetes.io/component=linstor-satellite"
         ).items
 
-        # 3) Find a pod that has our snapshot LV present
-        candidates = []
+        pod_name = None
+        lv_name = None
+
+        # 3) find the pod & LV that contains our snapshot
         for pod in pods:
             name = pod.metadata.name
             check_cmd = [
@@ -1480,14 +1465,17 @@ class DownloadSnapshotView(View):
             chk.close()
             if out:
                 pod_name = name
-                lv_name = out
+                lv_name  = out
                 break
 
         if not pod_name or not lv_name:
-            return HttpResponseNotFound(f"Snapshot {snapshot_name} not found on any node")
+            return HttpResponseNotFound(f"Snapshot {snapshot_name} not found")
 
-        # 4) Stream the snapshot with thin_send | zstd
-        cmd = ["sh", "-c", f"thin_send linstorvg/{lv_name} | zstd -3 -c"]
+        # 4) stream the snapshot: thin_send | zstd -3 -c inside the pod
+        cmd = [
+            "sh", "-c",
+            f"thin_send linstorvg/{lv_name} | zstd -3 -c"
+        ]
         exec_stream = stream.stream(
             v1.connect_get_namespaced_pod_exec,
             name=pod_name,
@@ -1497,29 +1485,28 @@ class DownloadSnapshotView(View):
             stderr=True, stdin=False, stdout=True, tty=False,
             _preload_content=False
         )
-        total = 0
+
         def generator():
-            nonlocal total
             try:
                 while True:
                     exec_stream.update(timeout=1)
-                    chunk = exec_stream.read_channel(1)   # channel 1 == stdout
+                    chunk = exec_stream.read_channel(1)  # raw stdout bytes
                     if chunk:
-                        # ensure it’s raw bytes, not str
-                        if isinstance(chunk, str):
-                            chunk = chunk.encode("latin-1")
-                        total += len(chunk)
                         yield chunk
                         continue
                     if not exec_stream.is_open():
                         break
             finally:
                 exec_stream.close()
-            # log how many bytes we actually pulled
-            print(f"[DEBUG] pulled {total} bytes from thin_send|zstd")
-        resp = StreamingHttpResponse(generator(), content_type="application/octet-stream")
-        resp["Content-Disposition"] = f'attachment; filename="{snapshot_name}.lv.zst"'
-        return resp
+
+        response = StreamingHttpResponse(
+            generator(),
+            content_type="application/octet-stream"
+        )
+        response["Content-Disposition"] = (
+            f'attachment; filename="{snapshot_name}.lv.zst"'
+        )
+        return response
 
 class DownloadSqlDumpView(View):
     def get(self, request, dump_name):
