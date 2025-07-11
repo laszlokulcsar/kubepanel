@@ -20,7 +20,8 @@ from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.views import View
 from django.conf import settings
-from kubernetes import client, config, stream
+from kubernetes import client, config
+from kubernetes import stream as k8s_stream
 from urllib.parse import quote_plus
 from websocket import create_connection
 import ssl, legacycrypt as crypt, time, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
