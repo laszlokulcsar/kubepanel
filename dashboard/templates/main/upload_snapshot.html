@@ -4,7 +4,7 @@
 {% block content %}
 <h1>Restore Snapshot Upload</h1>
 <p>Select a thin‑LVM snapshot file (<code>.lv.zst</code>) to upload for domain <strong>{{ domain_name }}</strong>.</p>
-<form method="post" action="{% url 'upload_restore_files' domain_name=domain_name %}" enctype="multipart/form-data">
+<form method="post" action="{% url 'upload_restore' domain_name=domain_name %}" enctype="multipart/form-data">
   {% csrf_token %}
   <div class="form-group">
     <label for="id_snapshot_file">Snapshot File (.lv.zst)</label>
@@ -16,4 +16,7 @@
   <ul class="mt-3">
     {% for message in messages %}
       <li class="alert {{ message.tags }}">{{ message }}</li>
-
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endblock %}

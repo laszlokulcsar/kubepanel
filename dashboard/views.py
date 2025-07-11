@@ -19,6 +19,7 @@ from django.views.generic import ListView, CreateView, UpdateView, FormView
 from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.views import View
+from django.conf import settings
 from kubernetes import client, config, stream
 
 import legacycrypt as crypt, time, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
@@ -26,6 +27,7 @@ import legacycrypt as crypt, time, cloudflare, logging, os, random, base64, stri
 GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
 EXCLUDED_EXTENSIONS = [".js", ".css", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".map"]
+UPLOAD_BASE_DIR = getattr(settings, 'WATCHDOG_UPLOAD_ROOT', '/kubepanel/watchdog/uploads')
 
 class SuperuserRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self):
@@ -1605,7 +1607,7 @@ class UploadRestoreFilesView(View):
         domain = get_object_or_404(Domain, domain_name=domain_name)
         if not request.user.is_superuser and domain.owner != request.user:
             raise PermissionDenied
-        return render(request, 'main/upload.html', {
+        return render(request, 'main/upload_snapshot.html', {
             'domain_name': domain_name
         })
 
@@ -1613,6 +1615,26 @@ class UploadRestoreFilesView(View):
         domain = get_object_or_404(Domain, domain_name=domain_name)
         if not request.user.is_superuser and domain.owner != request.user:
             raise PermissionDenied
+
+        # Determine PVC name
+        domain_name_dash = domain_name.replace(".","-")
+        pvc_name = f"{domain_name_dash}-pvc"
+
+        try:
+            config.load_incluster_config()
+        except config.ConfigException:
+            config.load_kube_config()
+        v1 = client.CoreV1Api()
+        try:
+            pvc = v1.read_namespaced_persistent_volume_claim(
+                name=pvc_name,
+                namespace=domain_name_dash
+            )
+        except client.exceptions.ApiException:
+            messages.error(request, f"PVC {pvc_name} not found in namespace {domain_name}.")
+            return redirect(reverse('upload_restore', args=[domain_name]))
+
+        pv_name = pvc.spec.volume_name
 
         # Ensure domain-specific directory exists
         domain_dir = os.path.join(UPLOAD_BASE_DIR, domain_name)
@@ -1640,8 +1662,10 @@ class UploadRestoreFilesView(View):
             for chunk in snapshot_file.chunks():
                 dest.write(chunk)
 
-        # Create READY semaphore
-        open(os.path.join(job_dir, 'READY'), 'w').close()
+        # Write PV name into READY semaphore
+        ready_path = os.path.join(job_dir, 'READY')
+        with open(ready_path, 'w') as sem:
+            sem.write(pv_name)
 
         messages.success(request, 'Snapshot uploaded and queued for restore.')
         return redirect(reverse('upload_restore', args=[domain_name]))
