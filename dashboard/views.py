@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
-from django.http import HttpResponse, FileResponse, StreamingHttpResponse, HttpResponseNotFound
+from django.http import HttpResponse, FileResponse, StreamingHttpResponse, HttpResponseNotFound, HttpResponseServerError
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
@@ -20,7 +20,9 @@ from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.views import View
 from django.conf import settings
-from kubernetes import client, config, stream
+from kubernetes import client, config
+from kubernetes.stream import stream
+from kubernetes.client import ApiException
 import legacycrypt as crypt, time, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
 
 GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
@@ -1423,21 +1425,35 @@ class UserProfilePackageUpdateView(SuperuserRequiredMixin, UpdateView):
 
 class DownloadSnapshotView(View):
     def get(self, request, snapshot_name):
-        # 1) Load Kubernetes credentials
+
+        # Access control
+        vs = get_object_or_404(Volumesnapshot, snapshotname=snapshot_name)
+        if not request.user.is_superuser and vs.domain.owner != request.user:
+            raise PermissionDenied
+        # Load Kubernetes config
         try:
             config.load_incluster_config()
         except config.ConfigException:
             config.load_kube_config()
-        v1 = client.CoreV1Api()
-
-        namespace = "piraeus-datastore"
-        container = "linstor-satellite"  # adjust if needed
-        snap_id   = snapshot_name                # e.g. "snapshot-…"
-
         # 2) Find a linstor-satellite pod & the full LV name
         pod_name = None
         lv_name  = None
+        namespace = "piraeus-datastore"
+        container = "linstor-satellite"
+        snap_namespace = vs.domain.domain_name.replace(".","-")
 
+        co_api = client.CustomObjectsApi()
+        obj = co_api.get_namespaced_custom_object(
+            group="snapshot.storage.k8s.io",
+            version="v1",
+            namespace=snap_namespace,
+            plural="volumesnapshots",
+            name=snapshot_name,
+        )
+        content_name = obj["status"]["boundVolumeSnapshotContentName"]
+        # extract the UUID suffix after the first dash
+        snap_id = content_name.split('-', 1)[1]
+        v1 = client.CoreV1Api()
         pods = v1.list_namespaced_pod(
             namespace,
             label_selector="app.kubernetes.io/component=linstor-satellite"
@@ -1468,53 +1484,25 @@ class DownloadSnapshotView(View):
         if not pod_name or not lv_name:
             return HttpResponseNotFound(f"Snapshot {snapshot_name} not found")
 
-        # 3) Create a temp file on the Django pod
-        fd, local_path = tempfile.mkstemp(prefix=snapshot_name + "_", suffix=".lv.zst")
-        os.close(fd)  # we’ll open it by name
-
-        # 4) Exec into the Linstor pod, stream thin_send|zstd into our file
-        cmd_dump = [
-            "sh", "-c",
+        cmd = [
+            "kubectl", "exec", "-i",
+            "-n", namespace,
+            pod_name, "-c", container,
+            "--", "sh", "-c",
             f"thin_send linstorvg/{lv_name} | zstd -3 -c"
         ]
-        try:
-            exec_stream = stream(
-                v1.connect_get_namespaced_pod_exec,
-                name=pod_name,
-                namespace=namespace,
-                container=container,
-                command=cmd_dump,
-                stderr=True, stdin=False, stdout=True, tty=False,
-                _preload_content=False
-            )
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-            with open(local_path, "wb") as f:
-                while True:
-                    exec_stream.update(timeout=1)
-                    chunk = exec_stream.read_channel(1)   # raw stdout bytes
-                    if chunk:
-                        f.write(chunk)
-                        continue
-                    if not exec_stream.is_open():
-                        break
-        except Exception as e:
-            # cleanup on failure
-            if os.path.exists(local_path):
-                os.remove(local_path)
-            return HttpResponseServerError(f"Error retrieving snapshot: {e}")
-        finally:
-            try:
-                exec_stream.close()
-            except:
-                pass
+        def stream_generator():
+            for chunk in iter(lambda: proc.stdout.read(64*1024), b""):
+                yield chunk
+            code = proc.wait()
+            if code != 0:
+                err = proc.stderr.read().decode(errors="ignore")
+                raise Exception(f"kubectl exec failed: {err}")
 
-        # 5) Serve it via FileResponse
-        response = FileResponse(
-            open(local_path, "rb"),
-            as_attachment=True,
-            filename=f"{snapshot_name}.lv.zst"
-        )
-        # Optionally schedule local_path for deletion after response
+        response = StreamingHttpResponse(stream_generator(), content_type="application/octet-stream")
+        response["Content-Disposition"] = f'attachment; filename="{snapshot_name}.lv.zst"'
         return response
 
 class DownloadSqlDumpView(View):
