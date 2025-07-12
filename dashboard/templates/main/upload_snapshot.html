@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block content %}
+ <div class="container-fluid p-0">
 <h1>Restore Snapshot Upload</h1>
 <p>Select a thin‑LVM snapshot file (<code>.lv.zst</code>) to upload for domain <strong>{{ domain_name }}</strong>.</p>
 <form method="post" action="{% url 'upload_restore' domain_name=domain_name %}" enctype="multipart/form-data">
@@ -19,4 +20,5 @@
       {% endfor %}
     </ul>
   {% endif %}
+</div>
 {% endblock %}
