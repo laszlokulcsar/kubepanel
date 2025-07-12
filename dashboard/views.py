@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
-from django.http import HttpResponse, StreamingHttpResponse, HttpResponseNotFound
+from django.http import HttpResponse, FileResponse, StreamingHttpResponse, HttpResponseNotFound
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
@@ -20,11 +20,8 @@ from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.views import View
 from django.conf import settings
-from kubernetes import client, config
-from kubernetes import stream as k8s_stream
-from urllib.parse import quote_plus
-from websocket import create_connection
-import ssl, legacycrypt as crypt, time, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
+from kubernetes import client, config, stream
+import legacycrypt as crypt, time, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
 
 GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
@@ -1426,7 +1423,7 @@ class UserProfilePackageUpdateView(SuperuserRequiredMixin, UpdateView):
 
 class DownloadSnapshotView(View):
     def get(self, request, snapshot_name):
-        # ── Load k8s config ──────────────────────────────────────────
+        # 1) Load Kubernetes credentials
         try:
             config.load_incluster_config()
         except config.ConfigException:
@@ -1435,9 +1432,9 @@ class DownloadSnapshotView(View):
 
         namespace = "piraeus-datastore"
         container = "linstor-satellite"  # adjust if needed
-        snap_id   = snapshot_name                   # e.g. "snapshot-…"
+        snap_id   = snapshot_name                # e.g. "snapshot-…"
 
-        # ── 1) Find the pod + lv_name via the Python client ─────────
+        # 2) Find a linstor-satellite pod & the full LV name
         pod_name = None
         lv_name  = None
 
@@ -1448,19 +1445,21 @@ class DownloadSnapshotView(View):
 
         for pod in pods:
             name = pod.metadata.name
-            # run `lvs | grep -w snap_id`
-            resp = v1.connect_get_namespaced_pod_exec(
-                name=name,
-                namespace=namespace,
-                container=container,
-                command=[
-                    "sh","-c",
-                    f"lvs --noheadings -o lv_name linstorvg | grep -w {snap_id}"
-                ],
-                stderr=False, stdin=False, stdout=True, tty=False,
-                _preload_content=True
-            )
-            out = resp.strip()
+            cmd_check = [
+                "sh", "-c",
+                f"lvs --noheadings -o lv_name linstorvg | grep {snap_id}"
+            ]
+            try:
+                out = stream(
+                    v1.connect_get_namespaced_pod_exec,
+                    name=name,
+                    namespace=namespace,
+                    container=container,
+                    command=cmd_check,
+                    stderr=False, stdin=False, stdout=True, tty=False,
+                ).strip()
+            except ApiException:
+                continue
             if out:
                 pod_name = name
                 lv_name  = out
@@ -1469,56 +1468,54 @@ class DownloadSnapshotView(View):
         if not pod_name or not lv_name:
             return HttpResponseNotFound(f"Snapshot {snapshot_name} not found")
 
-        # ── 2) Prepare the exec WebSocket URL ───────────────────────
-        host          = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
-        port          = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
-        token_path    = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-        ca_cert_path  = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-        try:
-            token = open(token_path).read().strip()
-        except FileNotFoundError:
-            return HttpResponseServerError("Kubernetes token not found")
+        # 3) Create a temp file on the Django pod
+        fd, local_path = tempfile.mkstemp(prefix=snapshot_name + "_", suffix=".lv.zst")
+        os.close(fd)  # we’ll open it by name
 
-        # build base WS URL
-        base = f"wss://{host}:{port}"
-        qs   = "?stdout=true&stderr=true&stdin=false&tty=false"
-        # we want: command=sh & command=-c & command="thin_send…|zstd -3 -c"
-        cmd = ["sh","-c", f"thin_send linstorvg/{lv_name} | zstd -3 -c"]
-        for part in cmd:
-            qs += "&command=" + quote_plus(part)
-        url = f"{base}/api/v1/namespaces/{namespace}/pods/{pod_name}/exec{qs}"
-
-        # ── 3) Open WebSocket with k8s exec subprotocol ────────────
+        # 4) Exec into the Linstor pod, stream thin_send|zstd into our file
+        cmd_dump = [
+            "sh", "-c",
+            f"thin_send linstorvg/{lv_name} | zstd -3 -c"
+        ]
         try:
-            ws = create_connection(
-                url,
-                header=[f"Authorization: Bearer {token}"],
-                sslopt={"ca_certs": ca_cert_path, "cert_reqs": ssl.CERT_REQUIRED},
-                subprotocols=["v4.channel.k8s.io"],
+            exec_stream = stream(
+                v1.connect_get_namespaced_pod_exec,
+                name=pod_name,
+                namespace=namespace,
+                container=container,
+                command=cmd_dump,
+                stderr=True, stdin=False, stdout=True, tty=False,
+                _preload_content=False
             )
-        except Exception as e:
-            return HttpResponseServerError(f"Failed to open exec WebSocket: {e}")
 
-        # ── 4) Stream raw stdout frames (channel 1) to the client ──
-        def stream_bytes():
-            try:
+            with open(local_path, "wb") as f:
                 while True:
-                    frame = ws.recv()
-                    if not frame:
+                    exec_stream.update(timeout=1)
+                    chunk = exec_stream.read_channel(1)   # raw stdout bytes
+                    if chunk:
+                        f.write(chunk)
+                        continue
+                    if not exec_stream.is_open():
                         break
-                    data = frame if isinstance(frame, (bytes, bytearray)) else frame.encode("latin-1")
-                    # first byte is the channel
-                    chan = data[0]
-                    if chan == 1:
-                        yield data[1:]
-            finally:
-                ws.close()
+        except Exception as e:
+            # cleanup on failure
+            if os.path.exists(local_path):
+                os.remove(local_path)
+            return HttpResponseServerError(f"Error retrieving snapshot: {e}")
+        finally:
+            try:
+                exec_stream.close()
+            except:
+                pass
 
-        # ── 5) Return a streaming HTTP response ─────────────────────
-        resp = StreamingHttpResponse(stream_bytes(), content_type="application/octet-stream")
-        resp["Content-Disposition"] = f'attachment; filename="{snapshot_name}.lv.zst"'
-        return resp
-
+        # 5) Serve it via FileResponse
+        response = FileResponse(
+            open(local_path, "rb"),
+            as_attachment=True,
+            filename=f"{snapshot_name}.lv.zst"
+        )
+        # Optionally schedule local_path for deletion after response
+        return response
 
 class DownloadSqlDumpView(View):
     def get(self, request, dump_name):
