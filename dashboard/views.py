@@ -1558,7 +1558,7 @@ class DownloadSqlDumpView(View):
 
         # 3) Stream the SQL file via cat
         cmd = ["cat", file_path]
-        exec_stream = stream.stream(
+        exec_stream = stream(
             v1.connect_get_namespaced_pod_exec,
             name=pod.metadata.name,
             namespace=namespace,
