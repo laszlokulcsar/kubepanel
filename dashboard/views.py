@@ -23,7 +23,7 @@ from django.conf import settings
 from kubernetes import client, config
 from kubernetes.stream import stream
 from kubernetes.client import ApiException
-import legacycrypt as crypt, time, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
+import subprocess, legacycrypt as crypt, time, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
 
 GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
