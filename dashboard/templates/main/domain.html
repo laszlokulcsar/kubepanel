@@ -92,7 +92,7 @@
                   <td>
                     <a href="{% url 'volumesnapshots' domain=domain.domain_name %}" class="btn btn-success btn-sm">Show Backups</a>
                     <a href="{% url 'start_backup' domain=domain.domain_name %}" class="btn btn-info btn-sm ms-1">Create Backup</a>
-                    <a href="{% url 'upload_restore' domain=domain.domain_name %}" class="btn btn-danger btn-sm ms-1">Restore from file</a>
+                    <a href="{% url 'upload_restore' domain_name=domain.domain_name %}" class="btn btn-danger btn-sm ms-1">Restore from file</a>
                   </td>
                   <td>{{ domain.status|safe }}</td>
                   <td class="d-none d-md-table-cell">
