@@ -65,7 +65,7 @@ spec:
                     kind: VolumeSnapshot
                     name: {{ volumesnapshot }}
                   accessModes:
-                    - ReadWriteMany
+                    - ReadWriteOnce
                 EOF
                 mysql -h mariadb.kubepanel.svc.cluster.local -uroot -p$MARIADB_ROOT_PASSWORD $DBNAME < /backup/{{ volumesnapshot }}.sql
                 kubectl scale deployment/nginx --replicas=1 -n {{ domain_name_dash }}
