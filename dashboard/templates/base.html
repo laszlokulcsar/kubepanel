@@ -14,7 +14,7 @@
     <aside class="w-64 bg-slate-900 text-gray-200 flex flex-col">
         <div class="p-6 text-2xl font-semibold">KubePanel</div>
         <nav class="flex-1 space-y-1 px-4">
-            <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-800 {% if section=='dashboard' %}bg-slate-800{% endif %}">
+            <a href="dashboard" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-800 {% if section=='dashboard' %}bg-slate-800{% endif %}">
                 <span class="i-lucide-layout-dashboard"></span> Dashboard
             </a>
             <a href="{% url 'kpmain' %}" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-800 {% if section=='domains' %}bg-slate-800{% endif %}">
