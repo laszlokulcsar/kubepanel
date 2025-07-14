@@ -77,7 +77,6 @@
                 <tr>
                   <th>Name</th>
                   <th>Owner</th>
-                  <th class="d-none d-xl-table-cell">SFTP Port</th>
                   <th>Filesystem Backups</th>
                   <th>Status</th>
                   <th class="d-none d-md-table-cell">Actions</th>
@@ -88,7 +87,6 @@
                 <tr>
                   <td>{{ domain.domain_name }}</td>
                   <td>{{ domain.owner.username }}</td>
-                  <td class="d-none d-xl-table-cell">{{ domain.scp_port }}</td>
                   <td>
                     <a href="{% url 'volumesnapshots' domain=domain.domain_name %}" class="btn btn-success btn-sm">Show Backups</a>
                     <a href="{% url 'start_backup' domain=domain.domain_name %}" class="btn btn-info btn-sm ms-1">Create Backup</a>
@@ -97,8 +95,12 @@
                   <td>{{ domain.status|safe }}</td>
                   <td class="d-none d-md-table-cell">
                     <a href="{% url 'view_domain' domain=domain.domain_name %}" class="btn btn-success btn-sm">View</a>
+                    {% if domain.status == 'Not running' %}
                     <a href="{% url 'startstop_domain' domain=domain.domain_name action='start' %}" class="btn btn-success btn-sm ms-1">Start</a>
-                    <a href="{% url 'startstop_domain' domain=domain.domain_name action='stop' %}" class="btn btn-warning btn-sm ms-1">Pause</a>
+                    {% endif %}
+                    {% if domain.status != 'Not running' %}
+                    <a href="{% url 'startstop_domain' domain=domain.domain_name action='stop' %}" class="btn btn-warning btn-sm ms-1">Stop</a>
+                    {% endif %}
                     <a href="{% url 'domain_logs' domain=domain.domain_name %}" class="btn btn-secondary btn-sm ms-1">Logs</a>
                     <a href="{% url 'delete_domain' domain=domain.domain_name %}" class="btn btn-danger btn-sm ms-1">Delete</a>
                   </td>
