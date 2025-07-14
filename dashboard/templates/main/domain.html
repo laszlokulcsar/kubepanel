@@ -39,7 +39,7 @@
         <h2 class="font-medium">Domains</h2>
         <button
             class="rounded bg-blue-600 px-4 py-2 text-white text-sm"
-            hx-get="{% url 'domains:add' %}"
+            hx-get="add"
             hx-target="#modal-root > div"
             hx-trigger="click"
             _="on htmx:afterRequest wait 10ms then remove .hidden from #modal-root">
