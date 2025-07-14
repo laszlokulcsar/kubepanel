@@ -1,215 +1,81 @@
+{# templates/base.html #}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link rel="shortcut icon" href="img/icons/icon-48x48.png" />
-  <link rel="canonical" href="https://kubepanel.io/" />
-  <title>Kubepanel.io</title>
-  {% load static %}
-  <!-- Your main CSS -->
-  <link href="{% static 'app.css' %}" rel="stylesheet">
-  <!-- Inter font -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <meta charset="utf-8">
+    <title>{% block title %}KubePanel{% endblock %}</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    {% block extra_head %}{% endblock %}
 </head>
+<body class="min-h-screen bg-gray-100 flex">
 
-<body>
-  <div class="wrapper">
-    <!-- Sidebar -->
-    <nav id="sidebar" class="sidebar js-sidebar">
-      <div class="sidebar-content js-simplebar">
-        <a class="sidebar-brand text-decoration-none" href="#">
-          <span class="align-middle fw-bold">KubePanel</span>
-        </a>
-
-        <ul class="sidebar-nav">
-          <li class="sidebar-header text-uppercase small fw-bold">
-            {% block title %}Dashboard{% endblock %}
-          </li>
-
-          <li class="sidebar-item {% if request.resolver_match.url_name == 'kpmain' %}active{% endif %}">
-            <a class="sidebar-link" href="{% url 'kpmain' %}">
-              <i class="align-middle" data-feather="sliders"></i>
-              <span class="align-middle">Domains</span>
+    {# --- Sidebar --- #}
+    <aside class="w-64 bg-slate-900 text-gray-200 flex flex-col">
+        <div class="p-6 text-2xl font-semibold">KubePanel</div>
+        <nav class="flex-1 space-y-1 px-4">
+            <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-800 {% if section=='dashboard' %}bg-slate-800{% endif %}">
+                <span class="i-lucide-layout-dashboard"></span> Dashboard
             </a>
-          </li>
-
-          <li class="sidebar-item {% if request.resolver_match.url_name == 'list_mail_users' %}active{% endif %}">
-            <a class="sidebar-link" href="{% url 'list_mail_users' %}">
-              <i class="align-middle" data-feather="mail"></i>
-              <span class="align-middle">E-mail accounts</span>
+            <a href="{% url 'kpmain' %}" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-800 {% if section=='domains' %}bg-slate-800{% endif %}">
+                <span class="i-lucide-server"></span> Domains
             </a>
-          </li>
-  {% if request.user.is_superuser %}
-          <li class="sidebar-item {% if request.resolver_match.url_name == 'list_userprofiles' %}active{% endif %}">
-            <a class="sidebar-link" href="{% url 'list_userprofiles' %}">
-              <i class="align-middle" data-feather="users"></i>
-              <span class="align-middle">User Profiles</span>
+            <a href="{% url 'list_mail_users' %}" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-800">
+                <span class="i-lucide-mail"></span> E-mail accounts
             </a>
-          </li>
-
-          <li class="sidebar-item {% if request.resolver_match.url_name == 'list_packages' %}active{% endif %}">
-            <a class="sidebar-link" href="{% url 'list_packages' %}">
-              <i class="align-middle" data-feather="package"></i>
-              <span class="align-middle">Packages</span>
+            <a href="{% url 'pods_status' %}" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-800">
+                <span class="i-lucide-activity-square"></span> Live Cluster Status
             </a>
-          </li>
-
-          <li class="sidebar-item {% if request.resolver_match.url_name == 'livetraffic' %}active{% endif %}">
-            <a class="sidebar-link" href="{% url 'livetraffic' %}">
-              <i class="align-middle" data-feather="activity"></i>
-              <span class="align-middle">Live Traffic</span>
+            <a href="{% url 'list_api_tokens' %}" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-800">
+                <span class="i-lucide-cloud"></span> Cloudflare API Tokens
             </a>
-          </li>
-
-          <li class="sidebar-item {% if request.resolver_match.url_name == 'blocked_objects' %}active{% endif %}">
-            <a class="sidebar-link" href="{% url 'blocked_objects' %}">
-              <i class="align-middle" data-feather="shield"></i>
-              <span class="align-middle">Firewall</span>
+            <a href="{% url 'zones_list' %}" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-800">
+                <span class="i-lucide-globe"></span> DNS Zones
             </a>
-          </li>
-
-          <li class="sidebar-item {% if request.resolver_match.url_name|slice:':5' == 'node_'  %}active{% endif %}">
-            <a class="sidebar-link" href="{% url 'node_list' %}">
-              <i class="align-middle" data-feather="server"></i>
-              <span class="align-middle">Node management</span>
+            <a href="phpmyadmin" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-800">
+                <span class="i-lucide-database"></span> PHPMyAdmin
             </a>
-          </li>
-{% endif %}
-          <li class="sidebar-item {% if request.resolver_match.url_name == 'pods_status' %}active{% endif %}">
-            <a class="sidebar-link" href="{% url 'pods_status' %}">
-              <i class="align-middle" data-feather="server"></i>
-              <span class="align-middle">Live Cluster Status</span>
+            <a href="webmail" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-800">
+                <span class="i-lucide-mailbox"></span> Webmail
             </a>
-          </li>
+        </nav>
+        <footer class="p-4 text-xs text-gray-500">
+            KubePanel – szerverzum.hu – EVOLUTIONET Kft. ©
+        </footer>
+    </aside>
 
-          <li class="sidebar-item {% if request.resolver_match.url_name == 'list_api_tokens' %}active{% endif %}">
-            <a class="sidebar-link" href="{% url 'list_api_tokens' %}">
-              <i class="align-middle" data-feather="key"></i>
-              <span class="align-middle">Cloudflare API Tokens</span>
-            </a>
-          </li>
-
-          <li class="sidebar-item {% if request.resolver_match.url_name == 'zones_list' %}active{% endif %}">
-            <a class="sidebar-link" href="{% url 'zones_list' %}">
-              <i class="align-middle" data-feather="globe"></i>
-              <span class="align-middle">DNS Zones</span>
-            </a>
-          </li>
-
-          <li class="sidebar-item">
-            <a class="sidebar-link" href="https://kubepanel.io" target="_blank">
-              <i class="align-middle" data-feather="book"></i>
-              <span class="align-middle">Support</span>
-            </a>
-          </li>
-        </ul>
-      </div>
-    </nav>
-    <!-- End sidebar -->
-
-    <!-- Main content -->
-    <div class="main">
-      <!-- Navbar -->
-      <nav class="navbar navbar-expand navbar-light navbar-bg">
-        <a class="sidebar-toggle js-sidebar-toggle ms-3">
-          <i class="hamburger align-self-center"></i>
-        </a>
-
-        <div class="navbar-collapse collapse">
-          <ul class="navbar-nav ms-auto">
-            <li class="nav-item dropdown">
-              <a class="nav-icon dropdown-toggle" href="#" id="alertsDropdown" data-bs-toggle="dropdown">
-                <div class="position-relative">
-                  <i class="align-middle" data-feather="bell"></i>
-                  <span class="indicator">1</span>
-                </div>
-              </a>
-              <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end py-0" aria-labelledby="alertsDropdown">
-                <div class="dropdown-menu-header">
-                  1 New Notification
-                </div>
-                <div class="list-group">
-                  <a href="#" class="list-group-item">
-                    <div class="row g-0 align-items-center">
-                      <div class="col-2">
-                        <i class="text-danger" data-feather="alert-circle"></i>
-                      </div>
-                      <div class="col-10">
-                        <div class="text-dark">Sample notification</div>
-                        <div class="text-muted small mt-1">New update for Kubepanel v0.1</div>
-                      </div>
-                    </div>
-                  </a>
-                </div>
-                <div class="dropdown-menu-footer">
-                  <a href="#" class="text-muted">Show all notifications</a>
-                </div>
-              </div>
-            </li>
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle d-none d-sm-inline-block" href="#" data-bs-toggle="dropdown">
-                <i class="align-middle me-1" data-feather="user"></i>
-                <span class="text-dark">{{ user.username }}</span>
-              </a>
-              <div class="dropdown-menu dropdown-menu-end">
-                <a class="dropdown-item" href="#"><i class="align-middle me-1" data-feather="settings"></i> Settings</a>
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="{% url 'logout_view' %}">
-                  <i class="align-middle me-1" data-feather="log-out"></i> Log out
-                </a>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </nav>
-      <!-- End Navbar -->
-
-      <!-- Main Content Area -->
-      {% block content %}
-      {% endblock %}
-
-      <!-- Footer -->
-      <footer class="footer">
-        <div class="container-fluid">
-          <div class="row text-muted">
-            <div class="col-6 text-start">
-              <p class="mb-0">
-                <a class="text-muted text-decoration-none" href="https://kubepanel.io/" target="_blank">
-                  <strong>KubePanel</strong>
-                </a> - 
-                <a class="text-muted text-decoration-none" href="https://kubepanel.io/" target="_blank">
-                  <strong>Example Company Ltd.</strong>
-                </a> &copy;
-              </p>
+    {# --- Main Content --- #}
+    <div class="flex-1 flex flex-col">
+        {# Top bar #}
+        <header class="h-14 bg-white shadow flex items-center justify-end px-6 gap-6">
+            <button class="relative">
+                <span class="i-lucide-bell w-6 h-6"></span>
+                <span class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] text-white">3</span>
+            </button>
+            <div class="flex items-center gap-2">
+                <span class="i-lucide-user w-6 h-6"></span>
+                <span>{{ request.user.username }}</span>
             </div>
-            <div class="col-6 text-end">
-              <ul class="list-inline mb-0">
-                <!-- Add any footer links or social icons as needed -->
-              </ul>
-            </div>
-          </div>
-        </div>
-      </footer>
-      <!-- End Footer -->
+        </header>
+
+        <main class="flex-1 p-10">
+            {% block content %}{% endblock %}
+        </main>
     </div>
-    <!-- End main -->
-  </div>
-  <!-- End wrapper -->
 
-  {% load static %}
-  <script src="{% static 'app.js' %}"></script>
-  <!-- Ensure Feather icons initialize -->
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      if (typeof feather !== 'undefined') {
-        feather.replace();
-      }
-    });
-  </script>
+    {# --- Global Modal (HTMX target) --- #}
+    <div id="modal-root"
+         class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50"
+         hx-on="modal-close: this.classList.add('hidden')">
+        <div class="bg-white w-full max-w-lg rounded-lg shadow-xl"
+             hx-target="this"
+             hx-swap="outerHTML">
+            {# Modal content will be swapped in by HTMX #}
+        </div>
+    </div>
+
+    {% block extra_js %}{% endblock %}
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 </body>
 </html>
 
