@@ -32,6 +32,7 @@ After the successful installation you can reach the Kubepanel UI on your choosen
 
 - Django based web application for account management
 - A hosting account uses Nginx and PHP containers by default
+- Container images can be extended dynamically based on customer needs
 - SFTP/SCP support (as sidecar container) for uploading codebase to the containers
 - MariaDB as default database backend
 - Postfix with DKIM signing for outgoing emails
@@ -40,4 +41,5 @@ After the successful installation you can reach the Kubepanel UI on your choosen
 
 # Mailbox management
 
-For incoming e-mail and mailbox management I suggest to use the following project: https://github.com/technicalguru/docker-mailserver
+- Mailbox management is natively supported now
+- Roundcube is used as a Web UI
