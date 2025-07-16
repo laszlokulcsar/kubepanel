@@ -1,110 +1,118 @@
-{# templates/domains.html #}
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Domains | KubePanel{% endblock %}
-{% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/lucide.css' %}">
-{% endblock %}
 {% block content %}
-{% with section="domains" %}
-<h1 class="text-2xl font-semibold mb-8">Domain List</h1>
+<main class="content">
+  <div class="container-fluid p-0">
 
-{# Stat cards #}
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
-    <div class="rounded-lg bg-white p-6 shadow">
-        <p class="text-sm text-gray-500">Storage</p>
-        <p class="text-lg font-semibold">{{ stats.used_storage }} / {{ stats.total_storage }} GB</p>
+    <div class="row mb-4">
+      <div class="col-12">
+        <h1 class="h3 mb-3"><strong>Domain</strong> List</h1>
+      </div>
     </div>
-    <div class="rounded-lg bg-white p-6 shadow">
-        <p class="text-sm text-gray-500">CPU</p>
-        <p class="text-lg font-semibold">{{ stats.used_cpu }} / {{ stats.total_cpu }} mCPU</p>
-    </div>
-    <div class="rounded-lg bg-white p-6 shadow">
-        <p class="text-sm text-gray-500">Memory</p>
-        <p class="text-lg font-semibold">{{ stats.used_mem }} / {{ stats.total_mem }} MB</p>
-    </div>
-    <div class="rounded-lg bg-white p-6 shadow">
-        <p class="text-sm text-gray-500">Mail Users</p>
-        <p class="text-lg font-semibold">{{ stats.mail_users }} / {{ stats.mail_limit }}</p>
-    </div>
-    <div class="rounded-lg bg-white p-6 shadow">
-        <p class="text-sm text-gray-500">Domain Aliases</p>
-        <p class="text-lg font-semibold">{{ stats.domain_aliases }} / {{ stats.alias_limit }}</p>
-    </div>
-</div>
 
-{# Table & Add button #}
-<div class="bg-white shadow rounded-lg">
-    <div class="flex items-center justify-between px-6 py-4 border-b">
-        <h2 class="font-medium">Domains</h2>
-        <button
-            class="rounded bg-blue-600 px-4 py-2 text-white text-sm"
-            hx-get="add"
-            hx-target="#modal-root > div"
-            hx-trigger="click"
-            _="on htmx:afterRequest wait 10ms then remove .hidden from #modal-root">
-            + Add New Domain
-        </button>
+    {% if pkg %}
+    <div class="row mb-4">
+      <div class="col-md-2">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="card-title">Storage</h6>
+            <p class="card-text">{{ total_storage }} / {{ pkg.max_storage_size }} GB</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="card-title">CPU</h6>
+            <p class="card-text">{{ total_cpu }} / {{ pkg.max_cpu }} mCPU</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="card-title">Memory</h6>
+            <p class="card-text">{{ total_mem }} / {{ pkg.max_memory }} MB</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="card-title">Mail Users</h6>
+            <p class="card-text">
+              {{ total_mail_users }}
+              {% if pkg.max_mail_users is not None %}/ {{ pkg.max_mail_users }}{% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="card-title">Domain Aliases</h6>
+            <p class="card-text">
+              {{ total_domain_aliases }}
+              {% if pkg.max_domain_aliases is not None %}/ {{ pkg.max_domain_aliases }}{% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
-            <thead class="bg-gray-50">
-            <tr>
-                <th class="px-6 py-3 text-left font-medium text-gray-600">Name</th>
-                <th class="px-6 py-3 text-left font-medium text-gray-600">Owner</th>
-                <th class="px-6 py-3 text-left font-medium text-gray-600">Filesystem Backups</th>
-                <th class="px-6 py-3 text-left font-medium text-gray-600">Status</th>
-                <th class="px-6 py-3 text-left font-medium text-gray-600">Actions</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for domain in domains %}
-            <tr class="{% cycle 'bg-white' 'bg-gray-50' %}">
-                <td class="px-6 py-4">{{ domain.name }}</td>
-                <td class="px-6 py-4">{{ domain.owner }}</td>
-                <td class="px-6 py-4 space-x-2">
-                    <button class="px-2 py-1 text-xs rounded bg-emerald-500 text-white"
-                            hx-get="{% url 'domains:backups' domain.id %}"
-                            hx-target="#modal-root > div"
-                            hx-trigger="click"
-                            _="on htmx:afterRequest wait 10ms then remove .hidden from #modal-root">
-                        Show Backups
-                    </button>
-                    <button class="px-2 py-1 text-xs rounded bg-blue-600 text-white"
-                            hx-post="{% url 'domains:create_backup' domain.id %}"
-                            hx-swap="none">
-                        Create Backup
-                    </button>
-                    <button class="px-2 py-1 text-xs rounded bg-rose-600 text-white"
-                            hx-get="{% url 'domains:restore_modal' domain.id %}"
-                            hx-target="#modal-root > div"
-                            hx-trigger="click"
-                            _="on htmx:afterRequest wait 10ms then remove .hidden from #modal-root">
-                        Restore from file
-                    </button>
-                </td>
-                <td class="px-6 py-4 whitespace-pre">{{ domain.status }}</td>
-                <td class="px-6 py-4 space-x-2">
-                    <a href="{% url 'domains:view' domain.id %}" class="px-3 py-1 text-xs rounded bg-emerald-600 text-white">View</a>
-                    <button class="px-3 py-1 text-xs rounded bg-amber-400">Stop</button>
-                    <button class="px-3 py-1 text-xs rounded bg-gray-600 text-white">Logs</button>
-                    <button class="px-3 py-1 text-xs rounded bg-rose-600 text-white"
-                            hx-delete="{% url 'domains:delete' domain.id %}"
-                            hx-target="closest tr"
-                            hx-swap="outerHTML">
-                        Delete
-                    </button>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="px-6 py-4 text-center text-gray-500">No domains yet.</td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+    {% endif %}
+
+    <div class="row">
+      <div class="col-12">
+        <div class="card flex-fill">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Domains</h5>
+            <a href="{% url 'add_domain' %}" class="btn btn-primary">
+              <i data-feather="plus"></i> Add New Domain
+            </a>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-hover table-nowrap mb-0">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Owner</th>
+                  <th>Filesystem Backups</th>
+                  <th>Status</th>
+                  <th class="d-none d-md-table-cell">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for domain in domains %}
+                <tr>
+                  <td>{{ domain.domain_name }}</td>
+                  <td>{{ domain.owner.username }}</td>
+                  <td>
+                    <a href="{% url 'volumesnapshots' domain=domain.domain_name %}" class="btn btn-success btn-sm">Show Backups</a>
+                    <a href="{% url 'start_backup' domain=domain.domain_name %}" class="btn btn-info btn-sm ms-1">Create Backup</a>
+                    <a href="{% url 'upload_restore' domain_name=domain.domain_name %}" class="btn btn-danger btn-sm ms-1">Restore from file</a>
+                  </td>
+                  <td>{{ domain.status|safe }}</td>
+                  <td class="d-none d-md-table-cell">
+                    <a href="{% url 'view_domain' domain=domain.domain_name %}" class="btn btn-success btn-sm">View</a>
+                    {% if domain.status == 'Not running' %}
+                    <a href="{% url 'startstop_domain' domain=domain.domain_name action='start' %}" class="btn btn-success btn-sm ms-1">Start</a>
+                    {% endif %}
+                    {% if domain.status != 'Not running' %}
+                    <a href="{% url 'startstop_domain' domain=domain.domain_name action='stop' %}" class="btn btn-warning btn-sm ms-1">Stop</a>
+                    {% endif %}
+                    <a href="{% url 'domain_logs' domain=domain.domain_name %}" class="btn btn-secondary btn-sm ms-1">Logs</a>
+                    <a href="{% url 'delete_domain' domain=domain.domain_name %}" class="btn btn-danger btn-sm ms-1">Delete</a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
-</div>
-{% endwith %}
+
+  </div>
+</main>
 {% endblock %}
-
