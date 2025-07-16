@@ -3,8 +3,12 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="shortcut icon" href="img/icons/icon-48x48.png" />
+    <link rel="canonical" href="https://kubepanel.io/" />
     <title>{% block title %}HostPro{% endblock %}</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
     <script>
         tailwind.config = {
@@ -73,6 +77,7 @@
             background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         }
     </style>
+    {% load static %}
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -83,10 +88,10 @@
             <div class="flex items-center justify-between h-16 px-6 border-b border-gray-200">
                 <div class="flex items-center space-x-3">
                     <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                        <span class="text-white font-bold text-sm">HP</span>
+                        <span class="text-white font-bold text-sm">KP</span>
                     </div>
                     <div>
-                        <h1 class="text-lg font-semibold text-gray-900">HostPro</h1>
+                        <h1 class="text-lg font-semibold text-gray-900">KubePanel</h1>
                         <p class="text-xs text-gray-500">Business Suite</p>
                     </div>
                 </div>
@@ -95,7 +100,7 @@
             <!-- Navigation -->
             <nav class="mt-6 px-4">
                 <div class="space-y-1">
-                    <!-- Domains (Active when on domains page) -->
+                    <!-- Domains -->
                     <a href="{% url 'kpmain' %}" 
                        class="{% if request.resolver_match.url_name == 'kpmain' %}bg-primary-50 border-r-4 border-primary-600 text-primary-700{% else %}text-gray-700 hover:text-primary-600 hover:bg-gray-50{% endif %} group flex items-center px-3 py-2.5 text-sm font-medium rounded-l-lg sidebar-transition">
                         <svg class="{% if request.resolver_match.url_name == 'kpmain' %}text-primary-500{% else %}text-gray-400 group-hover:text-primary-500{% endif %} mr-3 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,7 +118,8 @@
                         E-mail accounts
                     </a>
                     
-                    <!-- User Profiles -->
+                    {% if request.user.is_superuser %}
+                    <!-- User Profiles (Superuser only) -->
                     <a href="{% url 'list_userprofiles' %}" 
                        class="{% if request.resolver_match.url_name == 'list_userprofiles' %}bg-primary-50 border-r-4 border-primary-600 text-primary-700{% else %}text-gray-700 hover:text-primary-600 hover:bg-gray-50{% endif %} group flex items-center px-3 py-2.5 text-sm font-medium rounded-l-lg sidebar-transition">
                         <svg class="{% if request.resolver_match.url_name == 'list_userprofiles' %}text-primary-500{% else %}text-gray-400 group-hover:text-primary-500{% endif %} mr-3 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,7 +128,7 @@
                         User Profiles
                     </a>
                     
-                    <!-- Packages -->
+                    <!-- Packages (Superuser only) -->
                     <a href="{% url 'list_packages' %}" 
                        class="{% if request.resolver_match.url_name == 'list_packages' %}bg-primary-50 border-r-4 border-primary-600 text-primary-700{% else %}text-gray-700 hover:text-primary-600 hover:bg-gray-50{% endif %} group flex items-center px-3 py-2.5 text-sm font-medium rounded-l-lg sidebar-transition">
                         <svg class="{% if request.resolver_match.url_name == 'list_packages' %}text-primary-500{% else %}text-gray-400 group-hover:text-primary-500{% endif %} mr-3 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,7 +137,7 @@
                         Packages
                     </a>
                     
-                    <!-- Live Traffic -->
+                    <!-- Live Traffic (Superuser only) -->
                     <a href="{% url 'livetraffic' %}" 
                        class="{% if request.resolver_match.url_name == 'livetraffic' %}bg-primary-50 border-r-4 border-primary-600 text-primary-700{% else %}text-gray-700 hover:text-primary-600 hover:bg-gray-50{% endif %} group flex items-center px-3 py-2.5 text-sm font-medium rounded-l-lg sidebar-transition">
                         <svg class="{% if request.resolver_match.url_name == 'livetraffic' %}text-primary-500{% else %}text-gray-400 group-hover:text-primary-500{% endif %} mr-3 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,7 +146,7 @@
                         Live Traffic
                     </a>
                     
-                    <!-- Firewall -->
+                    <!-- Firewall (Superuser only) -->
                     <a href="{% url 'blocked_objects' %}" 
                        class="{% if request.resolver_match.url_name == 'blocked_objects' %}bg-primary-50 border-r-4 border-primary-600 text-primary-700{% else %}text-gray-700 hover:text-primary-600 hover:bg-gray-50{% endif %} group flex items-center px-3 py-2.5 text-sm font-medium rounded-l-lg sidebar-transition">
                         <svg class="{% if request.resolver_match.url_name == 'blocked_objects' %}text-primary-500{% else %}text-gray-400 group-hover:text-primary-500{% endif %} mr-3 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,14 +155,15 @@
                         Firewall
                     </a>
                     
-                    <!-- Node Management -->
+                    <!-- Node Management (Superuser only) -->
                     <a href="{% url 'node_list' %}" 
-                       class="{% if request.resolver_match.url_name == 'node_list' %}bg-primary-50 border-r-4 border-primary-600 text-primary-700{% else %}text-gray-700 hover:text-primary-600 hover:bg-gray-50{% endif %} group flex items-center px-3 py-2.5 text-sm font-medium rounded-l-lg sidebar-transition">
-                        <svg class="{% if request.resolver_match.url_name == 'node_list' %}text-primary-500{% else %}text-gray-400 group-hover:text-primary-500{% endif %} mr-3 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       class="{% if request.resolver_match.url_name|slice:':5' == 'node_' %}bg-primary-50 border-r-4 border-primary-600 text-primary-700{% else %}text-gray-700 hover:text-primary-600 hover:bg-gray-50{% endif %} group flex items-center px-3 py-2.5 text-sm font-medium rounded-l-lg sidebar-transition">
+                        <svg class="{% if request.resolver_match.url_name|slice:':5' == 'node_' %}text-primary-500{% else %}text-gray-400 group-hover:text-primary-500{% endif %} mr-3 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                         </svg>
-                        Node Management
+                        Node management
                     </a>
+                    {% endif %}
                     
                     <!-- Live Cluster Status -->
                     <a href="{% url 'pods_status' %}" 
@@ -185,26 +192,8 @@
                         DNS Zones
                     </a>
                     
-                    <!-- PHPMyAdmin -->
-                    <a href="/phpmyadmin" 
-                       class="text-gray-700 hover:text-primary-600 hover:bg-gray-50 group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg sidebar-transition">
-                        <svg class="text-gray-400 group-hover:text-primary-500 mr-3 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
-                        </svg>
-                        PHPMyAdmin
-                    </a>
-                    
-                    <!-- Webmail -->
-                    <a href="/webmail" 
-                       class="text-gray-700 hover:text-primary-600 hover:bg-gray-50 group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg sidebar-transition">
-                        <svg class="text-gray-400 group-hover:text-primary-500 mr-3 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                        </svg>
-                        Webmail
-                    </a>
-                    
                     <!-- Support -->
-                    <a href="#" 
+                    <a href="https://kubepanel.io" target="_blank"
                        class="text-gray-700 hover:text-primary-600 hover:bg-gray-50 group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg sidebar-transition">
                         <svg class="text-gray-400 group-hover:text-primary-500 mr-3 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path>
@@ -213,6 +202,11 @@
                     </a>
                 </div>
             </nav>
+            
+            <!-- Footer -->
+            <div class="mt-auto p-4 text-xs text-gray-500 border-t border-gray-200">
+                KubePanel – kubepanel.io – Example Company Ltd. ©
+            </div>
         </div>
 
         <!-- Main Content -->
@@ -230,12 +224,35 @@
                             {% block header_search %}{% endblock %}
                             
                             <!-- Notifications -->
-                            <button class="relative p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-3.5-3.5M9 17H4l3.5-3.5M12 6v12m-3-6l3 3 3-3"></path>
-                                </svg>
-                                <span class="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-xs text-white font-medium">3</span>
-                            </button>
+                            <div class="relative dropdown">
+                                <button class="relative p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-3.5-3.5M9 17H4l3.5-3.5M12 6v12m-3-6l3 3 3-3"></path>
+                                    </svg>
+                                    <span class="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-xs text-white font-medium">1</span>
+                                </button>
+                                <div class="dropdown-menu absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-0 z-20">
+                                    <div class="px-4 py-3 border-b border-gray-200">
+                                        <h4 class="text-sm font-medium text-gray-900">1 New Notification</h4>
+                                    </div>
+                                    <div class="py-2">
+                                        <a href="#" class="flex px-4 py-3 hover:bg-gray-50">
+                                            <div class="flex-shrink-0">
+                                                <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.088 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                                </svg>
+                                            </div>
+                                            <div class="ml-3 flex-1">
+                                                <p class="text-sm font-medium text-gray-900">Sample notification</p>
+                                                <p class="text-sm text-gray-500">New update for Kubepanel v0.1</p>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <div class="px-4 py-2 border-t border-gray-200">
+                                        <a href="#" class="text-sm text-gray-600 hover:text-gray-900">Show all notifications</a>
+                                    </div>
+                                </div>
+                            </div>
                             
                             <!-- Additional Header Actions -->
                             {% block header_actions %}{% endblock %}
@@ -244,10 +261,10 @@
                             <div class="relative dropdown">
                                 <button class="flex items-center space-x-3 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                                     <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                                        <span class="text-white text-sm font-medium">{{ request.user.username|first|upper }}</span>
+                                        <span class="text-white text-sm font-medium">{{ user.username|first|upper }}</span>
                                     </div>
                                     <div class="hidden md:block text-left">
-                                        <p class="text-sm font-medium text-gray-900">{{ request.user.username }}</p>
+                                        <p class="text-sm font-medium text-gray-900">{{ user.username }}</p>
                                         <p class="text-xs text-gray-500">Administrator</p>
                                     </div>
                                     <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -255,10 +272,24 @@
                                     </svg>
                                 </button>
                                 <div class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                                    <a href="{% url 'settings' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Profile Settings</a>
-                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Account Preferences</a>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                        <div class="flex items-center space-x-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            </svg>
+                                            <span>Settings</span>
+                                        </div>
+                                    </a>
                                     <hr class="my-1 border-gray-200">
-                                    <a href="{% url 'logout_view' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Sign Out</a>
+                                    <a href="{% url 'logout_view' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                        <div class="flex items-center space-x-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                            </svg>
+                                            <span>Log out</span>
+                                        </div>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -273,19 +304,6 @@
         </div>
     </div>
 
-    <!-- Global Modal (HTMX target) -->
-    <div id="modal-root"
-         class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50"
-         hx-on="modal-close: this.classList.add('hidden')">
-        <div class="bg-white w-full max-w-lg rounded-lg shadow-xl"
-             hx-target="this"
-             hx-swap="outerHTML">
-            <!-- Modal content will be swapped in by HTMX -->
-        </div>
-    </div>
-
-    {% block extra_js %}{% endblock %}
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Dropdown functionality
@@ -336,5 +354,6 @@
             });
         });
     </script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>
