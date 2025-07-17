@@ -30,7 +30,7 @@ NGINX_DEFAULT_CONFIG = r"""
         server {
             listen       8080 default_server;
             server_name  _;
-
+            client_max_body_size 100M;
                 root   /usr/share/nginx/html; # Ensure your document root is correctly set
                 index  index.php index.html index.htm;
 
