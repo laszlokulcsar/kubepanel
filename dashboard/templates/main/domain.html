@@ -500,21 +500,21 @@
         });
         
         // Add hover effects for cards (with margin compensation)
-        const statCards = document.querySelectorAll('.bg-white.rounded-xl');
-        statCards.forEach(card => {
-            // Only apply hover effect to stat cards, not the table card
-            if (!card.querySelector('table')) {
-                card.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-2px)';
-                    this.style.marginBottom = '2px'; // Compensate for the upward movement
-                });
-                
-                card.addEventListener('mouseleave', function() {
-                    this.style.transform = 'translateY(0)';
-                    this.style.marginBottom = '0px';
-                });
-            }
-        });
+//        const statCards = document.querySelectorAll('.bg-white.rounded-xl');
+//        statCards.forEach(card => {
+//            // Only apply hover effect to stat cards, not the table card
+//            if (!card.querySelector('table')) {
+//                card.addEventListener('mouseenter', function() {
+//                    this.style.transform = 'translateY(-2px)';
+//                    this.style.marginBottom = '2px'; // Compensate for the upward movement
+//                });
+//                
+//                card.addEventListener('mouseleave', function() {
+//                    this.style.transform = 'translateY(0)';
+//                    this.style.marginBottom = '0px';
+//                });
+//            }
+//        });
     });
 </script>
 {% endblock %}
