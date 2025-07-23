@@ -1,72 +1,397 @@
 {% extends "base.html" %}
-{% block content %}
-<main class="content">
-  <div class="container-fluid p-0">
-    <h1 class="h3 mb-3"><strong>Filesystem backups</strong> list</h1>
+{% load static %}
 
-    <div class="row">
-      <div class="col-12 d-flex">
-        <div class="card flex-fill">
-          <div class="card-header">
-            <h5 class="card-title mb-0">Domain List</h5>
-          </div>
+{% block title %}Filesystem Backups | KubePanel{% endblock %}
 
-          <table class="table table-hover my-0">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Created at</th>
-                <th>Actions</th>
-                <th>Logs</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for vs in volumesnapshots.all %}
-              <tr>
-                <td>{{ vs.snapshotname }}</td>
-                <td class="d-none d-xl-table-cell">{{ vs.created_at }}</td>
-                <td class="d-none d-md-table-cell">
-                  <a href="{% url 'restore_volumesnapshot' domain vs.snapshotname %}">
-                    <button class="btn btn-danger">Restore backup</button>
-                  </a>
-                  <a href="{% url 'download_snapshot' vs.snapshotname %}">
-                    <button class="btn btn-secondary">Download LVM snapshot</button>
-                  </a>
-                  <a href="{% url 'download_sql_dump' vs.snapshotname %}">
-                    <button class="btn btn-secondary">Download SQL dump</button>
-                  </a>
-                </td>
-                <td>
-                  <button class="btn btn-secondary"
-                          onclick="toggleLogs({{ forloop.counter }})">
-                    Show logs
-                  </button>
-                </td>
-              </tr>
-              <tr id="logs-{{ forloop.counter }}" style="display:none;">
-                <td colspan="4">
-                  <pre class="border rounded p-2"
-                       style="max-height:50vh; overflow:auto;
-                              background:#1e1e1e; color:#ddd;">
-{{ vs.log|default:"No logs available."|escape }}
-                  </pre>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+{% block page_title %}Filesystem Backups{% endblock %}
+{% block page_subtitle %}{{ domain }} - Manage and restore your domain backups{% endblock %}
 
-        </div>
-      </div>
+{% block header_search %}
+<div class="relative">
+    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
     </div>
-  </div>
-</main>
-
-<script>
-  function toggleLogs(id) {
-    var row = document.getElementById('logs-' + id);
-    row.style.display = (row.style.display === 'none') ? 'table-row' : 'none';
-  }
-</script>
+    <input type="text"
+           class="pl-12 pr-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl w-96 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 text-white placeholder-white/60 text-sm"
+           placeholder="Search backups..."
+           id="backup-search">
+</div>
 {% endblock %}
 
+{% block header_actions %}
+<a href="{% url 'start_backup' domain %}"
+   class="btn-primary text-white px-6 py-2.5 rounded-lg font-medium shadow-sm hover:shadow-md transition-all duration-200 flex items-center space-x-2">
+    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+    </svg>
+    <span>Create Backup</span>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- Total Backups -->
+        <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600 uppercase tracking-wider">Total Backups</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ volumesnapshots.count }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Latest Backup -->
+        <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600 uppercase tracking-wider">Latest Backup</p>
+                    <p class="text-2xl font-semibold text-gray-900">{% if volumesnapshots.first %}{{ volumesnapshots.first.created_at|date:"M d, Y" }}{% else %}None{% endif %}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Domain Info -->
+        <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600 uppercase tracking-wider">Domain</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ domain }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backup Status -->
+        <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600 uppercase tracking-wider">Status</p>
+                    <p class="text-2xl font-semibold text-gray-900">Active</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backups Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-medium text-gray-900">Backup History</h3>
+                <div class="flex items-center space-x-3">
+                    <select class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            id="date-filter">
+                        <option value="all">All Dates</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <button class="group flex items-center space-x-1 hover:text-gray-900">
+                            <span>Backup Name</span>
+                            <svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                            </svg>
+                        </button>
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Logs</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for vs in volumesnapshots.all %}
+                <tr class="hover:bg-gray-50 transition-colors" data-backup-id="{{ forloop.counter }}">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 w-10 h-10">
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900 font-mono">{{ vs.snapshotname }}</div>
+                                <div class="text-sm text-gray-500">Filesystem Snapshot</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">{{ vs.created_at|date:"M d, Y" }}</div>
+                        <div class="text-sm text-gray-500">{{ vs.created_at|date:"H:i:s" }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div class="flex items-center space-x-2">
+                            <a href="{% url 'restore_volumesnapshot' domain vs.snapshotname %}"
+                               class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+                                Restore
+                            </a>
+                            <div class="relative dropdown">
+                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center space-x-1">
+                                    <span>Download</span>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                <div class="dropdown-menu absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                                    <a href="{% url 'download_snapshot' vs.snapshotname %}"
+                                       class="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
+                                        </svg>
+                                        <span>LVM Snapshot</span>
+                                    </a>
+                                    <a href="{% url 'download_sql_dump' vs.snapshotname %}"
+                                       class="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                                        </svg>
+                                        <span>SQL Dump</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                                onclick="toggleLogs({{ forloop.counter }})">
+                            Show Logs
+                        </button>
+                    </td>
+                </tr>
+                <!-- Log Row -->
+                <tr id="logs-{{ forloop.counter }}" style="display:none;">
+                    <td colspan="4" class="px-6 py-4 bg-gray-50">
+                        <div class="bg-gray-900 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-white font-medium text-sm">
+                                    Backup Logs - {{ vs.snapshotname }}
+                                </h4>
+                                <button onclick="toggleLogs({{ forloop.counter }})"
+                                        class="text-gray-400 hover:text-white">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <pre class="text-green-400 text-xs overflow-auto max-h-64 bg-black rounded p-3">{{ vs.log|default:"No logs available."|escape }}</pre>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                            <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
+                            </svg>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No backups yet</h3>
+                            <p class="text-gray-500 mb-4">Get started by creating your first backup</p>
+                            <a href="{% url 'start_backup' domain %}"
+                               class="btn-primary text-white px-4 py-2 rounded-lg font-medium shadow-sm hover:shadow-md transition-all duration-200 flex items-center space-x-2">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                <span>Create Backup</span>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.getElementById('backup-search');
+    const dateFilter = document.getElementById('date-filter');
+    const tableRows = document.querySelectorAll('tbody tr[data-backup-id]');
+
+    function filterBackups() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedDate = dateFilter.value;
+
+        tableRows.forEach(row => {
+            const backupName = row.querySelector('.font-mono')?.textContent?.toLowerCase() || '';
+            const matchesSearch = backupName.includes(searchTerm);
+
+            if (matchesSearch) {
+                row.style.display = '';
+                // Also show/hide the corresponding log row if it exists
+                const logRow = document.getElementById(`logs-${row.dataset.backupId}`);
+                if (logRow && logRow.style.display === 'table-row') {
+                    logRow.style.display = 'table-row';
+                }
+            } else {
+                row.style.display = 'none';
+                // Hide corresponding log row
+                const logRow = document.getElementById(`logs-${row.dataset.backupId}`);
+                if (logRow) {
+                    logRow.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', filterBackups);
+    }
+
+    if (dateFilter) {
+        dateFilter.addEventListener('change', filterBackups);
+    }
+
+    // Dropdown functionality
+    const dropdowns = document.querySelectorAll('.dropdown');
+    dropdowns.forEach(dropdown => {
+        const button = dropdown.querySelector('button');
+        const menu = dropdown.querySelector('.dropdown-menu');
+
+        if (button && menu) {
+            // Set initial state
+            menu.style.transform = 'translateY(-5px)';
+            menu.style.opacity = '0';
+            menu.style.visibility = 'hidden';
+            menu.style.transition = 'all 0.2s ease-in-out';
+
+            let isClickOpen = false;
+            let hoverTimeout;
+
+            // Show dropdown function
+            function showDropdown() {
+                dropdowns.forEach(otherDropdown => {
+                    if (otherDropdown !== dropdown) {
+                        const otherMenu = otherDropdown.querySelector('.dropdown-menu');
+                        if (otherMenu) {
+                            otherMenu.style.transform = 'translateY(-5px)';
+                            otherMenu.style.opacity = '0';
+                            otherMenu.style.visibility = 'hidden';
+                            otherDropdown.isClickOpen = false;
+                        }
+                    }
+                });
+
+                menu.style.transform = 'translateY(0)';
+                menu.style.opacity = '1';
+                menu.style.visibility = 'visible';
+            }
+
+            // Hide dropdown function
+            function hideDropdown() {
+                if (!isClickOpen) {
+                    menu.style.transform = 'translateY(-5px)';
+                    menu.style.opacity = '0';
+                    menu.style.visibility = 'hidden';
+                }
+            }
+
+            // Click handler
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+
+                if (isClickOpen) {
+                    menu.style.transform = 'translateY(-5px)';
+                    menu.style.opacity = '0';
+                    menu.style.visibility = 'hidden';
+                    isClickOpen = false;
+                } else {
+                    showDropdown();
+                    isClickOpen = true;
+                }
+
+                dropdown.isClickOpen = isClickOpen;
+            });
+
+            // Hover handlers
+            dropdown.addEventListener('mouseenter', function() {
+                clearTimeout(hoverTimeout);
+                showDropdown();
+            });
+
+            dropdown.addEventListener('mouseleave', function() {
+                hoverTimeout = setTimeout(() => {
+                    hideDropdown();
+                }, 100);
+            });
+
+            dropdown.isClickOpen = isClickOpen;
+        }
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function() {
+        dropdowns.forEach(dropdown => {
+            const menu = dropdown.querySelector('.dropdown-menu');
+            if (menu) {
+                menu.style.transform = 'translateY(-5px)';
+                menu.style.opacity = '0';
+                menu.style.visibility = 'hidden';
+                dropdown.isClickOpen = false;
+            }
+        });
+    });
+
+    // Add loading states for action buttons
+    const actionButtons = document.querySelectorAll('a[href*="restore"], a[href*="download"]');
+    actionButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const originalText = this.innerHTML;
+            this.innerHTML = '<svg class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Processing...';
+            this.style.pointerEvents = 'none';
+            
+            setTimeout(() => {
+                this.innerHTML = originalText;
+                this.style.pointerEvents = '';
+            }, 3000);
+        });
+    });
+});
+
+// Log toggle function
+function toggleLogs(id) {
+    var row = document.getElementById('logs-' + id);
+    row.style.display = (row.style.display === 'none') ? 'table-row' : 'none';
+}
+</script>
+{% endblock %}

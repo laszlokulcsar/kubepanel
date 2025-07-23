@@ -128,24 +128,44 @@ def create_dns_record_in_cloudflare(record_obj):
     return response
 
 def create_dns_record(request):
+    zone_id = request.GET.get('zone')
+    zone = None
+
+    if zone_id:
+        try:
+            zone = DNSZone.objects.get(id=zone_id)
+        except DNSZone.DoesNotExist:
+            messages.error(request, "Zone not found.")
+            return redirect("zones_list")
+
     if request.method == "POST":
         form = DNSRecordForm(request.POST, user=request.user)
         if form.is_valid():
             record_obj = form.save(commit=False)
+            if zone:
+                record_obj.zone = zone  # Set the zone for the record
             try:
                 response = create_dns_record_in_cloudflare(record_obj)
                 record_obj.cf_record_id = response.id
                 record_obj.save()
                 messages.success(request, "DNS record created successfully.")
+                # Redirect back to the zone's records if zone_id exists
+                if zone_id:
+                    return redirect("list_dns_records", zone_id=zone_id)
+                else:
+                    return redirect("zones_list")
             except Exception as e:
                 messages.error(request, f"Error creating DNS record: {e}")
-            return redirect("/zones/list")
         else:
             messages.error(request, "Form invalid.")
     else:
         form = DNSRecordForm(user=request.user)
-    return render(request, "main/create_dns_record.html", {"form": form})
 
+    return render(request, "main/create_dns_record.html", {
+        "form": form,
+        "zone": zone,
+        "zone_id": zone_id
+    })
 
 def zones_list(request):
     tokens = CloudflareAPIToken.objects.filter(user=request.user)
