@@ -451,46 +451,6 @@
             });
         }
 
-        // Confirmation for regenerate rules
-        const regenerateForm = document.querySelector('form[method="POST"]');
-        if (regenerateForm && regenerateForm.querySelector('button[name="generate_rules"]')) {
-            regenerateForm.addEventListener('submit', function(e) {
-                const confirmed = confirm('Are you sure you want to regenerate all firewall rules? This may take a few moments.');
-                if (!confirmed) {
-                    e.preventDefault();
-                } else {
-                    // Show loading state
-                    const button = this.querySelector('button[name="generate_rules"]');
-                    if (button) {
-                        const originalContent = button.innerHTML;
-                        button.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Generating...';
-                        button.disabled = true;
-                    }
-                }
-            });
-        }
-
-        // Enhanced delete confirmations
-        const deleteButtons = document.querySelectorAll('button[type="submit"]');
-        deleteButtons.forEach(button => {
-            if (button.innerHTML.includes('Delete')) {
-                button.addEventListener('click', function(e) {
-                    const row = this.closest('tr');
-                    const ipCell = row.querySelector('td:nth-child(2)');
-                    const ip = ipCell ? ipCell.textContent.trim() : 'this rule';
-
-                    const confirmed = confirm(`Are you sure you want to delete the firewall rule for ${ip}? This action cannot be undone.`);
-                    if (!confirmed) {
-                        e.preventDefault();
-                    } else {
-                        // Show loading state
-                        const originalContent = this.innerHTML;
-                        this.innerHTML = '<svg class="animate-spin w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Deleting...';
-                        this.disabled = true;
-                    }
-                });
-            }
-        });
 
         // Highlight search matches
         function highlightMatches() {

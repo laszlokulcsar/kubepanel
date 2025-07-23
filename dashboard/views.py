@@ -965,7 +965,7 @@ def alias_add(request, pk):
             except:
               print("Can't create directories. Please check debug logs if you think this is an error.")
             iterate_input_templates(template_dir,domain_dirname,context)
-            return redirect('alias_list', pk=domain.pk)
+            return redirect('view_domain', pk=domain.pk)
     else:
         form = DomainAliasForm()
     return render(request, 'main/add_alias.html', {'domain': domain, 'form': form})
