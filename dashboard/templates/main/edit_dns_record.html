@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit DNS Record | KubePanel{% endblock %}
+
+{% block page_title %}Edit DNS Record{% endblock %}
+{% block page_subtitle %}{{ zone.name }}{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'list_dns_records' zone.id %}"
+   class="btn-secondary text-gray-700 px-6 py-2.5 rounded-lg font-medium shadow-sm hover:shadow-md transition-all duration-200 flex items-center space-x-2">
+    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+    </svg>
+    <span>Back to Records</span>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+    
+    <!-- Current Record Info -->
+    <div class="relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl"></div>
+        <div class="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-3xl border border-blue-100 shadow-lg"></div>
+        <div class="relative p-8">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm
+                          {% if record.record_type == 'A' %}bg-gradient-to-br from-blue-100 to-blue-200 text-blue-800
+                          {% elif record.record_type == 'AAAA' %}bg-gradient-to-br from-indigo-100 to-indigo-200 text-indigo-800
+                          {% elif record.record_type == 'CNAME' %}bg-gradient-to-br from-green-100 to-green-200 text-green-800
+                          {% elif record.record_type == 'MX' %}bg-gradient-to-br from-purple-100 to-purple-200 text-purple-800
+                          {% elif record.record_type == 'TXT' %}bg-gradient-to-br from-orange-100 to-orange-200 text-orange-800
+                          {% elif record.record_type == 'NS' %}bg-gradient-to-br from-red-100 to-red-200 text-red-800
+                          {% else %}bg-gradient-to-br from-gray-100 to-gray-200 text-gray-800{% endif %}">
+                    {{ record.record_type }}
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900">Editing {{ record.record_type }} Record</h3>
+                    <p class="text-gray-600">{{ record.name }} → {{ record.content }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Form -->
+    <div class="relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-gray-50 to-white rounded-3xl"></div>
+        <div class="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-3xl border border-gray-100 shadow-2xl"></div>
+        <div class="relative">
+            
+            <!-- Form Header -->
+            <div class="px-8 py-6 border-b border-gray-100/80">
+                <h3 class="text-2xl font-bold text-gray-900">Record Details</h3>
+                <p class="text-gray-600 mt-1">Update the DNS record information below</p>
+            </div>
+
+            <!-- Form Content -->
+            <form method="post" class="p-8">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    
+                    <!-- Record Type -->
+                    <div class="space-y-2">
+                        <label for="{{ form.record_type.id_for_label }}" class="block text-sm font-bold text-gray-900">
+                            Record Type
+                        </label>
+                        <div class="relative">
+                            {{ form.record_type }}
+                            {% if form.record_type.errors %}
+                                <div class="mt-2 text-sm text-red-600">
+                                    {% for error in form.record_type.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <p class="text-xs text-gray-500">The type of DNS record (A, AAAA, CNAME, etc.)</p>
+                    </div>
+
+                    <!-- Record Name -->
+                    <div class="space-y-2">
+                        <label for="{{ form.name.id_for_label }}" class="block text-sm font-bold text-gray-900">
+                            Name
+                        </label>
+                        <div class="relative">
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="mt-2 text-sm text-red-600">
+                                    {% for error in form.name.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <p class="text-xs text-gray-500">The name of the DNS record (use @ for root domain)</p>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="lg:col-span-2 space-y-2">
+                        <label for="{{ form.content.id_for_label }}" class="block text-sm font-bold text-gray-900">
+                            Content
+                        </label>
+                        <div class="relative">
+                            {{ form.content }}
+                            {% if form.content.errors %}
+                                <div class="mt-2 text-sm text-red-600">
+                                    {% for error in form.content.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <p class="text-xs text-gray-500">The target value for this DNS record (IP address, domain name, etc.)</p>
+                    </div>
+
+                    <!-- TTL -->
+                    <div class="space-y-2">
+                        <label for="{{ form.ttl.id_for_label }}" class="block text-sm font-bold text-gray-900">
+                            TTL (Time to Live)
+                        </label>
+                        <div class="relative">
+                            {{ form.ttl }}
+                            {% if form.ttl.errors %}
+                                <div class="mt-2 text-sm text-red-600">
+                                    {% for error in form.ttl.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <p class="text-xs text-gray-500">Cache time in seconds (1 = automatic)</p>
+                    </div>
+
+                    <!-- Priority (for MX records) -->
+                    <div class="space-y-2">
+                        <label for="{{ form.priority.id_for_label }}" class="block text-sm font-bold text-gray-900">
+                            Priority
+                        </label>
+                        <div class="relative">
+                            {{ form.priority }}
+                            {% if form.priority.errors %}
+                                <div class="mt-2 text-sm text-red-600">
+                                    {% for error in form.priority.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <p class="text-xs text-gray-500">Priority value (required for MX records, lower = higher priority)</p>
+                    </div>
+
+                    <!-- Proxied Status -->
+                    {% if form.proxied %}
+                    <div class="lg:col-span-2 space-y-3">
+                        <div class="flex items-center space-x-3">
+                            {{ form.proxied }}
+                            <label for="{{ form.proxied.id_for_label }}" class="text-sm font-medium text-gray-900">
+                                Proxy through Cloudflare
+                            </label>
+                        </div>
+                        {% if form.proxied.errors %}
+                            <div class="text-sm text-red-600">
+                                {% for error in form.proxied.errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <p class="text-xs text-gray-500">Enable Cloudflare's proxy for performance and security benefits</p>
+                    </div>
+                    {% endif %}
+
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex items-center justify-between pt-8 mt-8 border-t border-gray-100">
+                    <a href="{% url 'list_dns_records' zone.id %}"
+                       class="px-6 py-3 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2 shadow-sm hover:shadow-md">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        <span>Cancel</span>
+                    </a>
+                    
+                    <button type="submit"
+                            class="px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+                            id="submit-btn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span>Update DNS Record</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Help Section -->
+    <div class="relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl"></div>
+        <div class="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-3xl border border-amber-100 shadow-lg"></div>
+        <div class="relative p-8">
+            <div class="flex items-start space-x-4">
+                <div class="w-10 h-10 bg-gradient-to-br from-amber-100 to-orange-200 rounded-xl flex items-center justify-center">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Record Types Guide</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                        <div>
+                            <strong class="text-blue-600">A Record:</strong> Points to an IPv4 address
+                        </div>
+                        <div>
+                            <strong class="text-indigo-600">AAAA Record:</strong> Points to an IPv6 address
+                        </div>
+                        <div>
+                            <strong class="text-green-600">CNAME Record:</strong> Points to another domain name
+                        </div>
+                        <div>
+                            <strong class="text-purple-600">MX Record:</strong> Mail exchange server (requires priority)
+                        </div>
+                        <div>
+                            <strong class="text-orange-600">TXT Record:</strong> Text data (SPF, DKIM, verification)
+                        </div>
+                        <div>
+                            <strong class="text-red-600">NS Record:</strong> Name server delegation
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const submitBtn = document.getElementById('submit-btn');
+    const recordTypeField = document.getElementById('{{ form.record_type.id_for_label }}');
+    const priorityField = document.getElementById('{{ form.priority.id_for_label }}');
+    const priorityContainer = priorityField ? priorityField.closest('.space-y-2') : null;
+
+    // Show/hide priority field based on record type
+    function togglePriorityField() {
+        if (recordTypeField && priorityContainer) {
+            const recordType = recordTypeField.value;
+            if (recordType === 'MX' || recordType === 'SRV') {
+                priorityContainer.style.display = 'block';
+                priorityField.required = true;
+            } else {
+                priorityContainer.style.display = 'none';
+                priorityField.required = false;
+                priorityField.value = '';
+            }
+        }
+    }
+
+    // Initial toggle
+    togglePriorityField();
+
+    // Listen for changes
+    if (recordTypeField) {
+        recordTypeField.addEventListener('change', togglePriorityField);
+    }
+
+    // Form submission with loading state
+    if (form && submitBtn) {
+        form.addEventListener('submit', function(e) {
+            const originalHTML = submitBtn.innerHTML;
+            submitBtn.innerHTML = `
+                <svg class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Updating...</span>
+            `;
+            submitBtn.disabled = true;
+
+            // Reset if there are form errors (page doesn't redirect)
+            setTimeout(() => {
+                submitBtn.innerHTML = originalHTML;
+                submitBtn.disabled = false;
+            }, 5000);
+        });
+    }
+
+    // Add CSS classes to form fields for consistent styling
+    const formFields = document.querySelectorAll('input, select, textarea');
+    formFields.forEach(field => {
+        if (!field.classList.contains('styled')) {
+            field.classList.add(
+                'w-full', 'px-4', 'py-3', 'bg-white', 'border', 'border-gray-300',
+                'rounded-xl', 'text-sm', 'font-medium', 'text-gray-900',
+                'focus:outline-none', 'focus:ring-2', 'focus:ring-indigo-500/20',
+                'focus:border-indigo-300', 'transition-all', 'shadow-sm',
+                'hover:border-gray-400', 'styled'
+            );
+        }
+    });
+
+    // Special styling for checkbox
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.classList.remove('w-full', 'px-4', 'py-3');
+        checkbox.classList.add('w-5', 'h-5', 'text-indigo-600', 'rounded', 'border-gray-300');
+    });
+});
+</script>
+{% endblock %}
