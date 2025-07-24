@@ -1739,7 +1739,7 @@ class UploadRestoreFilesView(View):
         messages.success(request, 'Snapshot uploaded and queued for restore.')
         return redirect(reverse('upload_restore', args=[domain_name]))
 
-def edit_dns_record_efficient(request, record_id):
+def edit_dns_record(request, record_id):
     """Edit DNS record using Cloudflare's update API (more efficient)"""
     record = get_object_or_404(DNSRecord, id=record_id)
     zone = record.zone
