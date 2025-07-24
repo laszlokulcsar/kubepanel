@@ -302,7 +302,7 @@
                             <hr class="my-1 border-gray-200">
                             <a href="{% url 'delete_domain' domain=domain.domain_name %}" 
                                class="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                               onclick="return confirm('Are you sure you want to delete {{ domain.domain_name }}? This action cannot be undone.')">
+                               >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                 </svg>
@@ -473,15 +473,15 @@
         });
         
         // Add confirmation for delete actions
-        const deleteLinks = document.querySelectorAll('a[href*="delete_domain"]');
-        deleteLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
-                const domainName = this.closest('tr').querySelector('td:first-child .font-medium').textContent;
-                if (!confirm(`Are you sure you want to delete "${domainName}"? This action cannot be undone.`)) {
-                    e.preventDefault();
-                }
-            });
-        });
+//        const deleteLinks = document.querySelectorAll('a[href*="delete_domain"]');
+//        deleteLinks.forEach(link => {
+//            link.addEventListener('click', function(e) {
+//                const domainName = this.closest('tr').querySelector('td:first-child .font-medium').textContent;
+//                if (!confirm(`Are you sure you want to delete "${domainName}"? This action cannot be undone.`)) {
+//                    e.preventDefault();
+//                }
+//            });
+//        });
         
         // Add loading states for action buttons
         const actionLinks = document.querySelectorAll('a[href*="startstop_domain"], a[href*="start_backup"]');
