@@ -1,4 +1,4 @@
-from django import forms  
+from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.forms import UserCreationForm
@@ -95,66 +95,15 @@ class ZoneCreationForm(forms.Form):
 class DNSRecordForm(forms.ModelForm):
     class Meta:
         model = DNSRecord
-        fields = ["record_type", "name", "content", "ttl", "proxied", "priority"]  # Removed "zone"
-        widgets = {
-            'record_type': forms.Select(attrs={
-                'class': 'w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all shadow-sm hover:border-gray-400'
-            }),
-            'name': forms.TextInput(attrs={
-                'class': 'w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all shadow-sm hover:border-gray-400',
-                'placeholder': 'e.g., www or @ for root domain'
-            }),
-            'content': forms.TextInput(attrs={
-                'class': 'w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all shadow-sm hover:border-gray-400',
-                'placeholder': 'e.g., 192.168.1.1 or example.com'
-            }),
-            'ttl': forms.NumberInput(attrs={
-                'class': 'w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all shadow-sm hover:border-gray-400',
-                'min': 1,
-                'max': 86400
-            }),
-            'priority': forms.NumberInput(attrs={
-                'class': 'w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all shadow-sm hover:border-gray-400',
-                'min': 0,
-                'max': 65535
-            }),
-            'proxied': forms.CheckboxInput(attrs={
-                'class': 'w-5 h-5 text-indigo-600 rounded border-gray-300'
-            }),
-        }
-    
+        fields = ["zone", "record_type", "name", "content", "ttl", "proxied", "priority"]
+
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # Make priority optional for non-MX/SRV records
+        if user:
+            self.fields["zone"].queryset = DNSZone.objects.filter(token__user=user)
+
+        # Make priority optional
         self.fields['priority'].required = False
-        
-        # If this is for creating a new record (not editing), add zone field
-        if not self.instance.pk and user:
-            self.fields['zone'] = forms.ModelChoiceField(
-                queryset=DNSZone.objects.filter(token__user=user),
-                empty_label="Select a zone",
-                widget=forms.Select(attrs={
-                    'class': 'w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all shadow-sm hover:border-gray-400'
-                })
-            )
-            # Move zone to the beginning
-            self.fields.move_to_end('zone', last=False)
-    
-    def clean(self):
-        cleaned_data = super().clean()
-        record_type = cleaned_data.get('record_type')
-        priority = cleaned_data.get('priority')
-        
-        # Validate priority for MX and SRV records
-        if record_type in ['MX', 'SRV'] and priority is None:
-            raise forms.ValidationError('Priority is required for MX and SRV records.')
-        
-        # Clear priority for non-MX/SRV records
-        if record_type not in ['MX', 'SRV']:
-            cleaned_data['priority'] = None
-        
-        return cleaned_data
 
 class MailUserForm(forms.ModelForm):
     plain_password = forms.CharField(

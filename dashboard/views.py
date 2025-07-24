@@ -40,7 +40,7 @@ TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
 EXCLUDED_EXTENSIONS = [".js", ".css", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".map"]
 UPLOAD_BASE_DIR = getattr(settings, 'WATCHDOG_UPLOAD_ROOT', '/kubepanel/watchdog/uploads')
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("django")
 
 
 class SuperuserRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -89,15 +89,154 @@ def delete_zone(request, zone_id):
     return render(request, "main/delete_confirm.html", {"object": zone, "type": "DNS Zone"})
 
 def delete_dns_record(request, record_id):
+    """
+    Delete DNS record from both Cloudflare and database
+    Enhanced version of your existing function
+    """
     record = get_object_or_404(DNSRecord, id=record_id, zone__token__user=request.user)
+
     if request.method == "POST":
         try:
+            record_name = record.name
+            record_type = record.record_type
+
+            # Use your existing DNS service
+            dns_service = CloudflareDNSService(record.zone.token.api_token)
+
+            # Delete from Cloudflare first
+            if record.cf_record_id:
+                try:
+                    dns_service._retry_api_call(
+                        dns_service.client.dns.records.delete,
+                        zone_id=record.zone.zone_id,
+                        dns_record_id=record.cf_record_id
+                    )
+                    logger.info(f"Successfully deleted DNS record {record_name} from Cloudflare")
+                except CloudflareAPIException as e:
+                    logger.error(f"Failed to delete from Cloudflare: {e}")
+                    messages.error(request, f"Failed to delete from Cloudflare: {e.message}")
+                    return redirect("list_dns_records", zone_id=record.zone.id)
+                except Exception as e:
+                    logger.error(f"Unexpected Cloudflare error: {e}")
+                    messages.error(request, f"Failed to delete from Cloudflare: {str(e)}")
+                    return redirect("list_dns_records", zone_id=record.zone.id)
+
+            # Delete from database
+            zone_id = record.zone.id
             record.delete()
-            messages.success(request, f"DNS Record '{record.name}' deleted successfully.")
+
+            messages.success(request, f'DNS record "{record_name}" ({record_type}) deleted successfully.')
+            return redirect("list_dns_records", zone_id=zone_id)
+
         except Exception as e:
+            logger.error(f"Error deleting DNS record: {e}")
             messages.error(request, f"Error deleting record: {e}")
-        return redirect("list_dns_records", zone_id=record.zone.id)
-    return render(request, "main/delete_confirm.html", {"object": record, "type": "DNS Record"})
+            return redirect("list_dns_records", zone_id=record.zone.id)
+
+    # GET request - show confirmation page
+    return render(request, "main/delete_dns_record_confirm.html", {
+        "record": record,
+        "zone": record.zone,
+        "type": "DNS Record"
+    })
+
+
+@login_required
+def bulk_delete_dns_records(request):
+    """
+    Delete multiple DNS records at once via AJAX
+    """
+    if request.method != "POST":
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        record_ids = data.get('record_ids', [])
+
+        if not record_ids:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'No records selected for deletion.'
+            }, status=400)
+
+        # Get records belonging to the user
+        dns_records = DNSRecord.objects.filter(
+            id__in=record_ids,
+            zone__token__user=request.user
+        ).select_related('zone', 'zone__token')
+
+        if not dns_records.exists():
+            return JsonResponse({
+                'status': 'error',
+                'message': 'No valid records found for deletion.'
+            }, status=404)
+
+        deleted_count = 0
+        failed_count = 0
+        failed_records = []
+
+        # Group records by zone to use appropriate DNS service
+        zones = {}
+        for record in dns_records:
+            if record.zone.id not in zones:
+                zones[record.zone.id] = {
+                    'dns_service': CloudflareDNSService(record.zone.token.api_token),
+                    'zone_id': record.zone.zone_id,
+                    'records': []
+                }
+            zones[record.zone.id]['records'].append(record)
+
+        # Delete records zone by zone
+        for zone_data in zones.values():
+            dns_service = zone_data['dns_service']
+            zone_id = zone_data['zone_id']
+
+            for record in zone_data['records']:
+                try:
+                    # Delete from Cloudflare first
+                    if record.cf_record_id:
+                        dns_service._retry_api_call(
+                            dns_service.client.dns.records.delete,
+                            zone_id=zone_id,
+                            dns_record_id=record.cf_record_id
+                        )
+
+                    # Delete from database
+                    record.delete()
+                    deleted_count += 1
+
+                except Exception as e:
+                    logger.error(f"Failed to delete record {record.name}: {e}")
+                    failed_count += 1
+                    failed_records.append(f"{record.name} ({record.record_type})")
+
+        if failed_count == 0:
+            return JsonResponse({
+                'status': 'success',
+                'message': f'Successfully deleted {deleted_count} DNS records.'
+            })
+        elif deleted_count > 0:
+            return JsonResponse({
+                'status': 'partial',
+                'message': f'Deleted {deleted_count} records. Failed: {", ".join(failed_records)}'
+            })
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Failed to delete any records. Errors: {", ".join(failed_records)}'
+            }, status=500)
+
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Invalid JSON data.'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Bulk delete error: {e}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'An error occurred: {str(e)}'
+        }, status=500)
 
 # Delete a Cloudflare API Token
 def delete_api_token(request, token_id):
@@ -166,14 +305,34 @@ def create_dns_record(request):
         zone = get_object_or_404(DNSZone, id=zone_id)
 
     if request.method == "POST":
+        # Initialize form with POST data
         form = DNSRecordForm(request.POST, user=request.user)
+
+        # If zone is pre-selected from URL, we need to handle it specially
+        if zone and 'zone' not in request.POST:
+            # Create a mutable copy of POST data
+            post_data = request.POST.copy()
+            post_data['zone'] = zone.id
+            form = DNSRecordForm(post_data, user=request.user)
+
+        logger.info(f"Form data: {request.POST}")
+        logger.info(f"Zone from URL: {zone}")
+
         if form.is_valid():
+            logger.info(f"Form cleaned data: {form.cleaned_data}")
+
             try:
+                # Create the record object without saving
                 record_obj = form.save(commit=False)
+
+                # If zone was passed via URL, override the form's zone
                 if zone:
                     record_obj.zone = zone
 
-                # Use the service to create the record
+                logger.info(f"Creating record: {record_obj.record_type} {record_obj.name} -> {record_obj.content}")
+                logger.info(f"Zone: {record_obj.zone}")
+
+                # Use the service to create the record in Cloudflare
                 dns_service = CloudflareDNSService(record_obj.zone.token.api_token)
                 record_data = DNSRecordData(
                     record_type=record_obj.record_type,
@@ -184,26 +343,42 @@ def create_dns_record(request):
                     priority=record_obj.priority
                 )
 
+                # Create in Cloudflare and save to DB in a transaction
                 with transaction.atomic():
                     cf_record = dns_service.create_dns_record(record_obj.zone.zone_id, record_data)
+
                     # Extract record ID from response
-                    record_id = cf_record.id if hasattr(cf_record, 'id') else cf_record.get('id')
-                    record_obj.cf_record_id = record_id
+                    if hasattr(cf_record, 'id'):
+                        record_obj.cf_record_id = cf_record.id
+                    elif isinstance(cf_record, dict) and 'id' in cf_record:
+                        record_obj.cf_record_id = cf_record['id']
+                    else:
+                        logger.error(f"Unexpected Cloudflare response format: {cf_record}")
+                        raise ValueError("Could not extract record ID from Cloudflare response")
+
+                    # Now save to database
                     record_obj.save()
+                    logger.info(f"DNS record saved with ID: {record_obj.id}, CF ID: {record_obj.cf_record_id}")
 
                 messages.success(request, "DNS record created successfully.")
-                return redirect("list_dns_records", zone_id=zone_id) if zone_id else redirect("zones_list")
+                return redirect("list_dns_records", zone_id=record_obj.zone.id)
 
             except CloudflareAPIException as e:
                 logger.error(f"Cloudflare API error: {e}")
-                messages.error(request, f"Cloudflare API error: {e.message}")
+                messages.error(request, f"Cloudflare API error: {str(e)}")
             except Exception as e:
-                logger.error(f"Unexpected error creating DNS record: {e}")
+                logger.error(f"Unexpected error creating DNS record: {e}", exc_info=True)
                 messages.error(request, "An unexpected error occurred. Please try again.")
         else:
+            logger.error(f"Form errors: {form.errors}")
             messages.error(request, "Please correct the form errors.")
     else:
-        form = DNSRecordForm(user=request.user)
+        # GET request
+        initial_data = {}
+        if zone:
+            initial_data['zone'] = zone.id
+
+        form = DNSRecordForm(user=request.user, initial=initial_data)
 
     return render(request, "main/create_dns_record.html", {
         "form": form,
@@ -1743,43 +1918,43 @@ class UploadRestoreFilesView(View):
 def edit_dns_record(request, record_id):
     """Edit an existing DNS record"""
     logger.info(f"Starting edit_dns_record for record_id: {record_id}")
-    
+
     try:
         record = get_object_or_404(DNSRecord, id=record_id)
         zone = record.zone
         logger.info(f"Found record: {record.record_type} {record.name} -> {record.content}")
-        
+
     except Exception as e:
         logger.error(f"Error getting record: {e}")
         messages.error(request, f"Record not found: {e}")
         return redirect("zones_list")
-    
+
     if request.method == "POST":
         logger.info("Processing POST request")
         logger.info(f"POST data: {dict(request.POST)}")
-        
+
         # Create form with the existing record instance
         form = DNSRecordForm(request.POST, instance=record, user=request.user)
-        
+
         # Remove zone from cleaned_data since we don't want to change it
         if form.is_valid():
             logger.info("Form is valid")
             logger.info(f"Form cleaned data: {form.cleaned_data}")
-            
+
             try:
                 # Get the updated data but don't save yet
                 updated_record = form.save(commit=False)
-                
+
                 # Ensure the zone doesn't change (important!)
                 updated_record.zone = record.zone
                 updated_record.cf_record_id = record.cf_record_id  # Keep the CF record ID
-                
+
                 logger.info(f"Updated record prepared: {updated_record.record_type} {updated_record.name} -> {updated_record.content}")
-                
+
                 # Initialize Cloudflare service
                 dns_service = CloudflareDNSService(record.zone.token.api_token)
                 logger.info("Cloudflare service initialized")
-                
+
                 # Prepare update parameters for Cloudflare
                 update_params = {
                     'zone_id': record.zone.zone_id,
@@ -1790,13 +1965,13 @@ def edit_dns_record(request, record_id):
                     'ttl': updated_record.ttl,
                     'proxied': updated_record.proxied,
                 }
-                
+
                 # Only add priority for record types that support it
                 if updated_record.priority is not None and updated_record.record_type in ['MX', 'SRV']:
                     update_params['priority'] = updated_record.priority
-                
+
                 logger.info(f"Cloudflare update parameters: {update_params}")
-                
+
                 # Update in Cloudflare
                 try:
                     logger.info("Attempting Cloudflare update...")
@@ -1805,14 +1980,14 @@ def edit_dns_record(request, record_id):
                         **update_params
                     )
                     logger.info(f"Cloudflare update successful: {type(cf_response)}")
-                    
+
                 except Exception as cf_error:
                     logger.error(f"Cloudflare update failed: {cf_error}")
                     logger.error(f"Error type: {type(cf_error)}")
-                    
+
                     # Try delete + create approach as fallback
                     logger.info("Trying delete + create approach...")
-                    
+
                     try:
                         # Delete old record
                         logger.info(f"Deleting old record: {record.cf_record_id}")
@@ -1822,7 +1997,7 @@ def edit_dns_record(request, record_id):
                             dns_record_id=record.cf_record_id
                         )
                         logger.info("Old record deleted")
-                        
+
                         # Create new record
                         record_data = DNSRecordData(
                             record_type=updated_record.record_type,
@@ -1833,37 +2008,37 @@ def edit_dns_record(request, record_id):
                             priority=updated_record.priority
                         )
                         logger.info(f"Creating new record: {record_data}")
-                        
+
                         cf_record = dns_service.create_dns_record(record.zone.zone_id, record_data)
                         logger.info(f"New record created")
-                        
+
                         # Update the cf_record_id
                         record_id_new = cf_record.id if hasattr(cf_record, 'id') else cf_record.get('id')
                         updated_record.cf_record_id = record_id_new
                         logger.info(f"New Cloudflare record ID: {record_id_new}")
-                        
+
                     except Exception as fallback_error:
                         logger.error(f"Fallback approach failed: {fallback_error}")
                         raise fallback_error
-                
+
                 # Save to database
                 logger.info("Saving to database...")
                 with transaction.atomic():
                     updated_record.save()
                     logger.info("Database save successful")
-                
+
                 messages.success(request, "DNS record updated successfully.")
                 logger.info("Edit completed successfully")
                 return redirect("list_dns_records", zone_id=zone.id)
-                
+
             except CloudflareAPIException as e:
                 logger.error(f"CloudflareAPIException: {e}")
                 messages.error(request, f"Cloudflare API error: {e.message}")
-                
+
             except Exception as e:
                 logger.error(f"Unexpected error: {e}", exc_info=True)
                 messages.error(request, f"An unexpected error occurred: {str(e)}")
-                
+
         else:
             logger.error(f"Form is not valid. Errors: {form.errors}")
             messages.error(request, "Please correct the form errors.")
@@ -1873,7 +2048,7 @@ def edit_dns_record(request, record_id):
     else:
         logger.info("GET request - displaying form")
         form = DNSRecordForm(instance=record, user=request.user)
-    
+
     return render(request, "main/edit_dns_record.html", {
         "form": form,
         "record": record,
@@ -1885,42 +2060,42 @@ def edit_dns_record(request, record_id):
 def edit_dns_record_simple(request, record_id):
     """Simple version that only updates the database (for testing)"""
     logger.info(f"Simple edit for record_id: {record_id}")
-    
+
     record = get_object_or_404(DNSRecord, id=record_id)
     zone = record.zone
-    
+
     if request.method == "POST":
         logger.info(f"POST data: {dict(request.POST)}")
-        
+
         # Manual field updates (bypass form for testing)
         try:
             record.record_type = request.POST.get('record_type', record.record_type)
-            record.name = request.POST.get('name', record.name)  
+            record.name = request.POST.get('name', record.name)
             record.content = request.POST.get('content', record.content)
             record.ttl = int(request.POST.get('ttl', record.ttl))
             record.proxied = 'proxied' in request.POST
-            
+
             priority = request.POST.get('priority')
             if priority and priority.strip():
                 record.priority = int(priority)
             elif record.record_type not in ['MX', 'SRV']:
                 record.priority = None
-                
+
             logger.info(f"About to save: {record.record_type} {record.name} -> {record.content}")
             record.save()
             logger.info("Database save successful")
-            
+
             messages.success(request, "DNS record updated in database (simple mode).")
             return redirect("list_dns_records", zone_id=zone.id)
-            
+
         except Exception as e:
             logger.error(f"Simple save error: {e}", exc_info=True)
             messages.error(request, f"Save error: {e}")
-    
+
     context = {
         'record': record,
         'zone': zone,
         'record_types': DNSRecord.RECORD_TYPES,
     }
-    
+
     return render(request, "main/test_edit_dns_record.html", context)
