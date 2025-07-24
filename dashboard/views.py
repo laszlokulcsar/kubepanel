@@ -19,6 +19,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.views.generic import ListView, CreateView, UpdateView, FormView
 from django.contrib.auth.models import User
 from django.db.models import Sum
+from django.db import transaction
 from django.views import View
 from django.conf import settings
 from kubernetes import client, config
