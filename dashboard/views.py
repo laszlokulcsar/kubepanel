@@ -77,16 +77,63 @@ def delete_ip(request, ip_id):
         return redirect("manage_ips")
 
 def delete_zone(request, zone_id):
+    """
+    Delete DNS zone from both Cloudflare and database
+    Only allows deletion if the zone has no DNS records
+    """
     zone = get_object_or_404(DNSZone, id=zone_id, token__user=request.user)
+    
+    # Check if zone has any DNS records
+    record_count = zone.dns_records.count()
+    has_records = record_count > 0
+    
     if request.method == "POST":
+        # Double-check that zone has no records before allowing deletion
+        if has_records:
+            messages.error(request, f"Cannot delete zone '{zone.name}' because it contains {record_count} DNS record(s). Please delete all records first.")
+            return redirect("list_dns_records", zone_id=zone.id)
+        
         try:
-            # Optionally, add logic to delete the zone from Cloudflare
+            zone_name = zone.name
+            
+            # Delete from Cloudflare
+            try:
+                dns_service = CloudflareDNSService(zone.token.api_token)
+                dns_service._retry_api_call(
+                    dns_service.client.zones.delete,
+                    zone_id=zone.zone_id
+                )
+                logger.info(f"Successfully deleted zone {zone_name} from Cloudflare")
+            except CloudflareAPIException as e:
+                logger.error(f"Failed to delete zone from Cloudflare: {e}")
+                messages.error(request, f"Failed to delete zone from Cloudflare: {e.message}")
+                return redirect("zones_list")
+            except Exception as e:
+                logger.error(f"Unexpected error deleting zone from Cloudflare: {e}")
+                messages.error(request, f"Failed to delete zone from Cloudflare: {str(e)}")
+                return redirect("zones_list")
+            
+            # Delete from database
             zone.delete()
-            messages.success(request, f"DNS Zone '{zone.name}' deleted successfully.")
+            messages.success(request, f"DNS Zone '{zone_name}' deleted successfully.")
+            
+            # Log the deletion
+            logger.info(f"User {request.user.username} deleted DNS zone {zone_name}")
+            
+            return redirect("zones_list")
+            
         except Exception as e:
+            logger.error(f"Error deleting zone: {e}")
             messages.error(request, f"Error deleting zone: {e}")
-        return redirect("zones_list")
-    return render(request, "main/delete_confirm.html", {"object": zone, "type": "DNS Zone"})
+            return redirect("zones_list")
+    
+    # GET request - show confirmation page
+    return render(request, "main/delete_zone_confirm.html", {
+        "zone": zone,
+        "has_records": has_records,
+        "record_count": record_count,
+        "type": "DNS Zone"
+    })
 
 def delete_dns_record(request, record_id):
     """
