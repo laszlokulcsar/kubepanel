@@ -32,6 +32,7 @@ urlpatterns = [
     path('zones/<int:zone_id>/delete/', views.delete_zone, name='delete_zone'),
     path('zones/list/', views.zones_list, name='zones_list'),
     path('records/create/', views.create_dns_record, name='create_dns_record'),
+    path('records/<int:record_id>/edit/', views.edit_dns_record, name='edit_dns_record'),
     path('records/<int:record_id>/delete/', views.delete_dns_record, name='delete_dns_record'),  # Delete record
     path("zones/<int:zone_id>/records/", views.list_dns_records, name="list_dns_records"),
     path("ips/manage/", views.manage_ips, name="manage_ips"),

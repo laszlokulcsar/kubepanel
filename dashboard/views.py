@@ -1,9 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
-from django.http import HttpResponse, FileResponse, StreamingHttpResponse, HttpResponseNotFound, HttpResponseServerError
+from django.http import JsonResponse, HttpResponse, FileResponse, StreamingHttpResponse, HttpResponseNotFound, HttpResponseServerError
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
 from .models import PhpImage, Package, UserProfile, LogEntry, MailUser, MailAlias, ClusterIP, DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
 from dashboard.forms import UserProfilePackageForm, UserForm, PackageForm, UserProfileForm, MailUserForm, MailAliasForm, DomainForm, DomainAddForm, DomainAliasForm, APITokenForm, ZoneCreationForm, DNSRecordForm
@@ -25,10 +26,21 @@ from kubernetes.stream import stream
 from kubernetes.client import ApiException
 import subprocess, legacycrypt as crypt, time, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
 
+from .services.dns_service import (
+    CloudflareDNSService,
+    DNSZoneManager,
+    DNSRecordData,
+    CloudflareAPIException,
+    generate_email_dns_records
+)
+
 GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"
 EXCLUDED_EXTENSIONS = [".js", ".css", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".map"]
 UPLOAD_BASE_DIR = getattr(settings, 'WATCHDOG_UPLOAD_ROOT', '/kubepanel/watchdog/uploads')
+
+logger = logging.getLogger(__name__)
+
 
 class SuperuserRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self):
@@ -107,57 +119,88 @@ def list_dns_records(request, zone_id):
     zone = get_object_or_404(DNSZone, pk=zone_id)
     # Get DNS records from your local database rather than pulling from Cloudflare
     records = zone.dns_records.all()
-    
+
     return render(request, "main/list_dns_records.html", {"zone": zone, "records": records})
 
 def create_dns_record_in_cloudflare(record_obj):
     """
-    Creates a DNS record in Cloudflare based on the DNSRecord instance (record_obj).
-    Returns the Cloudflare response object on success, or raises an exception on failure.
+    Legacy function - creates a DNS record in Cloudflare based on the DNSRecord instance.
+    This is a simplified version of your original function using the new service.
     """
-    client = Cloudflare(api_token=record_obj.zone.token.api_token)
-    response = client.dns.records.create(
-        zone_id=record_obj.zone.zone_id,
-        type=record_obj.record_type,
-        name=record_obj.name,
-        content=record_obj.content,
-        ttl=record_obj.ttl,
-        proxied=record_obj.proxied,
-        priority=record_obj.priority
-    )
-    return response
+    try:
+        dns_service = CloudflareDNSService(record_obj.zone.token.api_token)
+        record_data = DNSRecordData(
+            record_type=record_obj.record_type,
+            name=record_obj.name,
+            content=record_obj.content,
+            ttl=record_obj.ttl,
+            proxied=record_obj.proxied,
+            priority=record_obj.priority
+        )
+        response = dns_service.create_dns_record(record_obj.zone.zone_id, record_data)
+        return response
+    except Exception as e:
+        logger.error(f"Error in legacy create_dns_record_in_cloudflare: {e}")
+        raise
+
+# Your original create_cf_zone function - simplified version
+def create_cf_zone(zone_name, token):
+    """
+    Legacy function - creates a zone in Cloudflare using the given token.
+    This is a simplified version using the new service.
+    """
+    try:
+        dns_service = CloudflareDNSService(token.api_token)
+        return dns_service.create_zone(zone_name)
+    except Exception as e:
+        logger.error(f"Error in legacy create_cf_zone: {e}")
+        raise
 
 def create_dns_record(request):
+    """Create a single DNS record"""
     zone_id = request.GET.get('zone')
     zone = None
 
     if zone_id:
-        try:
-            zone = DNSZone.objects.get(id=zone_id)
-        except DNSZone.DoesNotExist:
-            messages.error(request, "Zone not found.")
-            return redirect("zones_list")
+        zone = get_object_or_404(DNSZone, id=zone_id)
 
     if request.method == "POST":
         form = DNSRecordForm(request.POST, user=request.user)
         if form.is_valid():
-            record_obj = form.save(commit=False)
-            if zone:
-                record_obj.zone = zone  # Set the zone for the record
             try:
-                response = create_dns_record_in_cloudflare(record_obj)
-                record_obj.cf_record_id = response.id
-                record_obj.save()
+                record_obj = form.save(commit=False)
+                if zone:
+                    record_obj.zone = zone
+
+                # Use the service to create the record
+                dns_service = CloudflareDNSService(record_obj.zone.token.api_token)
+                record_data = DNSRecordData(
+                    record_type=record_obj.record_type,
+                    name=record_obj.name,
+                    content=record_obj.content,
+                    ttl=record_obj.ttl,
+                    proxied=record_obj.proxied,
+                    priority=record_obj.priority
+                )
+
+                with transaction.atomic():
+                    cf_record = dns_service.create_dns_record(record_obj.zone.zone_id, record_data)
+                    # Extract record ID from response
+                    record_id = cf_record.id if hasattr(cf_record, 'id') else cf_record.get('id')
+                    record_obj.cf_record_id = record_id
+                    record_obj.save()
+
                 messages.success(request, "DNS record created successfully.")
-                # Redirect back to the zone's records if zone_id exists
-                if zone_id:
-                    return redirect("list_dns_records", zone_id=zone_id)
-                else:
-                    return redirect("zones_list")
+                return redirect("list_dns_records", zone_id=zone_id) if zone_id else redirect("zones_list")
+
+            except CloudflareAPIException as e:
+                logger.error(f"Cloudflare API error: {e}")
+                messages.error(request, f"Cloudflare API error: {e.message}")
             except Exception as e:
-                messages.error(request, f"Error creating DNS record: {e}")
+                logger.error(f"Unexpected error creating DNS record: {e}")
+                messages.error(request, "An unexpected error occurred. Please try again.")
         else:
-            messages.error(request, "Form invalid.")
+            messages.error(request, "Please correct the form errors.")
     else:
         form = DNSRecordForm(user=request.user)
 
@@ -166,6 +209,32 @@ def create_dns_record(request):
         "zone": zone,
         "zone_id": zone_id
     })
+
+def create_zone(request):
+    """Create a DNS zone"""
+    if request.method == "POST":
+        form = ZoneCreationForm(request.user, request.POST)
+        if form.is_valid():
+            zone_name = form.cleaned_data["zone_name"]
+            user_token = form.cleaned_data["token"]
+
+            try:
+                zone_manager = DNSZoneManager(user_token)
+                zone_obj, _ = zone_manager.create_zone_with_records(zone_name, [])
+                messages.success(request, f"Zone '{zone_name}' created successfully.")
+
+            except CloudflareAPIException as e:
+                logger.error(f"Cloudflare API error creating zone: {e}")
+                messages.error(request, f"Failed to create zone: {e.message}")
+            except Exception as e:
+                logger.error(f"Unexpected error creating zone: {e}")
+                messages.error(request, "An unexpected error occurred. Please try again.")
+
+            return redirect("zones_list")
+    else:
+        form = ZoneCreationForm(request.user)
+
+    return render(request, "main/create_zone.html", {"form": form})
 
 def zones_list(request):
     tokens = CloudflareAPIToken.objects.filter(user=request.user)
@@ -183,47 +252,6 @@ def add_api_token(request):
     else:
         form = APITokenForm()
     return render(request, "main/add_token.html", {"form": form})
-
-def create_cf_zone(zone_name, token):
-    """
-    Creates a zone in Cloudflare using the given token.
-    Returns the newly created zone ID on success.
-    Raises an exception on error.
-    """
-    client = Cloudflare(api_token=token.api_token)
-    accounts = client.accounts.list().result
-
-    if not accounts:
-        raise ValueError("No accounts found for this token.")
-
-    account_id = accounts[0].id
-    result = client.zones.create(
-        account={"id": account_id},
-        name=zone_name,
-        type="full",
-    )
-    return result.id
-
-def create_zone(request):
-    if request.method == "POST":
-        form = ZoneCreationForm(request.user, request.POST)
-        if form.is_valid():
-            zone_name = form.cleaned_data["zone_name"]
-            user_token = form.cleaned_data["token"]
-            try:
-                zone_id = create_cf_zone(zone_name, user_token)
-                DNSZone.objects.create(
-                    name=zone_name,
-                    zone_id=zone_id,
-                    token=user_token
-                )
-                messages.success(request, f"Zone '{zone_name}' created successfully.")
-            except Exception as e:
-                messages.error(request, f"Error creating zone: {str(e)}")
-            return redirect("zones_list")
-    else:
-        form = ZoneCreationForm(request.user)
-    return render(request, "main/create_zone.html", {"form": form})
 
 @login_required(login_url="/dashboard/")
 def blocked_objects(request):
@@ -285,7 +313,7 @@ def generate_modsec_rule(br: BlockRule) -> str:
     if not conditions:
         return ""
 
-    rule_id = 10000 + br.pk  
+    rule_id = 10000 + br.pk
     msg_parts = []
 
     if br.block_ip:
@@ -304,7 +332,7 @@ def generate_modsec_rule(br: BlockRule) -> str:
         )
 
     rule_lines = []
-    
+
     first_var, first_val = conditions[0]
     rule_lines.append(
         f'SecRule {first_var} "@streq {first_val}" '
@@ -517,14 +545,14 @@ def livetraffic(request):
       url = f"https://{host}:{port}/api/v1/namespaces/{namespace}/pods"
       response = requests.get(url, headers=headers, verify=ca_cert_path)
       response.raise_for_status()
-      
+
       pods = response.json()["items"]
       logs = []
       for pod in pods:
           pod_name = pod["metadata"]["name"]
           log_url = f"https://{host}:{port}/api/v1/namespaces/{namespace}/pods/{pod_name}/log?sinceSeconds=3600"
           response = requests.get(log_url, headers=headers, verify=ca_cert_path)
-      
+
           if response.status_code == 200:
               pod_logs = []
               for line in response.text.splitlines():
@@ -548,7 +576,7 @@ def livetraffic(request):
       return render(request, "main/livetraffic.html", {"logs": logs})
     else:
       return HttpResponse("Permission denied")
-    
+
 def logout_view(request):
     logout(request)
     return render(request, "login/login.html")
@@ -619,7 +647,7 @@ def add_domain(request):
         dkim_txt = ''.join(dkim_pubkey)
         dkim_txt_record = "v=DKIM1; k=rsa; p="+dkim_txt+";"
         #END
-        
+
         scp_port = generate_scp_port()
         mariadb_pass = random_string(12)
         sftp_pass = random_string(12)
@@ -641,45 +669,78 @@ def add_domain(request):
           return render(request, "main/domain_error.html",{ "domain" : new_domain_name, "error" : e,})
         if auto_dns == True:
           try:
-            ips = ClusterIP.objects.all().values_list("ip_address", flat=True)
-            spf_record = "v=spf1 " + " ".join(f"ip4:{ip}" for ip in ips) + " -all"
-            user_token = CloudflareAPIToken.objects.get(api_token=api_token, user=request.user)
-            zone_id = create_cf_zone(new_domain_name, user_token)
-            zone_obj = DNSZone.objects.create(name=new_domain_name, zone_id=zone_id, token=user_token)
-            zone_obj.save()
-            dkim_record_obj = DNSRecord(zone=zone_obj,record_type="TXT",name="default._domainkey",content=dkim_txt_record)
-            response = create_dns_record_in_cloudflare(dkim_record_obj)
-            dkim_record_obj.cf_record_id = response.id
-            dkim_record_obj.save()
-            dmarc_record_obj = DNSRecord(zone=zone_obj,record_type="TXT",name="_dmarc",content="v=DMARC1; p=none;")
-            response = create_dns_record_in_cloudflare(dmarc_record_obj)
-            dmarc_record_obj.cf_record_id = response.id
-            dmarc_record_obj.save()
-            spf_record_obj = DNSRecord(zone=zone_obj,record_type="TXT",name="@",content=spf_record)
-            response = create_dns_record_in_cloudflare(spf_record_obj)
-            spf_record_obj.cf_record_id = response.id
-            spf_record_obj.save()
-            counter = 0
-            for ip in ips:
-              a_record_obj = DNSRecord(zone=zone_obj,record_type="A",name="@",content=ip)
-              response = create_dns_record_in_cloudflare(a_record_obj)
-              a_record_obj.cf_record_id = response.id
-              a_record_obj.save()
-              a_record_obj = DNSRecord(zone=zone_obj,record_type="A",name="www",content=ip)
-              response = create_dns_record_in_cloudflare(a_record_obj)
-              a_record_obj.cf_record_id = response.id
-              a_record_obj.save()
-              a_record_obj = DNSRecord(zone=zone_obj,record_type="A",name="mx"+str(counter),content=ip)
-              response = create_dns_record_in_cloudflare(a_record_obj)
-              a_record_obj.cf_record_id = response.id
-              a_record_obj.save()
-              mx_record_obj = DNSRecord(zone=zone_obj,record_type="MX",name="@",content="mx"+str(counter)+"."+new_domain_name,priority=counter)
-              response = create_dns_record_in_cloudflare(mx_record_obj)
-              mx_record_obj.cf_record_id = response.id
-              mx_record_obj.save()
-              counter = counter + 1
+              user_token = CloudflareAPIToken.objects.get(api_token=api_token, user=request.user)
+              cluster_ips = list(ClusterIP.objects.values_list("ip_address", flat=True))
+
+              # Generate all DNS records
+              dns_records = generate_email_dns_records(new_domain_name, cluster_ips)
+
+              # Add DKIM record
+              dns_records.append(DNSRecordData(
+                  record_type="TXT",
+                  name="default._domainkey",
+                  content=dkim_txt_record
+              ))
+
+              # Create zone with all records
+              zone_manager = DNSZoneManager(user_token)
+              zone_obj, created_records = zone_manager.create_zone_with_records(new_domain_name, dns_records)
+
+              logger.info(f"Successfully created domain '{new_domain_name}' with {len(created_records)} DNS records")
+              messages.success(request, f"Domain '{new_domain_name}' created with {len(created_records)} DNS records.")
+
+          except CloudflareAPIToken.DoesNotExist:
+              logger.error(f"API token not found for user {request.user}")
+              messages.error(request, "Invalid API token.")
+              raise ValueError("Invalid API token")
+          except CloudflareAPIException as e:
+              logger.error(f"Cloudflare API error: {e}")
+              messages.error(request, f"Failed to create domain: {e.message}")
+              raise
           except Exception as e:
-            logging.warning(f"Can't create DNS zone. Please check debug logs if you think this is an error: {e}")
+              logger.error(f"Failed to create domain with auto DNS: {e}")
+              messages.error(request, f"Failed to create domain: {str(e)}")
+              raise
+#          try:
+#            ips = ClusterIP.objects.all().values_list("ip_address", flat=True)
+#            spf_record = "v=spf1 " + " ".join(f"ip4:{ip}" for ip in ips) + " -all"
+#            user_token = CloudflareAPIToken.objects.get(api_token=api_token, user=request.user)
+#            zone_id = create_cf_zone(new_domain_name, user_token)
+#            zone_obj = DNSZone.objects.create(name=new_domain_name, zone_id=zone_id, token=user_token)
+#            zone_obj.save()
+#            dkim_record_obj = DNSRecord(zone=zone_obj,record_type="TXT",name="default._domainkey",content=dkim_txt_record)
+#            response = create_dns_record_in_cloudflare(dkim_record_obj)
+#            dkim_record_obj.cf_record_id = response.id
+#            dkim_record_obj.save()
+#            dmarc_record_obj = DNSRecord(zone=zone_obj,record_type="TXT",name="_dmarc",content="v=DMARC1; p=none;")
+#            response = create_dns_record_in_cloudflare(dmarc_record_obj)
+#            dmarc_record_obj.cf_record_id = response.id
+#            dmarc_record_obj.save()
+#            spf_record_obj = DNSRecord(zone=zone_obj,record_type="TXT",name="@",content=spf_record)
+#            response = create_dns_record_in_cloudflare(spf_record_obj)
+#            spf_record_obj.cf_record_id = response.id
+#            spf_record_obj.save()
+#            counter = 0
+#            for ip in ips:
+#              a_record_obj = DNSRecord(zone=zone_obj,record_type="A",name="@",content=ip)
+#              response = create_dns_record_in_cloudflare(a_record_obj)
+#              a_record_obj.cf_record_id = response.id
+#              a_record_obj.save()
+#              a_record_obj = DNSRecord(zone=zone_obj,record_type="A",name="www",content=ip)
+#              response = create_dns_record_in_cloudflare(a_record_obj)
+#              a_record_obj.cf_record_id = response.id
+#              a_record_obj.save()
+#              a_record_obj = DNSRecord(zone=zone_obj,record_type="A",name="mx"+str(counter),content=ip)
+#              response = create_dns_record_in_cloudflare(a_record_obj)
+#              a_record_obj.cf_record_id = response.id
+#              a_record_obj.save()
+#              mx_record_obj = DNSRecord(zone=zone_obj,record_type="MX",name="@",content="mx"+str(counter)+"."+new_domain_name,priority=counter)
+#              response = create_dns_record_in_cloudflare(mx_record_obj)
+#              mx_record_obj.cf_record_id = response.id
+#              mx_record_obj.save()
+#              counter = counter + 1
+#          except Exception as e:
+#            logging.warning(f"Can't create DNS zone. Please check debug logs if you think this is an error: {e}")
         try:
           os.mkdir(domain_dirname)
           os.mkdir('/dkim-privkeys/'+new_domain_name)
@@ -687,7 +748,7 @@ def add_domain(request):
           print("Can't create directories. Please check debug logs if you think this is an error.")
         template_dir = "yaml_templates/"
         iterate_input_templates(template_dir,domain_dirname,context)
-	
+
 	#RENDER DKIM PRIVATE KEYS
         dkim_privkeys_dir = '/dkim-privkeys/'+new_domain_name
         static_file = open(dkim_privkeys_dir+'/'+new_domain_name+'.key', 'w')
@@ -755,7 +816,7 @@ def startstop_domain(request,domain,action):
         error = "Domain name didn't match"
         return render(request, "main/pause_domain.html", { "action" : action, "domain" : domain, "error" : error})
     else:
-      return render(request, "main/pause_domain.html", { "action" : action, "domain" : domain})  
+      return render(request, "main/pause_domain.html", { "action" : action, "domain" : domain})
     return redirect(domain_logs, domain=domain_obj.domain_name)
 
 @login_required(login_url="/dashboard/")
@@ -818,7 +879,7 @@ def delete_domain(request,domain):
       if request.POST["imsure"] == domain:
         try:
             domain_obj = Domain.objects.get(domain_name = domain)
-            if domain_obj.owner == request.user or request.user.is_superuser: 
+            if domain_obj.owner == request.user or request.user.is_superuser:
                 permission_valid = True
             else:
                 permission_valid = False
@@ -935,7 +996,7 @@ def delete_mail_user(request, user_id):
     mail_user = get_object_or_404(MailUser, pk=user_id)
     if not request.user.is_superuser and mail_user.domain.owner != request.user:
         return render(request, "mail/error.html", {"error": "Permission denied."})
-    
+
     if request.method == 'POST':
         mail_user.delete()
         return redirect("list_mail_users")
@@ -1677,3 +1738,58 @@ class UploadRestoreFilesView(View):
 
         messages.success(request, 'Snapshot uploaded and queued for restore.')
         return redirect(reverse('upload_restore', args=[domain_name]))
+
+def edit_dns_record_efficient(request, record_id):
+    """Edit DNS record using Cloudflare's update API (more efficient)"""
+    record = get_object_or_404(DNSRecord, id=record_id)
+    zone = record.zone
+    
+    if request.method == "POST":
+        form = DNSRecordForm(request.POST, instance=record, user=request.user)
+        if form.is_valid():
+            try:
+                updated_record = form.save(commit=False)
+                
+                # Use Cloudflare's update API directly
+                dns_service = CloudflareDNSService(record.zone.token.api_token)
+                
+                update_params = {
+                    'zone_id': record.zone.zone_id,
+                    'dns_record_id': record.cf_record_id,
+                    'type': updated_record.record_type,
+                    'name': updated_record.name,
+                    'content': updated_record.content,
+                    'ttl': updated_record.ttl,
+                    'proxied': updated_record.proxied,
+                }
+                
+                # Only add priority for record types that support it
+                if updated_record.priority is not None and updated_record.record_type in ['MX', 'SRV']:
+                    update_params['priority'] = updated_record.priority
+                
+                with transaction.atomic():
+                    dns_service._retry_api_call(
+                        dns_service.client.dns.records.update,
+                        **update_params
+                    )
+                    updated_record.save()
+                
+                messages.success(request, "DNS record updated successfully.")
+                return redirect("list_dns_records", zone_id=zone.id)
+                
+            except CloudflareAPIException as e:
+                logger.error(f"Cloudflare API error: {e}")
+                messages.error(request, f"Cloudflare API error: {e.message}")
+            except Exception as e:
+                logger.error(f"Unexpected error updating DNS record: {e}")
+                messages.error(request, "An unexpected error occurred. Please try again.")
+        else:
+            messages.error(request, "Please correct the form errors.")
+    else:
+        form = DNSRecordForm(instance=record, user=request.user)
+    
+    return render(request, "main/edit_dns_record.html", {
+        "form": form,
+        "record": record,
+        "zone": zone,
+    })
