@@ -250,31 +250,12 @@
                 return;
             }
             
-            // Final warning dialog
-            const confirmed = confirm(
-                `⚠️ FINAL WARNING ⚠️\n\n` +
-                `You are about to permanently delete the domain "${expectedDomain}" and ALL associated data.\n\n` +
-                `This includes:\n` +
-                `• All files and databases\n` +
-                `• Email accounts and messages\n` +
-                `• SSL certificates\n` +
-                `• All backups and snapshots\n\n` +
-                `This action CANNOT be undone!\n\n` +
-                `Type "DELETE" to confirm:`
-            );
-            
+           
             if (!confirmed) {
                 e.preventDefault();
                 return;
             }
-            
-            const finalConfirm = prompt('Type "DELETE" in capital letters to proceed:');
-            if (finalConfirm !== 'DELETE') {
-                e.preventDefault();
-                alert('Deletion cancelled. You must type "DELETE" exactly to proceed.');
-                return;
-            }
-            
+           
             // Show loading state
             const originalContent = deleteButton.innerHTML;
             deleteButton.innerHTML = `
@@ -287,14 +268,7 @@
             deleteButton.disabled = true;
         });
         
-        // Prevent accidental navigation
-        window.addEventListener('beforeunload', function(e) {
-            if (domainInput.value.trim() !== '') {
-                e.preventDefault();
-                e.returnValue = '';
-            }
-        });
-        
+       
         // Focus management
         domainInput.focus();
         
