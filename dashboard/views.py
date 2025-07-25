@@ -4,6 +4,7 @@ from django.http import JsonResponse, HttpResponse, FileResponse, StreamingHttpR
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
 from .models import PhpImage, Package, UserProfile, LogEntry, MailUser, MailAlias, ClusterIP, DNSZone, User, Domain, Volumesnapshot, BlockRule, DNSRecord, CloudflareAPIToken
