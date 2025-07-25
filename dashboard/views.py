@@ -1811,60 +1811,77 @@ class DownloadSnapshotView(View):
 
 class DownloadSqlDumpView(View):
     def get(self, request, dump_name):
-        # Access control: domain owner or superuser
-        # dump_name is the VolumeSnapshot object name
         vs = get_object_or_404(Volumesnapshot, snapshotname=dump_name)
         if not request.user.is_superuser and vs.domain.owner != request.user:
             raise PermissionDenied
 
-        # Load Kubernetes config
         try:
             config.load_incluster_config()
         except config.ConfigException:
             config.load_kube_config()
 
-        namespace = "kubepanel"  # assuming PVC in domain namespace
-        domain_name_dash = vs.domain.domain_name.replace(".","-")
+        namespace = "kubepanel"
+        domain_name_dash = vs.domain.domain_name.replace(".", "-")
         pvc_name = f"{domain_name_dash}-backup-pvc"
         file_path = f"/mnt/{dump_name}.sql"
 
-        # 1) Create ephemeral pod manifest
-        pod_body = {
-            "apiVersion": "v1",
-            "kind": "Pod",
+        job_body = {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
             "metadata": {"generateName": f"backup-downloader-{domain_name_dash}-"},
             "spec": {
-                "restartPolicy": "Never",
-                "volumes": [{
-                    "name": "backup-pvc",
-                    "persistentVolumeClaim": {"claimName": pvc_name}
-                }],
-                "containers": [{
-                    "name": "downloader",
-                    "image": "alpine:latest",
-                    "command": ["sh", "-c", f"sleep 3600"],
-                    "volumeMounts": [{"mountPath": "/mnt", "name": "backup-pvc"}]
-                }]
+                "ttlSecondsAfterFinished": 60,
+                "template": {
+                    "metadata": {"labels": {"job-name": f"backup-downloader-{domain_name_dash}"}},
+                    "spec": {
+                        "restartPolicy": "Never",
+                        "volumes": [{
+                            "name": "backup-pvc",
+                            "persistentVolumeClaim": {"claimName": pvc_name}
+                        }],
+                        "containers": [{
+                            "name": "downloader",
+                            "image": "alpine:latest",
+                            "command": ["sh", "-c", "sleep 3600"],
+                            "volumeMounts": [{"mountPath": "/mnt", "name": "backup-pvc"}]
+                        }]
+                    }
+                }
             }
         }
-        v1 = client.CoreV1Api()
-        pod = v1.create_namespaced_pod(namespace=namespace, body=pod_body)
 
-        # 2) Wait for Pod to be running
+        batch_v1 = client.BatchV1Api()
+        core_v1 = client.CoreV1Api()
+
+        job = batch_v1.create_namespaced_job(namespace=namespace, body=job_body)
+        job_name = job.metadata.name
+
+        # Wait for pod to be created
+        pod_name = None
         for _ in range(60):
-            pod_status = v1.read_namespaced_pod(name=pod.metadata.name, namespace=namespace)
-            if pod_status.status.phase == "Running":
-                break
+            pods = core_v1.list_namespaced_pod(
+                namespace=namespace,
+                label_selector=f"job-name={job_name}"
+            ).items
+            if pods:
+                pod = pods[0]
+                pod_name = pod.metadata.name
+                if pod.status.phase == "Running":
+                    break
             time.sleep(1)
-        else:
-            v1.delete_namespaced_pod(name=pod.metadata.name, namespace=namespace)
-            return HttpResponseNotFound("Failed to start helper pod")
 
-        # 3) Stream the SQL file via cat
+        if not pod_name:
+            batch_v1.delete_namespaced_job(
+                name=job_name,
+                namespace=namespace,
+                body=client.V1DeleteOptions(propagation_policy='Foreground')
+            )
+            return HttpResponseNotFound("Failed to start job pod")
+
         cmd = ["cat", file_path]
         exec_stream = stream(
-            v1.connect_get_namespaced_pod_exec,
-            name=pod.metadata.name,
+            core_v1.connect_get_namespaced_pod_exec,
+            name=pod_name,
             namespace=namespace,
             container="downloader",
             command=cmd,
@@ -1881,13 +1898,16 @@ class DownloadSqlDumpView(View):
                         yield chunk
             finally:
                 exec_stream.close()
-                v1.delete_namespaced_pod(name=pod.metadata.name, namespace=namespace)
+                batch_v1.delete_namespaced_job(
+                    name=job_name,
+                    namespace=namespace,
+                    body=client.V1DeleteOptions(propagation_policy='Foreground')
+                )
 
         response = StreamingHttpResponse(generator(), content_type="application/sql")
-        response["Content-Disposition"] = (
-            f'attachment; filename="{dump_name}.sql"'
-        )
+        response["Content-Disposition"] = f'attachment; filename="{dump_name}.sql"'
         return response
+
 
 class UploadRestoreFilesView(View):
     """
