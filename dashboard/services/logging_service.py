@@ -216,23 +216,30 @@ class LogQueryManager:
     """
     
     @staticmethod
-    def get_user_logs(user: User, limit: int = 100) -> models.QuerySet:
+    def get_user_logs(user: User, limit: int = None) -> models.QuerySet:
         """
         Get log entries that a user should be able to see.
         
         Args:
             user: Django User instance
-            limit: Maximum number of entries to return
+            limit: Maximum number of entries to return (None for no limit)
             
         Returns:
             QuerySet of LogEntry objects
         """
         if user.is_superuser:
             # Superusers can see all logs
-            return LogEntry.objects.all().order_by('-timestamp')[:limit]
+            queryset = LogEntry.objects.all().order_by('-timestamp')
         else:
             # Regular users can only see logs for objects they own/have access to
-            return LogEntry.objects.filter(user=user).order_by('-timestamp')[:limit]
+            queryset = LogEntry.objects.filter(user=user).order_by('-timestamp')
+        
+        # Apply limit only if specified and return the queryset (not sliced)
+        if limit:
+            # Don't slice here, let the view handle pagination
+            pass
+            
+        return queryset
     
     @staticmethod
     def get_object_logs(content_object: models.Model, user: User = None) -> models.QuerySet:
@@ -264,11 +271,13 @@ class LogQueryManager:
     @staticmethod
     def get_logs_by_level(level: str, user: User, limit: int = 100) -> models.QuerySet:
         """Get logs filtered by level with user permissions"""
-        base_query = LogQueryManager.get_user_logs(user, limit * 2)  # Get more to account for filtering
-        return base_query.filter(level=level)[:limit]
+        base_query = LogQueryManager.get_user_logs(user)
+        filtered_query = base_query.filter(level=level)
+        return filtered_query[:limit] if limit else filtered_query
     
     @staticmethod
     def get_recent_errors(user: User, limit: int = 50) -> models.QuerySet:
         """Get recent error and critical logs"""
-        base_query = LogQueryManager.get_user_logs(user, limit * 2)
-        return base_query.filter(level__in=['ERROR', 'CRITICAL'])[:limit]
+        base_query = LogQueryManager.get_user_logs(user)
+        filtered_query = base_query.filter(level__in=['ERROR', 'CRITICAL'])
+        return filtered_query[:limit] if limit else filtered_query

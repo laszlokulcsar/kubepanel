@@ -610,18 +610,231 @@ def is_static_file(log_entry):
     # Match paths ending with excluded extensions
     return any(path.endswith(ext) for ext in EXCLUDED_EXTENSIONS)
 
+def get_client_ip(request):
+    """
+    Get the real IP address of the client, accounting for proxies
+    """
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        # Take the first IP in case of multiple proxies
+        ip = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR', 'Unknown')
+    return ip
+
+def get_user_agent(request):
+    """
+    Get the user agent string
+    """
+    return request.META.get('HTTP_USER_AGENT', 'Unknown')
+
+@csrf_protect
+@require_http_methods(["GET", "POST"])
 def kplogin(request):
-    try:
-        username = request.POST["username"][:20]
-        password = request.POST["password"][:40]
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect(kpmain)
-        else:
-            return HttpResponse("Invalid login")
-    except:
+    """
+    Handle user login with proper security measures and comprehensive logging
+    """
+    if request.method == "GET":
+        # Show login form
         return render(request, "login/login.html")
+    
+    # Handle POST request (login attempt)
+    client_ip = get_client_ip(request)
+    user_agent = get_user_agent(request)
+    
+    try:
+        # Validate required POST data
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "")
+        
+        if not username or not password:
+            # Log missing credentials attempt
+            KubepanelLogger.log_system_event(
+                message=f"Login attempt with missing credentials from IP {client_ip}",
+                level="WARNING",
+                actor="login_system",
+                data={
+                    "ip_address": client_ip,
+                    "user_agent": user_agent,
+                    "error": "missing_credentials",
+                    "provided_username": bool(username),
+                    "provided_password": bool(password)
+                }
+            )
+            messages.error(request, "Please provide both username and password.")
+            return render(request, "login/login.html")
+        
+        # Validate username length (reasonable limits)
+        if len(username) > 150 or len(password) > 128:  # Django's default limits
+            # Log suspicious long input attempt
+            KubepanelLogger.log_system_event(
+                message=f"Login attempt with excessive input length from IP {client_ip}",
+                level="WARNING",
+                actor="login_system",
+                data={
+                    "ip_address": client_ip,
+                    "user_agent": user_agent,
+                    "username_length": len(username),
+                    "password_length": len(password),
+                    "attempted_username": username[:50] + "..." if len(username) > 50 else username
+                }
+            )
+            messages.error(request, "Invalid credentials provided.")
+            return render(request, "login/login.html")
+        
+        # Attempt authentication
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            if user.is_active:
+                # Successful login
+                login(request, user)
+                
+                # Log successful login
+                KubepanelLogger.log_system_event(
+                    message=f"Successful login for user {username}",
+                    level="INFO",
+                    actor=f"user:{username}",
+                    data={
+                        "ip_address": client_ip,
+                        "user_agent": user_agent,
+                        "user_id": user.id,
+                        "is_superuser": user.is_superuser,
+                        "login_method": "form_authentication"
+                    }
+                )
+                
+                # Also create a user-specific log entry if we can link it to a user object
+                try:
+                    # Create a log entry linked to the user (using the user as content_object)
+                    KubepanelLogger.log(
+                        content_object=user,
+                        message=f"User logged in from IP {client_ip}",
+                        level="INFO",
+                        actor=f"user:{username}",
+                        user=user,
+                        data={
+                            "ip_address": client_ip,
+                            "user_agent": user_agent,
+                            "login_timestamp": timezone.now().isoformat(),
+                            "session_key": request.session.session_key
+                        }
+                    )
+                except Exception as e:
+                    # If user-specific logging fails, at least log the issue
+                    logger.warning(f"Failed to create user-specific login log for {username}: {e}")
+                
+                # Redirect to intended page or main dashboard
+                next_url = request.GET.get('next') or request.POST.get('next')
+                if next_url:
+                    # Basic validation to prevent open redirects
+                    if next_url.startswith('/') and not next_url.startswith('//'):
+                        return redirect(next_url)
+                
+                return redirect('kpmain')
+            else:
+                # User account is disabled
+                KubepanelLogger.log_system_event(
+                    message=f"Login attempt for disabled user {username} from IP {client_ip}",
+                    level="WARNING",
+                    actor="login_system",
+                    data={
+                        "ip_address": client_ip,
+                        "user_agent": user_agent,
+                        "username": username,
+                        "error": "account_disabled",
+                        "user_id": user.id
+                    }
+                )
+                messages.error(request, "Your account has been disabled.")
+                return render(request, "login/login.html")
+        else:
+            # Invalid credentials
+            # Check if username exists to differentiate between invalid username vs password
+            username_exists = User.objects.filter(username=username).exists()
+            
+            KubepanelLogger.log_system_event(
+                message=f"Failed login attempt for username '{username}' from IP {client_ip}",
+                level="WARNING",
+                actor="login_system",
+                data={
+                    "ip_address": client_ip,
+                    "user_agent": user_agent,
+                    "attempted_username": username,
+                    "username_exists": username_exists,
+                    "error": "invalid_credentials",
+                    "failure_reason": "invalid_password" if username_exists else "invalid_username"
+                }
+            )
+            
+            # Don't reveal whether username exists or not
+            messages.error(request, "Invalid username or password.")
+            return render(request, "login/login.html")
+    
+    except KeyError as e:
+        # Missing POST parameters
+        KubepanelLogger.log_system_event(
+            message=f"Login attempt with missing POST parameter from IP {client_ip}: {str(e)}",
+            level="WARNING",
+            actor="login_system",
+            data={
+                "ip_address": client_ip,
+                "user_agent": user_agent,
+                "error": "missing_post_parameter",
+                "missing_parameter": str(e)
+            }
+        )
+        messages.error(request, "Invalid login request.")
+        return render(request, "login/login.html")
+    
+    except Exception as e:
+        # Unexpected error
+        KubepanelLogger.log_system_event(
+            message=f"Unexpected error during login from IP {client_ip}: {str(e)}",
+            level="ERROR",
+            actor="login_system",
+            data={
+                "ip_address": client_ip,
+                "user_agent": user_agent,
+                "error": "unexpected_error",
+                "error_message": str(e),
+                "error_type": type(e).__name__
+            }
+        )
+        logger.exception(f"Unexpected error in login function: {e}")
+        messages.error(request, "An unexpected error occurred. Please try again.")
+        return render(request, "login/login.html")
+
+# Optional: Add a logout logging function
+def logout_view(request):
+    """
+    Handle user logout with logging
+    """
+    client_ip = get_client_ip(request)
+    user_agent = get_user_agent(request)
+    
+    if request.user.is_authenticated:
+        username = request.user.username
+        user_id = request.user.id
+        
+        # Log the logout
+        KubepanelLogger.log_system_event(
+            message=f"User {username} logged out",
+            level="INFO",
+            actor=f"user:{username}",
+            data={
+                "ip_address": client_ip,
+                "user_agent": user_agent,
+                "user_id": user_id,
+                "logout_method": "manual_logout"
+            }
+        )
+    
+    # Perform logout
+    from django.contrib.auth import logout
+    logout(request)
+    
+    return render(request, "login/login.html")
 
 @login_required(login_url="/dashboard/")
 def kpmain(request):
@@ -800,10 +1013,6 @@ def livetraffic(request):
       return render(request, "main/livetraffic.html", {"logs": logs})
     else:
       return HttpResponse("Permission denied")
-
-def logout_view(request):
-    logout(request)
-    return render(request, "login/login.html")
 
 def generate_scp_port():
     scp_port_taken = 1

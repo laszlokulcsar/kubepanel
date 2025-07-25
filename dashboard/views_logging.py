@@ -1,5 +1,3 @@
-# dashboard/views_logging.py
-
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -26,8 +24,8 @@ def system_logs(request):
     except ValueError:
         days = 7
     
-    # Start with base query based on user permissions
-    logs_queryset = LogQueryManager.get_user_logs(request.user, limit=1000)
+    # Start with base query based on user permissions (no limit applied here)
+    logs_queryset = LogQueryManager.get_user_logs(request.user)
     
     # Apply filters
     if level_filter:
@@ -44,6 +42,9 @@ def system_logs(request):
         cutoff_date = datetime.now() - timedelta(days=days)
         logs_queryset = logs_queryset.filter(timestamp__gte=cutoff_date)
     
+    # Get total count before pagination
+    total_logs = logs_queryset.count()
+    
     # Pagination
     paginator = Paginator(logs_queryset, 50)  # Show 50 logs per page
     page_number = request.GET.get('page')
@@ -58,7 +59,7 @@ def system_logs(request):
         'current_level': level_filter,
         'current_search': search_query,
         'current_days': days,
-        'total_logs': logs_queryset.count(),
+        'total_logs': total_logs,
     }
     
     return render(request, 'logging/system_logs.html', context)
@@ -140,7 +141,11 @@ def error_logs(request):
     """
     Show only error and critical logs
     """
-    logs_queryset = LogQueryManager.get_recent_errors(request.user, limit=200)
+    # Start with base query
+    logs_queryset = LogQueryManager.get_user_logs(request.user)
+    
+    # Filter to only errors and critical
+    logs_queryset = logs_queryset.filter(level__in=['ERROR', 'CRITICAL'])
     
     # Apply search filter
     search_query = request.GET.get('search', '')
@@ -150,6 +155,9 @@ def error_logs(request):
             Q(actor__icontains=search_query)
         )
     
+    # Get total count before pagination
+    total_errors = logs_queryset.count()
+    
     # Pagination
     paginator = Paginator(logs_queryset, 25)
     page_number = request.GET.get('page')
@@ -158,7 +166,7 @@ def error_logs(request):
     context = {
         'page_obj': page_obj,
         'current_search': search_query,
-        'total_errors': logs_queryset.count(),
+        'total_errors': total_errors,
     }
     
     return render(request, 'logging/error_logs.html', context)
@@ -173,8 +181,8 @@ def logs_api(request):
     level = request.GET.get('level', '')
     hours = int(request.GET.get('hours', 24))
     
-    # Get logs
-    logs_queryset = LogQueryManager.get_user_logs(request.user, limit)
+    # Get logs without initial limit
+    logs_queryset = LogQueryManager.get_user_logs(request.user)
     
     # Apply filters
     if level:
@@ -183,6 +191,12 @@ def logs_api(request):
     if hours > 0:
         cutoff_time = datetime.now() - timedelta(hours=hours)
         logs_queryset = logs_queryset.filter(timestamp__gte=cutoff_time)
+    
+    # Get total count
+    total_available = logs_queryset.count()
+    
+    # Apply limit for response
+    logs_queryset = logs_queryset[:limit]
     
     # Convert to JSON-serializable format
     logs_data = []
@@ -201,7 +215,7 @@ def logs_api(request):
     return JsonResponse({
         'logs': logs_data,
         'count': len(logs_data),
-        'total_available': logs_queryset.count()
+        'total_available': total_available
     })
 
 @login_required
@@ -209,7 +223,8 @@ def logs_stats(request):
     """
     Show logging statistics and charts
     """
-    user_logs = LogQueryManager.get_user_logs(request.user, limit=10000)
+    # Get base queryset without limit
+    user_logs = LogQueryManager.get_user_logs(request.user)
     
     # Calculate statistics
     stats = {
