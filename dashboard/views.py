@@ -1071,30 +1071,40 @@ def restore_volumesnapshot(request,volumesnapshot,domain):
     return redirect(domain_logs, domain=domain_obj.domain_name)
 
 @login_required(login_url="/dashboard/")
-def start_backup(request,domain):
+def start_backup(request, domain):
     if request.method == 'POST':
-      if request.POST["imsure"] == domain:
+        if request.POST.get("imsure") != domain:
+            error = "Domain name didn't match"
+            return render(request, "main/start_backup.html", {"domain": domain, "error": error})
+
+        # Superusers can bypass ownership check
+        if not request.user.is_superuser:
+            try:
+                Domain.objects.get(owner=request.user, domain_name=domain)
+            except Domain.DoesNotExist:
+                return HttpResponse("Permission denied.")
+
+        template_dir = "backup_templates/"
+        domain_dirname = f'/kubepanel/yaml_templates/{domain}'
+
         try:
-          permission_valid = Domain.objects.get(owner=request.user, domain_name = domain)
-        except:
-          return HttpResponse("Permission denied.")
-        if permission_valid:
-          template_dir = "backup_templates/"
-          domain_dirname = '/kubepanel/yaml_templates/'+domain
-          try:
-            os.mkdir(domain_dirname)
-            os.mkdir('/dkim-privkeys/'+domain)
-          except:
-            print("Can't create directories. Please check debug logs if you think this is an error.")
-          jobid = random_string(5)
-          context = { "domain_name" : domain, "jobid" : jobid, "domain_name_underscore" : domain.replace(".","_"), "domain_name_dash" : domain.replace(".","-") }
-          iterate_input_templates(template_dir,domain_dirname,context)
-          return redirect('backup_logs', domain=domain, jobid=jobid)
-      else:
-        error = "Domain name didn't match"
-        return render(request, "main/start_backup.html", { "domain" : domain, "error" : error})
-    else:
-      return render(request, "main/start_backup.html", { "domain" : domain})
+            os.makedirs(domain_dirname, exist_ok=True)
+            os.makedirs(f'/dkim-privkeys/{domain}', exist_ok=True)
+        except Exception as e:
+            print(f"Directory creation failed: {e}")
+
+        jobid = random_string(5)
+        context = {
+            "domain_name": domain,
+            "jobid": jobid,
+            "domain_name_underscore": domain.replace(".", "_"),
+            "domain_name_dash": domain.replace(".", "-")
+        }
+
+        iterate_input_templates(template_dir, domain_dirname, context)
+        return redirect('backup_logs', domain=domain, jobid=jobid)
+
+    return render(request, "main/start_backup.html", {"domain": domain})
 
 @login_required(login_url="/dashboard/")
 def delete_domain(request,domain):
@@ -1832,7 +1842,6 @@ class DownloadSqlDumpView(View):
             "spec": {
                 "ttlSecondsAfterFinished": 60,
                 "template": {
-                    "metadata": {"labels": {"job-name": f"backup-downloader-{domain_name_dash}"}},
                     "spec": {
                         "restartPolicy": "Never",
                         "volumes": [{
