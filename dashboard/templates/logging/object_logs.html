@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ content_type_name|title }} Logs{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-history text-primary"></i>
+            {{ content_type_name|title }} Logs
+        </h1>
+        <div class="d-flex gap-2">
+            <a href="{% url 'system_logs' %}" class="btn btn-outline-primary">
+                <i class="fas fa-list"></i> All Logs
+            </a>
+            <button class="btn btn-outline-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Object Information -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="mb-1">
+                        {% if content_object.domain_name %}
+                            <i class="fas fa-globe"></i> {{ content_object.domain_name }}
+                        {% elif content_object.name %}
+                            <i class="fas fa-tag"></i> {{ content_object.name }}
+                        {% elif content_object.title %}
+                            <i class="fas fa-file"></i> {{ content_object.title }}
+                        {% else %}
+                            <i class="fas fa-cube"></i> {{ content_type_name|title }} #{{ content_object.id }}
+                        {% endif %}
+                    </h5>
+                    <p class="text-muted mb-0">
+                        Showing all log entries for this {{ content_type_name }}
+                        {% if content_object.owner %}
+                            | Owner: {{ content_object.owner.username }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    {% if content_type_name == 'domain' %}
+                        <a href="{% url 'view_domain' content_object.domain_name %}" 
+                           class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-eye"></i> View Domain
+                        </a>
+                    {% endif %}
+                    <span class="badge bg-secondary">{{ page_obj.paginator.count }} log entries</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="level" class="form-label">Filter by Level</label>
+                    <select name="level" id="level" class="form-select">
+                        <option value="">All Levels</option>
+                        {% for level_value, level_display in available_levels %}
+                            <option value="{{ level_value }}" 
+                                    {% if current_level == level_value %}selected{% endif %}>
+                                {{ level_display }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Apply Filter</button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <a href="{% url 'object_logs' content_object|get_content_type_id content_object.id %}" 
+                           class="btn btn-outline-secondary">Clear Filter</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Log Entries -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Log History</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="15%">Timestamp</th>
+                                <th width="10%">Level</th>
+                                <th width="15%">Actor</th>
+                                <th width="50%">Message</th>
+                                <th width="10%">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in page_obj %}
+                                <tr class="log-level-{{ log.level|lower }}">
+                                    <td>
+                                        <small>
+                                            {{ log.timestamp|date:"M d, Y" }}<br>
+                                            <strong>{{ log.timestamp|date:"H:i:s" }}</strong>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if log.level == 'ERROR' or log.level == 'CRITICAL' %}danger{% elif log.level == 'WARNING' %}warning{% elif log.level == 'DEBUG' %}secondary{% else %}primary{% endif %}">
+                                            {{ log.level }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small>{{ log.actor }}</small>
+                                        {% if log.user and log.user.username != log.actor %}
+                                            <br><small class="text-muted">{{ log.user.username }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ log.message }}
+                                        {% if log.data %}
+                                            <small class="text-muted d-block">
+                                                <i class="fas fa-database"></i> Has additional data
+                                            </small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'log_detail' log.id %}" 
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="View details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                    <nav aria-label="Object log pagination" class="p-3">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if current_level %}&level={{ current_level }}{% endif %}">First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_level %}&level={{ current_level }}{% endif %}">Previous</a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                </span>
+                            </li>
+                            
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_level %}&level={{ current_level }}{% endif %}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if current_level %}&level={{ current_level }}{% endif %}">Last</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No log entries found</h5>
+                    <p class="text-muted">
+                        {% if current_level %}
+                            No {{ current_level }} logs found for this {{ content_type_name }}.
+                        {% else %}
+                            This {{ content_type_name }} has no recorded activity yet.
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.log-level-error, .log-level-critical {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+.log-level-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+.log-level-debug {
+    background-color: rgba(108, 117, 125, 0.1);
+}
+</style>
+
+<!-- Template filter to get content type ID -->
+{% load custom_filters %}
+{% endblock %}

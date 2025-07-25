@@ -34,6 +34,7 @@ from .services.dns_service import (
     CloudflareAPIException,
     generate_email_dns_records
 )
+from .services.logging_service import KubepanelLogger
 
 GEOIP_DB_PATH = "/kubepanel/GeoLite2-Country.mmdb"
 TEMPLATE_BASE = "/kubepanel/dashboard/templates/"

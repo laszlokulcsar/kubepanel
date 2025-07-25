@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Log Statistics{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-chart-bar text-primary"></i>
+            Log Statistics
+        </h1>
+        <div class="d-flex gap-2">
+            <a href="{% url 'system_logs' %}" class="btn btn-outline-primary">
+                <i class="fas fa-list"></i> All Logs
+            </a>
+            <a href="{% url 'error_logs' %}" class="btn btn-outline-danger">
+                <i class="fas fa-exclamation-triangle"></i> Errors
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-clipboard-list fa-2x text-primary mb-2"></i>
+                    <h4 class="card-title">{{ stats.total_logs }}</h4>
+                    <p class="card-text text-muted">Total Log Entries</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-clock fa-2x text-info mb-2"></i>
+                    <h4 class="card-title">{{ stats.last_24h }}</h4>
+                    <p class="card-text text-muted">Last 24 Hours</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-calendar-week fa-2x text-success mb-2"></i>
+                    <h4 class="card-title">{{ stats.last_week }}</h4>
+                    <p class="card-text text-muted">Last 7 Days</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
+                    <h4 class="card-title">{{ level_stats.ERROR|add:level_stats.CRITICAL }}</h4>
+                    <p class="card-text text-muted">Errors & Critical</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row">
+        <!-- Log Levels Chart -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie"></i>
+                        Logs by Level
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="logLevelsChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Timeline Chart -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line"></i>
+                        Activity Timeline (Last 7 Days)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="activityChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Breakdown -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-layer-group"></i>
+                        Log Level Breakdown
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for level, count in level_stats.items %}
+                            <div class="col-md-2">
+                                <div class="text-center p-3 border rounded">
+                                    <span class="badge bg-{% if level == 'ERROR' or level == 'CRITICAL' %}danger{% elif level == 'WARNING' %}warning{% elif level == 'DEBUG' %}secondary{% else %}primary{% endif %} mb-2">
+                                        {{ level }}
+                                    </span>
+                                    <h4>{{ count }}</h4>
+                                    <a href="{% url 'system_logs' %}?level={{ level }}" class="btn btn-sm btn-outline-primary">
+                                        View {{ level }} logs
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tools"></i>
+                        Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <a href="{% url 'system_logs' %}?days=1" class="btn btn-outline-info w-100 mb-2">
+                                <i class="fas fa-calendar-day"></i> View Today's Logs
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{% url 'error_logs' %}" class="btn btn-outline-danger w-100 mb-2">
+                                <i class="fas fa-bug"></i> View All Errors
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{% url 'system_logs' %}?level=WARNING" class="btn btn-outline-warning w-100 mb-2">
+                                <i class="fas fa-exclamation-triangle"></i> View Warnings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Log Levels Pie Chart
+    const levelData = {
+        labels: [{% for level, count in level_stats.items %}'{{ level }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for level, count in level_stats.items %}{{ count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: [
+                {% for level, count in level_stats.items %}
+                    {% if level == 'ERROR' or level == 'CRITICAL' %}'#dc3545'{% elif level == 'WARNING' %}'#ffc107'{% elif level == 'DEBUG' %}'#6c757d'{% else %}'#0d6efd'{% endif %}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ]
+        }]
+    };
+
+    const levelChart = new Chart(document.getElementById('logLevelsChart'), {
+        type: 'doughnut',
+        data: levelData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Activity Timeline Chart
+    const activityData = {
+        labels: [{% for activity in recent_activity %}'{{ activity.date }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Log Entries',
+            data: [{% for activity in recent_activity %}{{ activity.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    };
+
+    const activityChart = new Chart(document.getElementById('activityChart'), {
+        type: 'line',
+        data: activityData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

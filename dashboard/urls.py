@@ -6,7 +6,7 @@ from .views import (
     UserCreateView, DownloadSnapshotView, DownloadSqlDumpView, UploadRestoreFilesView
 )
 
-from . import views
+from . import views, views_logging
 
 urlpatterns = [
     path("", views.kplogin, name="kplogin"),
@@ -69,4 +69,12 @@ urlpatterns = [
     path("download/<str:snapshot_name>/", DownloadSnapshotView.as_view(), name="download_snapshot"),
     path("download/sql/<str:dump_name>/", DownloadSqlDumpView.as_view(), name="download_sql_dump"),
     path('restore/upload/<str:domain_name>/',UploadRestoreFilesView.as_view(),name='upload_restore'),
+    path('logs/', views_logging.system_logs, name='system_logs'),
+    path('logs/errors/', views_logging.error_logs, name='error_logs'),
+    path('logs/stats/', views_logging.logs_stats, name='logs_stats'),
+    path('logs/<int:log_id>/', views_logging.log_detail, name='log_detail'),
+    path('logs/object/<int:content_type_id>/<int:object_id>/', views_logging.object_logs, name='object_logs'),
+    
+    # API endpoints
+    path('api/logs/', views_logging.logs_api, name='logs_api'),
 ]

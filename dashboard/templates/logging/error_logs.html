@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Error Logs{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-exclamation-triangle text-danger"></i>
+            Error Logs
+        </h1>
+        <div class="d-flex gap-2">
+            <a href="{% url 'system_logs' %}" class="btn btn-outline-primary">
+                <i class="fas fa-list"></i> All Logs
+            </a>
+            <a href="{% url 'logs_stats' %}" class="btn btn-outline-info">
+                <i class="fas fa-chart-bar"></i> Statistics
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert for no errors -->
+    {% if not page_obj %}
+        <div class="alert alert-success" role="alert">
+            <i class="fas fa-check-circle"></i>
+            <strong>Great news!</strong> No error or critical logs found. Your system is running smoothly.
+        </div>
+    {% endif %}
+
+    <!-- Search -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-8">
+                    <label for="search" class="form-label">Search Errors</label>
+                    <input type="text" name="search" id="search" class="form-control" 
+                           value="{{ current_search }}" 
+                           placeholder="Search error messages or actors...">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <a href="{% url 'error_logs' %}" class="btn btn-outline-secondary">Clear</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Error Entries -->
+    {% if page_obj %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-bug text-danger"></i>
+                    Error & Critical Logs ({{ total_errors }} total)
+                </h5>
+                <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Level</th>
+                                <th>Actor</th>
+                                <th>Object</th>
+                                <th>Error Message</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in page_obj %}
+                                <tr class="{% if log.level == 'CRITICAL' %}table-danger{% else %}table-warning{% endif %}">
+                                    <td>
+                                        <small>
+                                            {{ log.timestamp|date:"M d, H:i:s" }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if log.level == 'CRITICAL' %}danger{% else %}warning{% endif %}">
+                                            {% if log.level == 'CRITICAL' %}
+                                                <i class="fas fa-skull-crossbones"></i>
+                                            {% else %}
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                            {% endif %}
+                                            {{ log.level }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small>{{ log.actor }}</small>
+                                    </td>
+                                    <td>
+                                        {% if log.content_object %}
+                                            <small class="text-muted">
+                                                {{ log.content_type.model|title }}: 
+                                                {% if log.content_object.domain_name %}
+                                                    {{ log.content_object.domain_name }}
+                                                {% elif log.content_object.name %}
+                                                    {{ log.content_object.name }}
+                                                {% else %}
+                                                    ID {{ log.object_id }}
+                                                {% endif %}
+                                            </small>
+                                        {% else %}
+                                            <small class="text-muted">System</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="text-danger fw-bold">
+                                            {{ log.message|truncatechars:100 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'log_detail' log.id %}" 
+                                               class="btn btn-outline-primary"
+                                               title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if log.content_object %}
+                                                <a href="{% url 'object_logs' log.content_type.id log.object_id %}" 
+                                                   class="btn btn-outline-secondary"
+                                                   title="View all logs for this object">
+                                                    <i class="fas fa-list"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                    <nav aria-label="Error log pagination" class="p-3">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if current_search %}&search={{ current_search }}{% endif %}">First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_search %}&search={{ current_search }}{% endif %}">Previous</a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                </span>
+                            </li>
+                            
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_search %}&search={{ current_search }}{% endif %}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if current_search %}&search={{ current_search }}{% endif %}">Last</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

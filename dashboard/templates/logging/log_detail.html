@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Log Entry Detail{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Log Entry Detail</h1>
+        <a href="{% url 'system_logs' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Logs
+        </a>
+    </div>
+
+    <!-- Log Entry Details -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <span class="badge bg-{% if log_entry.level == 'ERROR' or log_entry.level == 'CRITICAL' %}danger{% elif log_entry.level == 'WARNING' %}warning{% elif log_entry.level == 'DEBUG' %}secondary{% else %}primary{% endif %} me-2">
+                            {{ log_entry.level }}
+                        </span>
+                        Log Entry #{{ log_entry.id }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Timestamp:</dt>
+                        <dd class="col-sm-9">{{ log_entry.timestamp|date:"F d, Y H:i:s T" }}</dd>
+
+                        <dt class="col-sm-3">Actor:</dt>
+                        <dd class="col-sm-9">
+                            <code>{{ log_entry.actor }}</code>
+                            {% if log_entry.user %}
+                                <small class="text-muted">(User: {{ log_entry.user.username }})</small>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-3">Message:</dt>
+                        <dd class="col-sm-9">{{ log_entry.message }}</dd>
+
+                        {% if log_entry.content_object %}
+                            <dt class="col-sm-3">Related Object:</dt>
+                            <dd class="col-sm-9">
+                                <strong>{{ log_entry.content_type.model|title }}</strong>
+                                {% if log_entry.content_object.domain_name %}
+                                    - {{ log_entry.content_object.domain_name }}
+                                {% elif log_entry.content_object.name %}
+                                    - {{ log_entry.content_object.name }}
+                                {% elif log_entry.content_object.title %}
+                                    - {{ log_entry.content_object.title }}
+                                {% else %}
+                                    - ID {{ log_entry.object_id }}
+                                {% endif %}
+                                <br>
+                                <small class="text-muted">
+                                    <a href="{% url 'object_logs' log_entry.content_type.id log_entry.object_id %}" 
+                                       class="text-decoration-none">
+                                        <i class="fas fa-list"></i> View all logs for this object
+                                    </a>
+                                </small>
+                            </dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+
+            {% if formatted_data %}
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Additional Data</h5>
+                    </div>
+                    <div class="card-body">
+                        <pre class="bg-light p-3 rounded"><code>{{ formatted_data }}</code></pre>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    {% if log_entry.content_object %}
+                        {% if log_entry.content_type.model == 'domain' %}
+                            <a href="{% url 'view_domain' log_entry.content_object.domain_name %}" 
+                               class="btn btn-outline-primary btn-sm w-100 mb-2">
+                                <i class="fas fa-globe"></i> View Domain
+                            </a>
+                            <a href="{% url 'domain_logs' log_entry.content_object.domain_name %}" 
+                               class="btn btn-outline-secondary btn-sm w-100 mb-2">
+                                <i class="fas fa-history"></i> Domain Logs
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                    
+                    {% if log_entry.user %}
+                        <a href="{% url 'system_logs' %}?search=user:{{ log_entry.user.username }}" 
+                           class="btn btn-outline-info btn-sm w-100 mb-2">
+                            <i class="fas fa-user"></i> All logs by {{ log_entry.user.username }}
+                        </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'system_logs' %}?level={{ log_entry.level }}" 
+                       class="btn btn-outline-warning btn-sm w-100">
+                        <i class="fas fa-filter"></i> All {{ log_entry.level }} logs
+                    </a>
+                </div>
+            </div>
+
+            <!-- Context Information -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Context</h5>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <strong>Content Type:</strong> {{ log_entry.content_type.app_label }}.{{ log_entry.content_type.model }}<br>
+                        <strong>Object ID:</strong> {{ log_entry.object_id }}<br>
+                        <strong>Log ID:</strong> {{ log_entry.id }}<br>
+                        {% if log_entry.data %}
+                            <strong>Has Additional Data:</strong> Yes<br>
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
