@@ -21,7 +21,6 @@ NGINX_DEFAULT_CONFIG = r"""
                           '"$http_user_agent" "$http_x_forwarded_for"';
 
         access_log  /var/log/nginx/access.log  main;
-        error_log /var/log/nginx/error.log debug;
         port_in_redirect off;
         sendfile        on;
         keepalive_timeout  65;
@@ -30,7 +29,7 @@ NGINX_DEFAULT_CONFIG = r"""
         server {
             listen       8080 default_server;
             server_name  _;
-            client_max_body_size 100M;
+            client_max_body_size 150M;
                 root   /usr/share/nginx/html; # Ensure your document root is correctly set
                 index  index.php index.html index.htm;
 
