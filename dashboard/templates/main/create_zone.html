@@ -7,7 +7,7 @@
 {% block page_subtitle %}Add a new DNS zone to manage domain records{% endblock %}
 
 {% block header_actions %}
-<a href="{% url 'list_zones' %}"
+<a href="{% url 'zones_list' %}"
    class="text-gray-600 hover:text-gray-800 px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center space-x-2 border border-gray-300 hover:border-gray-400">
     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -212,7 +212,7 @@
 
                 <!-- Form Actions -->
                 <div class="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
-                    <a href="{% url 'list_zones' %}" 
+                    <a href="{% url 'zones_list' %}" 
                        class="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 font-medium transition-colors flex items-center space-x-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
