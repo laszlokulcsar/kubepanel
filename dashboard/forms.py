@@ -235,3 +235,37 @@ class UserForm(UserCreationForm):
         widgets = {
             'username': forms.TextInput(attrs={'class':'form-control'}),
         }
+
+class PasswordChangeForm(forms.Form):
+    new_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+            'placeholder': 'Enter new password',
+            'minlength': '8'
+        }),
+        min_length=8,
+        required=True,
+        label='New Password'
+    )
+    
+    confirm_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+            'placeholder': 'Confirm new password',
+            'minlength': '8'
+        }),
+        min_length=8,
+        required=True,
+        label='Confirm Password'
+    )
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password = cleaned_data.get('new_password')
+        confirm_password = cleaned_data.get('confirm_password')
+        
+        if new_password and confirm_password:
+            if new_password != confirm_password:
+                raise forms.ValidationError('Passwords do not match.')
+        
+        return cleaned_data

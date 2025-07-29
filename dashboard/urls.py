@@ -76,7 +76,7 @@ urlpatterns = [
     path('logs/stats/', views_logging.logs_stats, name='logs_stats'),
     path('logs/<int:log_id>/', views_logging.log_detail, name='log_detail'),
     path('logs/object/<int:content_type_id>/<int:object_id>/', views_logging.object_logs, name='object_logs'),
-    
+    path("change_password/<str:domain>/<str:password_type>", views.change_password, name="change_password"),    
     # API endpoints
     path('api/logs/', views_logging.logs_api, name='logs_api'),
 ]

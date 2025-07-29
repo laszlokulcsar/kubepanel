@@ -2386,3 +2386,97 @@ def edit_dns_record_simple(request, record_id):
     }
 
     return render(request, "main/test_edit_dns_record.html", context)
+
+@login_required(login_url="/dashboard/")
+def change_password(request, domain, password_type):
+    """
+    Handle password changes for database or SFTP passwords
+    """
+    try:
+        if request.user.is_superuser:
+            domain_obj = Domain.objects.get(domain_name=domain)
+        else:
+            domain_obj = Domain.objects.get(owner=request.user, domain_name=domain)
+    except Domain.DoesNotExist:
+        return HttpResponse("Permission denied")
+    
+    if password_type not in ['mariadb', 'sftp']:
+        return HttpResponse("Invalid password type")
+    
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        
+        if not new_password or not confirm_password:
+            messages.error(request, "Both password fields are required.")
+            return render(request, "main/change_password.html", {
+                "domain": domain_obj,
+                "password_type": password_type
+            })
+        
+        if new_password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+            return render(request, "main/change_password.html", {
+                "domain": domain_obj,
+                "password_type": password_type
+            })
+        
+        # Validate password length
+        if len(new_password) < 8:
+            messages.error(request, "Password must be at least 8 characters long.")
+            return render(request, "main/change_password.html", {
+                "domain": domain_obj,
+                "password_type": password_type
+            })
+        
+        # Update the password
+        if password_type == 'mariadb':
+            domain_obj.mariadb_pass = new_password
+            password_label = "Database"
+        else:  # sftp
+            domain_obj.sftp_pass = new_password
+            password_label = "SFTP"
+            
+        domain_obj.save()
+        
+        # Log the password change
+        LogEntry.objects.create(
+            content_object=domain_obj,
+            actor=f"user:{request.user.username}",
+            user=request.user,
+            level="INFO",
+            message=f"{password_label} password changed for {domain_obj.domain_name}",
+            data={"domain_id": domain_obj.pk, "password_type": password_type}
+        )
+        
+        # Trigger YAML template regeneration to update the infrastructure
+        template_dir = "yaml_templates/"
+        domain_dirname = '/kubepanel/yaml_templates/' + domain_obj.domain_name
+        try:
+            os.mkdir(domain_dirname)
+            os.mkdir('/dkim-privkeys/' + domain)
+        except:
+            print("Can't create directories. Please check debug logs if you think this is an error.")
+        
+        jobid = random_string(5)
+        sftp_pass = domain_obj.sftp_pass
+        salt = crypt.mksalt(crypt.METHOD_SHA512)
+        sftp_pass_hash = crypt.crypt(sftp_pass, salt)
+        
+        context = {
+            "domain_instance": domain_obj,
+            "sftp_pass_hash": sftp_pass_hash,
+            "domain_name": domain,
+            "jobid": jobid,
+            "domain_name_underscore": domain.replace(".", "_"),
+            "domain_name_dash": domain.replace(".", "-")
+        }
+        iterate_input_templates(template_dir, domain_dirname, context)
+        
+        messages.success(request, f"{password_label} password has been changed successfully.")
+        return redirect('view_domain', domain=domain_obj.domain_name)
+    
+    return render(request, "main/change_password.html", {
+        "domain": domain_obj,
+        "password_type": password_type
+    })
