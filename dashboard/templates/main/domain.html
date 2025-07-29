@@ -192,7 +192,7 @@
                             </div>
                         </div>
                         <div class="ml-4">
-                            <div class="text-sm font-medium text-gray-900">{{ domain.domain_name }}</div>
+                            <div class="text-sm font-medium text-gray-900"><a href="{% url 'view_domain' domain=domain.domain_name %}">{{ domain.domain_name }}</a></div>
                             <div class="text-sm text-gray-500">Active domain</div>
                         </div>
                     </div>
