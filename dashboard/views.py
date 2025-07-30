@@ -26,7 +26,7 @@ from django.conf import settings
 from kubernetes import client, config
 from kubernetes.stream import stream
 from kubernetes.client import ApiException
-import pymsql, subprocess, legacycrypt as crypt, time, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
+import pymysql, subprocess, legacycrypt as crypt, time, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
 
 from .services.dns_service import (
     CloudflareDNSService,
