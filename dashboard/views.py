@@ -2425,7 +2425,7 @@ def update_mariadb_user_password(username, new_password):
     try:
         # Get root password from Kubernetes secret
         root_password = get_mariadb_root_password()
-        
+        logger.info("Starting mariadb password change")
         # Connect to MariaDB
         connection = pymysql.connect(
             host='mariadb.kubepanel.svc.cluster.local',
@@ -2448,15 +2448,15 @@ def update_mariadb_user_password(username, new_password):
                 for query in update_queries:
                     try:
                         cursor.execute(query, (new_password,))
-                        print(f"Updated password for {username} with host pattern")
+                        logger.info("Updated password for {username} with host pattern")
                     except pymysql.Error as e:
                         # User might not exist with this host pattern, continue
-                        print(f"Could not update {username} with host pattern: {e}")
+                        logger.error("Could not update {username} with host pattern: {e}")
                         continue
                 
                 # Flush privileges to ensure changes take effect
                 cursor.execute("FLUSH PRIVILEGES")
-                print(f"Successfully updated password for database user: {username}")
+                logger.info("Successfully updated password for database user: {username}")
                 
         finally:
             connection.close()
