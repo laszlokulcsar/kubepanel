@@ -26,6 +26,7 @@ from django.conf import settings
 from kubernetes import client, config
 from kubernetes.stream import stream
 from kubernetes.client import ApiException
+
 import pymysql, subprocess, legacycrypt as crypt, time, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
 
 from .services.dns_service import (
@@ -2440,10 +2441,10 @@ def update_mariadb_user_password(username, new_password):
                 # First, let's check what users exist to debug the issue
                 cursor.execute("SELECT User, Host FROM mysql.user WHERE User = %s", (username,))
                 existing_users = cursor.fetchall()
-                print(f"Found existing users for '{username}': {existing_users}")
+                logger.info(f"Found existing users for '{username}': {existing_users}")
                 
                 if not existing_users:
-                    print(f"No users found with username '{username}'. Cannot update password.")
+                    logger.warning(f"No users found with username '{username}'. Cannot update password.")
                     raise Exception(f"Database user '{username}' does not exist")
                 
                 # Update user password for all found host patterns
@@ -2451,16 +2452,16 @@ def update_mariadb_user_password(username, new_password):
                 for user_row in existing_users:
                     user, host = user_row
                     try:
-                        # Use parameterized query to avoid f-string issues
-                        query = "ALTER USER %s@%s IDENTIFIED BY %s"
-                        # Note: We need to construct the user@host string manually for ALTER USER
-                        user_host = f"'{user}'@'{host}'"
-                        alter_query = f"ALTER USER {user_host} IDENTIFIED BY %s"
+                        # Construct the ALTER USER statement properly
+                        # We need to escape the username and host properly
+                        escaped_user = pymysql.escape_string(user)
+                        escaped_host = pymysql.escape_string(host)
+                        alter_query = f"ALTER USER '{escaped_user}'@'{escaped_host}' IDENTIFIED BY %s"
                         cursor.execute(alter_query, (new_password,))
-                        print(f"Successfully updated password for {user}@{host}")
+                        logger.info(f"Successfully updated password for {user}@{host}")
                         success_count += 1
                     except pymysql.Error as e:
-                        print(f"Could not update password for {user}@{host}: {e}")
+                        logger.error(f"Could not update password for {user}@{host}: {e}")
                         continue
                 
                 if success_count == 0:
@@ -2468,14 +2469,15 @@ def update_mariadb_user_password(username, new_password):
                 
                 # Flush privileges to ensure changes take effect
                 cursor.execute("FLUSH PRIVILEGES")
-                print(f"Successfully updated password for {success_count} instance(s) of database user: {username}")
+                logger.info(f"Successfully updated password for {success_count} instance(s) of database user: {username}")
                 
         finally:
             connection.close()
             
     except Exception as e:
-        print(f"Error updating MariaDB user password: {e}")
+        logger.error(f"Error updating MariaDB user password: {e}")
         raise
+
 
 def user_can_change_password(user, domain_obj, password_type):
     """
