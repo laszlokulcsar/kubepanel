@@ -2417,7 +2417,6 @@ def get_mariadb_root_password():
         print(f"Error retrieving MariaDB root password: {e}")
         raise
 
-
 def update_mariadb_user_password(username, new_password):
     """
     Connect to MariaDB and update user password
@@ -2425,7 +2424,7 @@ def update_mariadb_user_password(username, new_password):
     try:
         # Get root password from Kubernetes secret
         root_password = get_mariadb_root_password()
-        logger.info("Starting mariadb password change")
+        
         # Connect to MariaDB
         connection = pymysql.connect(
             host='mariadb.kubepanel.svc.cluster.local',
@@ -2438,25 +2437,38 @@ def update_mariadb_user_password(username, new_password):
         
         try:
             with connection.cursor() as cursor:
-                # Update user password - using ALTER USER which is more secure
-                # This handles both local and wildcard hosts
-                update_queries = [
-                    f"ALTER USER '{username}'@'localhost' IDENTIFIED BY %s",
-                    f"ALTER USER '{username}'@'%' IDENTIFIED BY %s"
-                ]
+                # First, let's check what users exist to debug the issue
+                cursor.execute("SELECT User, Host FROM mysql.user WHERE User = %s", (username,))
+                existing_users = cursor.fetchall()
+                print(f"Found existing users for '{username}': {existing_users}")
                 
-                for query in update_queries:
+                if not existing_users:
+                    print(f"No users found with username '{username}'. Cannot update password.")
+                    raise Exception(f"Database user '{username}' does not exist")
+                
+                # Update user password for all found host patterns
+                success_count = 0
+                for user_row in existing_users:
+                    user, host = user_row
                     try:
-                        cursor.execute(query, (new_password,))
-                        logger.info("Updated password for {username} with host pattern")
+                        # Use parameterized query to avoid f-string issues
+                        query = "ALTER USER %s@%s IDENTIFIED BY %s"
+                        # Note: We need to construct the user@host string manually for ALTER USER
+                        user_host = f"'{user}'@'{host}'"
+                        alter_query = f"ALTER USER {user_host} IDENTIFIED BY %s"
+                        cursor.execute(alter_query, (new_password,))
+                        print(f"Successfully updated password for {user}@{host}")
+                        success_count += 1
                     except pymysql.Error as e:
-                        # User might not exist with this host pattern, continue
-                        logger.error("Could not update {username} with host pattern: {e}")
+                        print(f"Could not update password for {user}@{host}: {e}")
                         continue
+                
+                if success_count == 0:
+                    raise Exception(f"Failed to update password for any instances of user '{username}'")
                 
                 # Flush privileges to ensure changes take effect
                 cursor.execute("FLUSH PRIVILEGES")
-                logger.info("Successfully updated password for database user: {username}")
+                print(f"Successfully updated password for {success_count} instance(s) of database user: {username}")
                 
         finally:
             connection.close()
@@ -2464,7 +2476,6 @@ def update_mariadb_user_password(username, new_password):
     except Exception as e:
         print(f"Error updating MariaDB user password: {e}")
         raise
-
 
 def user_can_change_password(user, domain_obj, password_type):
     """
