@@ -2452,12 +2452,9 @@ def update_mariadb_user_password(username, new_password):
                 for user_row in existing_users:
                     user, host = user_row
                     try:
-                        # Construct the ALTER USER statement properly
-                        # We need to escape the username and host properly
-                        escaped_user = pymysql.escape_string(user)
-                        escaped_host = pymysql.escape_string(host)
-                        alter_query = f"ALTER USER '{escaped_user}'@'{escaped_host}' IDENTIFIED BY %s"
-                        cursor.execute(alter_query, (new_password,))
+                        # Use SET PASSWORD which is more reliable than ALTER USER
+                        # SET PASSWORD FOR 'user'@'host' = PASSWORD('newpassword')
+                        cursor.execute("SET PASSWORD FOR %s@%s = PASSWORD(%s)", (user, host, new_password))
                         logger.info(f"Successfully updated password for {user}@{host}")
                         success_count += 1
                     except pymysql.Error as e:
