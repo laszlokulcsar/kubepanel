@@ -26,7 +26,7 @@ from django.conf import settings
 from kubernetes import client, config
 from kubernetes.stream import stream
 from kubernetes.client import ApiException
-import subprocess, legacycrypt as crypt, time, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
+import pymsql, subprocess, legacycrypt as crypt, time, cloudflare, logging, os, random, base64, string, requests, json, geoip2.database
 
 from .services.dns_service import (
     CloudflareDNSService,
@@ -2387,18 +2387,117 @@ def edit_dns_record_simple(request, record_id):
 
     return render(request, "main/test_edit_dns_record.html", context)
 
-@login_required(login_url="/dashboard/")
+def get_mariadb_root_password():
+    """
+    Retrieve MariaDB root password from Kubernetes secret
+    """
+    try:
+        # Load Kubernetes config (assumes running in cluster or kubeconfig is available)
+        try:
+            config.load_incluster_config()
+        except:
+            config.load_kube_config()
+        
+        v1 = client.CoreV1Api()
+        
+        # Get the secret containing MariaDB root password
+        secret = v1.read_namespaced_secret(
+            name="mariadb-auth",
+            namespace="kubepanel"
+        )
+        
+        # Decode the base64 encoded password
+        encoded_password = secret.data.get("password")
+        if encoded_password:
+            return base64.b64decode(encoded_password).decode('utf-8')
+        else:
+            raise Exception("Password key not found in secret")
+            
+    except Exception as e:
+        print(f"Error retrieving MariaDB root password: {e}")
+        raise
+
+
+def update_mariadb_user_password(username, new_password):
+    """
+    Connect to MariaDB and update user password
+    """
+    try:
+        # Get root password from Kubernetes secret
+        root_password = get_mariadb_root_password()
+        
+        # Connect to MariaDB
+        connection = pymysql.connect(
+            host='mariadb.kubepanel.svc.cluster.local',
+            port=3306,
+            user='root',
+            password=root_password,
+            charset='utf8mb4',
+            autocommit=True
+        )
+        
+        try:
+            with connection.cursor() as cursor:
+                # Update user password - using ALTER USER which is more secure
+                # This handles both local and wildcard hosts
+                update_queries = [
+                    f"ALTER USER '{username}'@'localhost' IDENTIFIED BY %s",
+                    f"ALTER USER '{username}'@'%' IDENTIFIED BY %s"
+                ]
+                
+                for query in update_queries:
+                    try:
+                        cursor.execute(query, (new_password,))
+                        print(f"Updated password for {username} with host pattern")
+                    except pymysql.Error as e:
+                        # User might not exist with this host pattern, continue
+                        print(f"Could not update {username} with host pattern: {e}")
+                        continue
+                
+                # Flush privileges to ensure changes take effect
+                cursor.execute("FLUSH PRIVILEGES")
+                print(f"Successfully updated password for database user: {username}")
+                
+        finally:
+            connection.close()
+            
+    except Exception as e:
+        print(f"Error updating MariaDB user password: {e}")
+        raise
+
+
+def user_can_change_password(user, domain_obj, password_type):
+    """
+    Check if user has permission to change the specified password type for the domain
+    """
+    # Superusers can change any password
+    if user.is_superuser:
+        return True, None
+    
+    # Regular users can only change passwords for domains they own
+    if domain_obj.owner != user:
+        return False, "You don't have permission to change passwords for this domain."
+    
+    # Additional checks can be added here for specific password types if needed
+    # For example, you might want to restrict database password changes to certain user roles
+    
+    return True, None
+
+
 def change_password(request, domain, password_type):
     """
     Handle password changes for database or SFTP passwords
     """
+    # First, get the domain object
     try:
-        if request.user.is_superuser:
-            domain_obj = Domain.objects.get(domain_name=domain)
-        else:
-            domain_obj = Domain.objects.get(owner=request.user, domain_name=domain)
+        domain_obj = Domain.objects.get(domain_name=domain)
     except Domain.DoesNotExist:
-        return HttpResponse("Permission denied")
+        return HttpResponse("Domain not found", status=404)
+    
+    # Check user permissions
+    can_change, error_message = user_can_change_password(request.user, domain_obj, password_type)
+    if not can_change:
+        return HttpResponse(f"Permission denied: {error_message}", status=403)
     
     if password_type not in ['mariadb', 'sftp']:
         return HttpResponse("Invalid password type")
@@ -2429,51 +2528,90 @@ def change_password(request, domain, password_type):
                 "password_type": password_type
             })
         
+        # Additional security: Double-check permissions before any database operations
+        if password_type == 'mariadb':
+            can_change_db, db_error = user_can_change_password(request.user, domain_obj, password_type)
+            if not can_change_db:
+                messages.error(request, f"Database password change failed: {db_error}")
+                return render(request, "main/change_password.html", {
+                    "domain": domain_obj,
+                    "password_type": password_type
+                })
+        
         # Update the password
         if password_type == 'mariadb':
+            # Update password in kubepanel database
             domain_obj.mariadb_pass = new_password
             password_label = "Database"
+            
+            # Update password in MariaDB infrastructure
+            try:
+                # Use the mariadb_user field from the domain model
+                db_username = domain_obj.mariadb_user
+                if not db_username:
+                    raise Exception("No MariaDB username configured for this domain")
+                
+                update_mariadb_user_password(db_username, new_password)
+                
+                messages.success(request, f"{password_label} password updated in both kubepanel and MariaDB server.")
+                
+            except Exception as e:
+                # Log the error but don't fail completely
+                print(f"Error updating MariaDB password for user {db_username}: {e}")
+                messages.warning(request, 
+                    f"{password_label} password updated in kubepanel, but there was an issue updating the MariaDB server. "
+                    f"Please check the logs and contact administrator if needed.")
+                
         else:  # sftp
             domain_obj.sftp_pass = new_password
             password_label = "SFTP"
             
         domain_obj.save()
         
-        # Log the password change
+        # Enhanced logging with security information
         LogEntry.objects.create(
             content_object=domain_obj,
             actor=f"user:{request.user.username}",
             user=request.user,
             level="INFO",
             message=f"{password_label} password changed for {domain_obj.domain_name}",
-            data={"domain_id": domain_obj.pk, "password_type": password_type}
+            data={
+                "domain_id": domain_obj.pk, 
+                "password_type": password_type,
+                "user_id": request.user.id,
+                "domain_owner_id": domain_obj.owner.id,
+                "is_superuser": request.user.is_superuser,
+                "mariadb_user": domain_obj.mariadb_user if password_type == 'mariadb' else None
+            }
         )
         
         # Trigger YAML template regeneration to update the infrastructure
-        template_dir = "yaml_templates/"
-        domain_dirname = '/kubepanel/yaml_templates/' + domain_obj.domain_name
-        try:
-            os.mkdir(domain_dirname)
-            os.mkdir('/dkim-privkeys/' + domain)
-        except:
-            print("Can't create directories. Please check debug logs if you think this is an error.")
+#        template_dir = "yaml_templates/"
+#        domain_dirname = '/kubepanel/yaml_templates/' + domain_obj.domain_name
+#        try:
+#            os.mkdir(domain_dirname)
+#            os.mkdir('/dkim-privkeys/' + domain)
+#        except:
+#            print("Can't create directories. Please check debug logs if you think this is an error.")
+#        
+#        jobid = random_string(5)
+#        sftp_pass = domain_obj.sftp_pass
+#        salt = crypt.mksalt(crypt.METHOD_SHA512)
+#        sftp_pass_hash = crypt.crypt(sftp_pass, salt)
+#        
+#        context = {
+#            "domain_instance": domain_obj,
+#            "sftp_pass_hash": sftp_pass_hash,
+#            "domain_name": domain,
+#            "jobid": jobid,
+#            "domain_name_underscore": domain.replace(".", "_"),
+#            "domain_name_dash": domain.replace(".", "-")
+#        }
+#        iterate_input_templates(template_dir, domain_dirname, context)
         
-        jobid = random_string(5)
-        sftp_pass = domain_obj.sftp_pass
-        salt = crypt.mksalt(crypt.METHOD_SHA512)
-        sftp_pass_hash = crypt.crypt(sftp_pass, salt)
-        
-        context = {
-            "domain_instance": domain_obj,
-            "sftp_pass_hash": sftp_pass_hash,
-            "domain_name": domain,
-            "jobid": jobid,
-            "domain_name_underscore": domain.replace(".", "_"),
-            "domain_name_dash": domain.replace(".", "-")
-        }
-        iterate_input_templates(template_dir, domain_dirname, context)
-        
-        messages.success(request, f"{password_label} password has been changed successfully.")
+        if password_type == 'sftp':
+            messages.success(request, f"{password_label} password has been changed successfully.")
+            
         return redirect('view_domain', domain=domain_obj.domain_name)
     
     return render(request, "main/change_password.html", {
