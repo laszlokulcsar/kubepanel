@@ -1309,7 +1309,7 @@ def start_backup(request, domain):
         context = {
             "domain_name": domain,
             "jobid": jobid,
-            "domain_name_underscore": domain.replace(".", "_"),
+            "domain_name_underscore": domain.replace(".", "_").replace(".","_"),
             "domain_name_dash": domain.replace(".", "-")
         }
 

@@ -27,9 +27,9 @@ spec:
                   name: mariadb-auth
                   key: password
             - name: DBUSER
-              value: "{{ domain_name_underscore }}"
+              value: "{{ domain_instance.mariadb_user }}"
             - name: DBNAME
-              value: "{{ domain_name_underscore }}"
+              value: "{{ domain_instance.mariadb_user }}"
             - name: NAMESPACE
               value: "{{ domain_name_dash }}"
             - name: DOMAIN
