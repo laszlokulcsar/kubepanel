@@ -239,12 +239,12 @@
                     </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    {% if domain.status == 'Not running' %}
+                    {% if domain.status == 'Not running' and domain.id != 1 %}
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                         <span class="w-1.5 h-1.5 bg-red-500 rounded-full mr-1.5"></span>
                         Stopped
                     </span>
-                    {% elif 'Running' in domain.status %}
+                    {% elif 'Running' in domain.status or domain.id == 1 %}
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         <span class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>
                         Running
